@@ -1,63 +1,79 @@
-import { useContext, useEffect, useState } from 'react';
-import { AuthContext } from '../context/AuthContext';
-import userService from '../services/userService';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import eventService from '../services/eventService';
 
 const AdminDashboard = () => {
-    const { currentUser, token } = useContext(AuthContext);
-    const [stats, setStats] = useState({ totalUsers: 0, totalStudents: 0, totalAdmins: 0 });
+    const [stats, setStats] = useState({
+        totalUsers: 0,
+        totalEvents: 0,
+        totalOrganizers: 0,
+        totalStudents: 0
+    });
+    const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const data = await userService.getUserStats(token);
-                setStats(data);
-            } catch (err) {
-                console.error('Failed to fetch stats', err);
+                const response = await eventService.getAdminStats();
+                setStats(response.data);
+                setLoading(false);
+            } catch (error) {
+                console.error('Error fetching admin stats:', error);
+                setLoading(false);
             }
         };
-        if (token) fetchStats();
-    }, [token]);
+        fetchStats();
+    }, []);
+
+    if (loading) return <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>Loading stats...</div>;
+
+    const statCards = [
+        { title: 'Total Users', value: stats.totalUsers, icon: '👥', color: '#6366f1' },
+        { title: 'Total Events', value: stats.totalEvents, icon: '📅', color: '#a855f7' },
+        { title: 'System Organizers', value: stats.totalOrganizers, icon: '🏗️', color: '#ec4899' },
+        { title: 'Active Students', value: stats.totalStudents, icon: '🎓', color: '#10b981' }
+    ];
 
     return (
-        <div style={{ padding: '40px 5%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
-                <div>
-                    <h1 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>Administrative Console</h1>
-                    <p style={{ color: '#94a3b8' }}>System wide control and monitoring for {currentUser?.name}.</p>
-                </div>
-                <Link to="/admin/users" className="btn-primary">Manage Users</Link>
+        <div style={{ padding: '2rem 5%' }}>
+            <h1 style={{ fontSize: '2.5rem', marginBottom: '2rem', fontWeight: '800' }}>Admin <span style={{ color: '#6366f1' }}>Dashboard</span></h1>
+
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '3rem'
+            }}>
+                {statCards.map((card, index) => (
+                    <div key={index} className="glass-card" style={{
+                        padding: '1.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.5rem',
+                        transition: 'transform 0.3s ease',
+                        cursor: 'default'
+                    }}>
+                        <div style={{ fontSize: '2rem' }}>{card.icon}</div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500' }}>{card.title}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: card.color }}>{card.value}</div>
+                    </div>
+                ))}
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
-                <div className="glass-card" style={{ padding: '30px', borderTop: '4px solid #6366f1' }}>
-                    <h3 style={{ color: '#6366f1', marginBottom: '15px', textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>Infrastructure</h3>
-                    <h2 style={{ marginBottom: '5px', fontSize: '2rem' }}>{stats.totalUsers}</h2>
-                    <p style={{ color: '#94a3b8' }}>Total Registered Users</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                <div className="glass-card" style={{ padding: '2rem' }}>
+                    <h3 style={{ marginBottom: '1rem' }}>User Management</h3>
+                    <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>View and manage all registered users in the system.</p>
+                    <Link to="/admin/users" className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>
+                        Manage Users
+                    </Link>
                 </div>
-
-                <div className="glass-card" style={{ padding: '30px', borderTop: '4px solid #10b981' }}>
-                    <h3 style={{ color: '#10b981', marginBottom: '15px', textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>Engagement</h3>
-                    <h2 style={{ marginBottom: '5px', fontSize: '2rem' }}>{stats.totalStudents}</h2>
-                    <p style={{ color: '#94a3b8' }}>Active Students</p>
-                </div>
-
-                <div className="glass-card" style={{ padding: '30px', borderTop: '40px solid #ef4444' }}>
-                    <h3 style={{ color: '#ef4444', marginBottom: '15px', textTransform: 'uppercase', fontSize: '0.8rem', letterSpacing: '0.1em' }}>Governance</h3>
-                    <h2 style={{ marginBottom: '5px', fontSize: '2rem' }}>{stats.totalAdmins}</h2>
-                    <p style={{ color: '#94a3b8' }}>System Administrators</p>
-                </div>
-            </div>
-
-            <div className="glass-card" style={{ marginTop: '40px', padding: '30px' }}>
-                <h2 style={{ marginBottom: '20px' }}>Recent System Activity</h2>
-                <div style={{ borderTop: '1px solid rgba(255,255,255,0.05)' }}>
-                    {[1, 2, 3].map(i => (
-                        <div key={i} style={{ padding: '15px 0', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between', color: '#94a3b8', fontSize: '0.9rem' }}>
-                            <span>User registration: new_user_{i}@example.com</span>
-                            <span>{i * 2} hours ago</span>
-                        </div>
-                    ))}
+                <div className="glass-card" style={{ padding: '2rem' }}>
+                    <h3 style={{ marginBottom: '1rem' }}>Event Oversight</h3>
+                    <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>Monitor and oversee all events across the platform.</p>
+                    <button className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none', background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)', opacity: 0.7 }}>
+                        All Events (Coming Soon)
+                    </button>
                 </div>
             </div>
         </div>

@@ -1,15 +1,18 @@
 const express = require('express');
-const router = express.Router();
-const { getUsers, deleteUser, getUserStats } = require('../controllers/adminController');
+const { getUsers, deleteUser } = require('../controllers/adminController');
+const { getAllEvents, getDashboardStats } = require('../controllers/eventController');
 const { protect } = require('../middleware/authMiddleware');
 const { authorizeRoles } = require('../middleware/roleMiddleware');
 
-// All routes here require admin role
+const router = express.Router();
+
+// Admin routes
 router.use(protect);
 router.use(authorizeRoles('admin'));
 
 router.get('/users', getUsers);
 router.delete('/users/:id', deleteUser);
-router.get('/user-stats', getUserStats);
+router.get('/events', getAllEvents);
+router.get('/stats', getDashboardStats);
 
 module.exports = router;

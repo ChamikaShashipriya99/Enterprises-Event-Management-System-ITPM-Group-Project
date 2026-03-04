@@ -11,6 +11,8 @@ import Register from './pages/Register';
 import StudentDashboard from './pages/StudentDashboard';
 import OrganizerDashboard from './pages/OrganizerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import CreateEvent from './pages/CreateEvent';
+import OrganizerEvents from './pages/OrganizerEvents';
 
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
@@ -76,6 +78,18 @@ function App() {
           <Route path="/organizer-dashboard" element={
             <ProtectedRoute role="organizer">
               <OrganizerDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/create-event" element={
+            <ProtectedRoute role="organizer">
+              <CreateEvent />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/organizer-events" element={
+            <ProtectedRoute role="organizer">
+              <OrganizerEvents />
             </ProtectedRoute>
           } />
 
