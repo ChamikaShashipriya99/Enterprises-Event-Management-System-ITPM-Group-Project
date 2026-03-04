@@ -5,9 +5,18 @@ The **Enterprise Event Management System (EEMS)** is a robust platform designed 
 
 In any enterprise-grade platform, user management is critical for ensuring data integrity, security, and a personalized user experience. This module handles everything from initial registration to advanced administrative oversight.
 
+<div align="center">
+  <img src="LandingPage.png" width="90%" alt="Landing Page" style="border-radius: 10px; border: 1px solid #30363d; margin-bottom: 20px;" />
+</div>
+
 <p align="center">
-  <img src="LoginPage.png" width="45%" alt="Login Page Presentation" />
-  <img src="RegPage.png" width="45%" alt="Registration Page Presentation" />
+  <img src="RegPage.png" width="45%" alt="Registration Page" style="border-radius: 8px; border: 1px solid #30363d;" />
+  <img src="LoginPage.png" width="45%" alt="Login Page" style="border-radius: 8px; border: 1px solid #30363d;" />
+</p>
+
+<p align="center">
+  <img src="AdminDash.png" width="45%" alt="Admin Dashboard" style="border-radius: 8px; border: 1px solid #30363d;" />
+  <img src="UserDash.png" width="45%" alt="User Dashboard" style="border-radius: 8px; border: 1px solid #30363d;" />
 </p>
 
 ---
