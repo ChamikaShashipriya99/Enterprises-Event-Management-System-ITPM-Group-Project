@@ -32,7 +32,7 @@ const Navbar = () => {
                 WebkitBackgroundClip: 'text',
                 WebkitTextFillColor: 'transparent'
             }}>
-                EEMS Portal
+                EventBuddy
             </Link>
 
             <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
