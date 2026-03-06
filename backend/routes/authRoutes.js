@@ -20,7 +20,8 @@ router.get(
     (req, res) => {
         const token = generateToken(req.user);
         // Redirect to frontend with token
-        res.redirect(`http://localhost:5174/login?token=${token}`);
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        res.redirect(`${frontendUrl}/login?token=${token}`);
     }
 );
 
