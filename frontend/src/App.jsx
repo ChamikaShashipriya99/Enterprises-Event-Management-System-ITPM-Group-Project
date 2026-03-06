@@ -11,6 +11,7 @@ import Register from './pages/Register';
 import StudentDashboard from './pages/StudentDashboard';
 import OrganizerDashboard from './pages/OrganizerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
+import AdminEvents from './pages/AdminEvents';
 import CreateEvent from './pages/CreateEvent';
 import OrganizerEvents from './pages/OrganizerEvents';
 
@@ -114,6 +115,12 @@ function App() {
           <Route path="/admin/users" element={
             <ProtectedRoute role="admin">
               <AdminUsers />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/events" element={
+            <ProtectedRoute role="admin">
+              <AdminEvents />
             </ProtectedRoute>
           } />
 

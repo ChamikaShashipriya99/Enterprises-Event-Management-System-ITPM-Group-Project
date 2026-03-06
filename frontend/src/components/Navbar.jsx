@@ -54,7 +54,7 @@ const Navbar = () => {
                             <>
                                 <Link to="/admin-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/admin/users" style={{ color: '#f8fafc', textDecoration: 'none' }}>Users</Link>
-                                <button style={{ color: '#f8fafc', background: 'none', border: 'none', cursor: 'pointer', fontSize: '1rem', opacity: 0.6 }}>Events</button>
+                                <Link to="/admin/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Events</Link>
                             </>
                         )}
                         <Link to="/profile" style={{ color: '#f8fafc', textDecoration: 'none' }}>Profile</Link>

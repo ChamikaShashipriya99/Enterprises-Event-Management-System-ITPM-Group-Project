@@ -71,9 +71,9 @@ const AdminDashboard = () => {
                 <div className="glass-card" style={{ padding: '2rem' }}>
                     <h3 style={{ marginBottom: '1rem' }}>Event Oversight</h3>
                     <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>Monitor and oversee all events across the platform.</p>
-                    <button className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none', background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)', opacity: 0.7 }}>
-                        All Events (Coming Soon)
-                    </button>
+                    <Link to="/admin/events" className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none', background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)' }}>
+                        Manage Events
+                    </Link>
                 </div>
             </div>
         </div>
