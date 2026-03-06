@@ -1,7 +1,7 @@
 # Enterprise Event Management System (EEMS) – User Management Module
 
 ## Project Overview
-The **Enterprise Event Management System (EEMS)** is a robust platform designed to facilitate the orchestration of corporate events, user registrations, and certificate issuance. The **User Management Module** serves as the core foundation of the system, providing secure authentication, role-based access control, and comprehensive profile management for both students and administrators.
+The **Enterprise Event Management System (EEMS)** is a robust platform designed to facilitate the orchestration of corporate events, user registrations, and certificate issuance. The **User and Event Management Module** serves as the core foundation of the system, providing secure authentication, role-based access control, and comprehensive management for students, organizers, and administrators.
 
 In any enterprise-grade platform, user management is critical for ensuring data integrity, security, and a personalized user experience. This module handles everything from initial registration to advanced administrative oversight.
 
@@ -30,11 +30,12 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 *   **Account Deletion**: Secure account closure with data persistence cleanup.
 *   **Role-Based Access**: Specialized dashboards for Students/Users.
 
-### Admin Features
-*   **Administrative Dashboard**: High-level system monitoring with real-time statistics.
+### Admin & Organizer Features
+*   **Administrative Dashboard**: High-level system monitoring with real-time statistics on users and events.
 *   **User Directory**: Searchable management table displaying all registered enterprise members.
-*   **User Oversight**: Capability to view detailed roles and delete user accounts if necessary.
-*   **System Statistics**: Instant visibility into total users, student counts, and administrator accounts.
+*   **Event Oversight (Admin)**: Platform-wide visibility and moderation of all scheduled events.
+*   **Event Creation (Organizer)**: Dedicated tools for organizers to create, manage, and monitor their own events.
+*   **System Statistics**: Instant visibility into total users, student counts, organizer activity, and event volume.
 
 ### Security Features
 *   **Password Hashing**: Industry-standard encryption using `bcryptjs`.
@@ -82,9 +83,9 @@ The system follows a classic **MERN** architecture pattern:
 EEMS-ITPM/
 ├── backend/            # Express Server
 │   ├── config/         # DB and Passport configurations
-│   ├── controllers/    # Request handlers (auth, user, admin)
-│   ├── middleware/     # Auth and Role guards
-│   ├── models/         # Mongoose schemas (User)
+│   ├── controllers/    # Request handlers (auth, user, admin, event)
+│   ├── middleware/     # Auth, Role, and Permission guards
+│   ├── models/         # Mongoose schemas (User, Event)
 │   ├── routes/         # API endpoints
 │   ├── utils/          # Token generation and helpers
 │   └── server.js       # Application entry point
@@ -106,7 +107,7 @@ The **User Schema** in MongoDB includes:
 *   `name`: (String) Full name of the user.
 *   `email`: (String) Unique identifier for login.
 *   `password`: (String) Hashed credentials (optional for OAuth users).
-*   `role`: (Enum) `student` or `admin`.
+*   `role`: (Enum) `student`, `organizer`, or `admin`.
 *   `phone`: (String) Optional contact information.
 *   `profilePicture`: (String) URL to user avatar.
 *   `registeredEvents`: (Array) List of event IDs user is attending.
@@ -130,8 +131,15 @@ The **User Schema** in MongoDB includes:
 
 ### Administrative Control
 *   `GET /api/admin/users`: List all system users (Admin only).
-*   `GET /api/admin/user-stats`: Fetch system-wide metrics (Admin only).
+*   `GET /api/admin/stats`: Fetch system-wide metrics (Admin only).
+*   `GET /api/admin/events`: Oversee all enterprise events (Admin only).
 *   `DELETE /api/admin/users/:id`: Remove specific user account (Admin only).
+
+### Event Management
+*   `POST /api/events`: Create a new corporate event (Organizer only).
+*   `GET /api/events/my-events`: List events for current organizer.
+*   `PUT /api/events/:id`: Update event details.
+*   `DELETE /api/events/:id`: Cancel or remove an event.
 
 ---
 
@@ -169,6 +177,7 @@ The backend requires the following variables in the `.env` file:
 *   `PORT`: Port for the backend server (default: 5000).
 *   `GOOGLE_CLIENT_ID`: Your Google Cloud Console Client ID.
 *   `GOOGLE_CLIENT_SECRET`: Your Google Cloud Console Client Secret.
+*   `FRONTEND_URL`: The URL of your running frontend application (e.g., http://localhost:5173).
 
 ---
 
