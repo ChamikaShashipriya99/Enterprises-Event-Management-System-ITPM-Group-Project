@@ -32,6 +32,26 @@ const deleteEvent = async (id) => {
     return response.data;
 };
 
+const getAllEvents = async () => {
+    const response = await axios.get(`${API_URL}/events`, getAuthHeader());
+    return response.data;
+};
+
+const getEventById = async (id) => {
+    const response = await axios.get(`${API_URL}/events/${id}`, getAuthHeader());
+    return response.data;
+};
+
+const registerForEvent = async (id) => {
+    const response = await axios.post(`${API_URL}/events/${id}/register`, {}, getAuthHeader());
+    return response.data;
+};
+
+const unregisterFromEvent = async (id) => {
+    const response = await axios.post(`${API_URL}/events/${id}/unregister`, {}, getAuthHeader());
+    return response.data;
+};
+
 const getAdminEvents = async () => {
     const response = await axios.get(`${API_URL}/admin/events`, getAuthHeader());
     return response.data;
@@ -47,6 +67,10 @@ const eventService = {
     getMyEvents,
     updateEvent,
     deleteEvent,
+    getAllEvents,
+    getEventById,
+    registerForEvent,
+    unregisterFromEvent,
     getAdminEvents,
     getAdminStats
 };

@@ -30,6 +30,13 @@ export const AuthProvider = ({ children }) => {
         setUser(null);
     };
 
+    const refreshProfile = async () => {
+        if (user?.token) {
+            const updatedUser = await authService.getProfile(user.token);
+            setUser(updatedUser);
+        }
+    };
+
     const value = {
         currentUser: user,
         setUser,
@@ -38,6 +45,7 @@ export const AuthProvider = ({ children }) => {
         login,
         register,
         logout,
+        refreshProfile,
         loading
     };
 

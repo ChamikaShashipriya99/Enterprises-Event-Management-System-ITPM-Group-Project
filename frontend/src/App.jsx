@@ -12,6 +12,8 @@ import StudentDashboard from './pages/StudentDashboard';
 import OrganizerDashboard from './pages/OrganizerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminEvents from './pages/AdminEvents';
+import AllEvents from './pages/AllEvents';
+import EventDetail from './pages/EventDetail';
 import CreateEvent from './pages/CreateEvent';
 import OrganizerEvents from './pages/OrganizerEvents';
 
@@ -123,6 +125,9 @@ function App() {
               <AdminEvents />
             </ProtectedRoute>
           } />
+
+          <Route path="/events" element={<AllEvents />} />
+          <Route path="/events/:id" element={<EventDetail />} />
 
           <Route path="/" element={<LandingPage />} />
         </Routes>

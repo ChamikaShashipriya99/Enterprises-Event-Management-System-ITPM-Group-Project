@@ -104,3 +104,91 @@ exports.getDashboardStats = async (req, res, next) => {
         next(error);
     }
 };
+
+// @desc    Register for an event
+// @route   POST /api/events/:id/register
+// @access  Private/Student
+exports.registerForEvent = async (req, res, next) => {
+    try {
+        const event = await Event.findById(req.params.id);
+
+        if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+
+        // Check if user is already registered
+        if (event.registeredUsers.includes(req.user.id)) {
+            return res.status(400).json({ success: false, message: 'Already registered for this event' });
+        }
+
+        // Check capacity
+        if (event.registeredUsers.length >= event.capacity) {
+            return res.status(400).json({ success: false, message: 'Event is at full capacity' });
+        }
+
+        // Add user to event
+        event.registeredUsers.push(req.user.id);
+        await event.save();
+
+        // Add event to user's registeredEvents
+        const user = await User.findById(req.user.id);
+        user.registeredEvents.push(event._id);
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Successfully registered for event' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Unregister from an event
+// @route   POST /api/events/:id/unregister
+// @access  Private/Student
+exports.unregisterFromEvent = async (req, res, next) => {
+    try {
+        const event = await Event.findById(req.params.id);
+
+        if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+
+        // Check if user is registered
+        if (!event.registeredUsers.includes(req.user.id)) {
+            return res.status(400).json({ success: false, message: 'Not registered for this event' });
+        }
+
+        // Remove user from event
+        event.registeredUsers = event.registeredUsers.filter(userId => userId.toString() !== req.user.id.toString());
+        await event.save();
+
+        // Remove event from user's registeredEvents
+        const user = await User.findById(req.user.id);
+        user.registeredEvents = user.registeredEvents.filter(eventId => eventId.toString() !== event._id.toString());
+        await user.save();
+
+        res.status(200).json({ success: true, message: 'Successfully unregistered from event' });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get all events (Student Discovery)
+// @route   GET /api/events
+// @access  Private
+exports.getEvents = async (req, res, next) => {
+    try {
+        const events = await Event.find().populate('organizer', 'name email');
+        res.status(200).json({ success: true, count: events.length, data: events });
+    } catch (error) {
+        next(error);
+    }
+};
+
+// @desc    Get single event
+// @route   GET /api/events/:id
+// @access  Private
+exports.getEvent = async (req, res, next) => {
+    try {
+        const event = await Event.findById(req.params.id).populate('organizer', 'name email');
+        if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
+        res.status(200).json({ success: true, data: event });
+    } catch (error) {
+        next(error);
+    }
+};
