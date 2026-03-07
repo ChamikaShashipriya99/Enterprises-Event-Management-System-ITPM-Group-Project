@@ -4,8 +4,9 @@ import { useNavigate, Link } from 'react-router-dom';
 import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
 
 const Register = () => {
-    const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'student' });
+    const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'student', roleCode: '' });
     const [success, setSuccess] = useState(false);
+    const [message, setMessage] = useState('');
     const [errors, setErrors] = useState({});
     const { register } = useContext(AuthContext);
     const navigate = useNavigate();
@@ -21,6 +22,10 @@ const Register = () => {
             newErrors.password = 'Password must be at least 8 characters';
         } else if (!/\d/.test(formData.password)) {
             newErrors.password = 'Password must contain at least one number';
+        }
+
+        if ((formData.role === 'admin' || formData.role === 'organizer') && !formData.roleCode.trim()) {
+            newErrors.roleCode = 'Secret code is required for this role';
         }
 
         setErrors(newErrors);
@@ -108,7 +113,6 @@ const Register = () => {
                         />
                         <PasswordStrengthMeter password={formData.password} />
                         {errors.password && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.password}</p>}
-
                         <div style={{ marginBottom: '5px', fontSize: '0.9rem', color: '#94a3b8' }}>I am a...</div>
                         <select
                             className="input-field"
@@ -120,6 +124,26 @@ const Register = () => {
                             <option value="organizer" style={{ background: '#1e293b' }}>Organizer</option>
                             <option value="admin" style={{ background: '#1e293b' }}>Admin</option>
                         </select>
+                        {errors.role && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.role}</p>}
+
+                        {(formData.role === 'admin' || formData.role === 'organizer') && (
+                            <>
+                                <div style={{ marginBottom: '5px', marginTop: '15px', fontSize: '0.9rem', color: '#94a3b8' }}>
+                                    {formData.role.charAt(0).toUpperCase() + formData.role.slice(1)} Secret Code
+                                </div>
+                                <input
+                                    type="text"
+                                    placeholder={`Enter ${formData.role} secret code`}
+                                    className="input-field"
+                                    value={formData.roleCode}
+                                    onChange={(e) => {
+                                        setFormData({ ...formData, roleCode: e.target.value });
+                                        if (errors.roleCode) setErrors({ ...errors, roleCode: '' });
+                                    }}
+                                />
+                                {errors.roleCode && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.roleCode}</p>}
+                            </>
+                        )}
 
                         <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '10px' }}>
                             Create Account
@@ -131,7 +155,7 @@ const Register = () => {
                     Already have an account? <Link to="/login" style={{ color: '#6366f1', fontWeight: '600' }}>Log in</Link>
                 </p>
             </div>
-        </div>
+        </div >
     );
 };
 

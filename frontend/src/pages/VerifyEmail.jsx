@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
 
@@ -6,9 +6,12 @@ const VerifyEmail = () => {
     const [status, setStatus] = useState('verifying');
     const [message, setMessage] = useState('');
     const { token } = useParams();
+    const verificationAttempted = useRef(false);
 
     useEffect(() => {
         const verifyEmailToken = async () => {
+            if (verificationAttempted.current) return;
+            verificationAttempted.current = true;
             try {
                 const response = await axios.get(`http://localhost:5000/api/auth/verifyemail/${token}`);
                 setStatus('success');

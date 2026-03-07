@@ -10,57 +10,75 @@ const UAParser = require('ua-parser-js');
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
-    const { name, email, password, role } = req.body;
+    try {
+        const { name, email, password, role, roleCode } = req.body;
 
-    // Email validation
-    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-    if (!emailRegex.test(email)) {
-        return res.status(400).json({ message: 'Please provide a valid email address' });
-    }
-
-    if (!password) {
-        return res.status(400).json({ message: 'Please provide a password' });
-    }
-
-    const userExists = await User.findOne({ email });
-
-    if (userExists) {
-        return res.status(400).json({ message: 'User already exists' });
-    }
-
-    const verificationToken = crypto.randomBytes(32).toString('hex');
-
-    const user = await User.create({
-        name,
-        email,
-        password,
-        role,
-        verificationToken,
-    });
-
-    if (user) {
-        // Send verification email
-        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
-        const verificationUrl = `${frontendUrl}/verify-email/${verificationToken}`;
-        const message = `Welcome to EventBuddy! Please verify your email by clicking the link below:\n\n${verificationUrl}`;
-
-        try {
-            await sendEmail({
-                email: user.email,
-                subject: 'Email Verification',
-                message,
-            });
-            res.status(201).json({
-                message: 'Registration successful! Please check your email to verify your account.',
-            });
-        } catch (err) {
-            console.error('Initial email failed, but user created:', err);
-            res.status(201).json({
-                message: 'Registration successful! However, we could not send the verification email. Please contact support.',
-            });
+        // Check for secret codes if role is admin or organizer
+        if (role === 'admin') {
+            const adminCode = process.env.ADMIN_CODE || 'admin123';
+            if (roleCode !== adminCode) {
+                return res.status(403).json({ message: 'Invalid Admin Secret Code' });
+            }
+        } else if (role === 'organizer') {
+            const organizerCode = process.env.ORGANIZER_CODE || 'organizer123';
+            if (roleCode !== organizerCode) {
+                return res.status(403).json({ message: 'Invalid Organizer Secret Code' });
+            }
         }
-    } else {
-        res.status(400).json({ message: 'Invalid user data' });
+
+        // Email validation
+        const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Please provide a valid email address' });
+        }
+
+        if (!password) {
+            return res.status(400).json({ message: 'Please provide a password' });
+        }
+
+        const userExists = await User.findOne({ email });
+
+        if (userExists) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
+
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role,
+            verificationToken,
+        });
+
+        if (user) {
+            // Send verification email
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            const verificationUrl = `${frontendUrl}/verify-email/${verificationToken}`;
+            const message = `Welcome to EventBuddy! Please verify your email by clicking the link below:\n\n${verificationUrl}`;
+
+            try {
+                await sendEmail({
+                    email: user.email,
+                    subject: 'Email Verification',
+                    message,
+                });
+                res.status(201).json({
+                    message: 'Registration successful! Please check your email to verify your account.',
+                });
+            } catch (err) {
+                console.error('Initial email failed, but user created:', err);
+                res.status(201).json({
+                    message: 'Registration successful! However, we could not send the verification email. Please contact support.',
+                });
+            }
+        } else {
+            res.status(400).json({ message: 'Invalid user data' });
+        }
+    } catch (error) {
+        console.error('Registration Error:', error);
+        res.status(500).json({ message: error.message || 'Server error during registration' });
     }
 };
 
