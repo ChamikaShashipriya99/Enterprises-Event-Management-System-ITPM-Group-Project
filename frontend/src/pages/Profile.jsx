@@ -50,7 +50,7 @@ const Profile = () => {
                         color: 'white'
                     }}>
                         {profile.profilePicture ? (
-                            <img src={profile.profilePicture} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
+                            <img src={profile.profilePicture.startsWith('http') ? profile.profilePicture : `http://localhost:5000${profile.profilePicture}`} alt="Profile" style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }} />
                         ) : (
                             profile.name.charAt(0)
                         )}
