@@ -1,10 +1,12 @@
 import { useState, useEffect } from 'react';
 import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 
 const AdminEvents = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [modal, setModal] = useState({ isOpen: false, eventId: null });
     const [stats, setStats] = useState({
         totalEvents: 0,
         upcomingEvents: 0,
@@ -42,14 +44,17 @@ const AdminEvents = () => {
     }, []);
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-            try {
-                await eventService.deleteEvent(id);
-                setEvents(events.filter(e => e._id !== id));
-            } catch (error) {
-                console.error('Error deleting event:', error);
-                alert('Failed to delete event');
-            }
+        setModal({ isOpen: true, eventId: id });
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await eventService.deleteEvent(modal.eventId);
+            setEvents(events.filter(e => e._id !== modal.eventId));
+            setModal({ isOpen: false, eventId: null });
+        } catch (error) {
+            console.error('Error deleting event:', error);
+            alert('Failed to delete event');
         }
     };
 
@@ -168,6 +173,14 @@ const AdminEvents = () => {
                     </tbody>
                 </table>
             </div>
+
+            <ConfirmModal
+                isOpen={modal.isOpen}
+                title="Delete Event"
+                message="Are you sure you want to cancel and delete this event? This will permanently remove all registration data."
+                onConfirm={confirmDelete}
+                onCancel={() => setModal({ isOpen: false, eventId: null })}
+            />
         </div>
     );
 };

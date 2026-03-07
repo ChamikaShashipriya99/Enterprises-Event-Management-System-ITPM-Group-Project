@@ -2,10 +2,12 @@ import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import userService from '../services/userService';
 import Skeleton from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 
 const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [modal, setModal] = useState({ isOpen: false, userId: null, userName: '' });
     const { token } = useContext(AuthContext);
 
     const fetchUsers = async () => {
@@ -24,13 +26,16 @@ const AdminUsers = () => {
     }, [token]);
 
     const handleDeleteUser = async (id, name) => {
-        if (window.confirm(`Are you sure you want to delete user: ${name}?`)) {
-            try {
-                await userService.adminDeleteUser(id, token);
-                setUsers(users.filter(user => user._id !== id));
-            } catch (err) {
-                alert(err.response?.data?.message || 'Failed to delete user');
-            }
+        setModal({ isOpen: true, userId: id, userName: name });
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await userService.adminDeleteUser(modal.userId, token);
+            setUsers(users.filter(user => user._id !== modal.userId));
+            setModal({ isOpen: false, userId: null, userName: '' });
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to delete user');
         }
     };
 
@@ -119,6 +124,14 @@ const AdminUsers = () => {
                     </tbody>
                 </table>
             </div>
+
+            <ConfirmModal
+                isOpen={modal.isOpen}
+                title="Delete User"
+                message={`Are you sure you want to permanently delete user "${modal.userName}"? This action cannot be undone.`}
+                onConfirm={confirmDelete}
+                onCancel={() => setModal({ isOpen: false, userId: null, userName: '' })}
+            />
         </div>
     );
 };

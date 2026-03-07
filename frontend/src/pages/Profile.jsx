@@ -4,6 +4,7 @@ import { useNavigate, Link } from 'react-router-dom';
 import userService from '../services/userService';
 import authService from '../services/authService';
 import Skeleton from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 
 const Profile = () => {
     const { currentUser, token, logout } = useContext(AuthContext);
@@ -12,6 +13,7 @@ const Profile = () => {
     const [mfaCode, setMfaCode] = useState('');
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const navigate = useNavigate();
 
     const fetchProfile = async () => {
@@ -124,14 +126,16 @@ const Profile = () => {
     );
 
     const handleDeleteAccount = async () => {
-        if (window.confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) {
-            try {
-                await userService.deleteAccount(token);
-                logout();
-                navigate('/login');
-            } catch (err) {
-                alert('Failed to delete account');
-            }
+        setDeleteModalOpen(true);
+    };
+
+    const confirmDeleteAccount = async () => {
+        try {
+            await userService.deleteAccount(token);
+            logout();
+            navigate('/login');
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to delete account');
         }
     };
 
@@ -331,6 +335,15 @@ const Profile = () => {
                     </button>
                 </div>
             </div>
+
+            <ConfirmModal
+                isOpen={deleteModalOpen}
+                title="Delete Account"
+                message="Are you absolutely sure you want to delete your account? This will permanently remove all your data, including event history and certificates. This action cannot be undone."
+                onConfirm={confirmDeleteAccount}
+                onCancel={() => setDeleteModalOpen(false)}
+                confirmText="Delete Permanently"
+            />
         </div>
     );
 };

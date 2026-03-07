@@ -2,10 +2,12 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 
 const OrganizerEvents = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [modal, setModal] = useState({ isOpen: false, eventId: null });
 
     const fetchEvents = async () => {
         try {
@@ -23,13 +25,16 @@ const OrganizerEvents = () => {
     }, []);
 
     const handleDelete = async (id) => {
-        if (window.confirm('Securely delete this event? This action cannot be undone.')) {
-            try {
-                await eventService.deleteEvent(id);
-                setEvents(events.filter(e => e._id !== id));
-            } catch (error) {
-                alert('Migration failed: Could not delete event');
-            }
+        setModal({ isOpen: true, eventId: id });
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await eventService.deleteEvent(modal.eventId);
+            setEvents(events.filter(e => e._id !== modal.eventId));
+            setModal({ isOpen: false, eventId: null });
+        } catch (error) {
+            alert('Action failed: Could not delete event');
         }
     };
 
@@ -110,6 +115,14 @@ const OrganizerEvents = () => {
                     </tbody>
                 </table>
             </div>
+
+            <ConfirmModal
+                isOpen={modal.isOpen}
+                title="Delete Event"
+                message="Are you sure you want to securely delete this event? This action cannot be undone."
+                onConfirm={confirmDelete}
+                onCancel={() => setModal({ isOpen: false, eventId: null })}
+            />
         </div>
     );
 };
