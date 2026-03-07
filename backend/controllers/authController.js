@@ -25,21 +25,37 @@ const registerUser = async (req, res) => {
         return res.status(400).json({ message: 'User already exists' });
     }
 
+    const verificationToken = crypto.randomBytes(32).toString('hex');
+
     const user = await User.create({
         name,
         email,
         password,
         role,
+        verificationToken,
     });
 
     if (user) {
-        res.status(201).json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            token: generateToken(user),
-        });
+        // Send verification email
+        const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+        const verificationUrl = `${frontendUrl}/verify-email/${verificationToken}`;
+        const message = `Welcome to EventBuddy! Please verify your email by clicking the link below:\n\n${verificationUrl}`;
+
+        try {
+            await sendEmail({
+                email: user.email,
+                subject: 'Email Verification',
+                message,
+            });
+            res.status(201).json({
+                message: 'Registration successful! Please check your email to verify your account.',
+            });
+        } catch (err) {
+            console.error('Initial email failed, but user created:', err);
+            res.status(201).json({
+                message: 'Registration successful! However, we could not send the verification email. Please contact support.',
+            });
+        }
     } else {
         res.status(400).json({ message: 'Invalid user data' });
     }
@@ -55,6 +71,13 @@ const authUser = async (req, res) => {
 
     if (!user) {
         return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Check if account is verified
+    if (!user.isVerified) {
+        return res.status(401).json({
+            message: 'Please verify your email to login. Check your inbox for the verification link.'
+        });
     }
 
     // Check if account is locked
@@ -168,4 +191,21 @@ const resetPassword = async (req, res) => {
     });
 };
 
-module.exports = { registerUser, authUser, forgotPassword, resetPassword };
+// @desc    Verify email
+// @route   GET /api/auth/verifyemail/:token
+// @access  Public
+const verifyEmail = async (req, res) => {
+    const user = await User.findOne({ verificationToken: req.params.token });
+
+    if (!user) {
+        return res.status(400).json({ message: 'Invalid verification token' });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Email verified successfully!' });
+};
+
+module.exports = { registerUser, authUser, forgotPassword, resetPassword, verifyEmail };

@@ -19,6 +19,7 @@ import OrganizerEvents from './pages/OrganizerEvents';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import EditEvent from './pages/EditEvent';
+import VerifyEmail from './pages/VerifyEmail';
 
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
@@ -73,6 +74,7 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-email/:token" element={<VerifyEmail />} />
           <Route path="/forgot-password" element={<ForgotPassword />} />
           <Route path="/reset-password/:token" element={<ResetPassword />} />
 
