@@ -1,0 +1,127 @@
+const Booking = require('../models/Booking');
+const Event = require('../models/Event');
+
+const User = require('../models/User');
+const { v4: uuidv4 } = require('uuid');
+
+const isSameDay = (d1, d2) => {
+    const a = new Date(d1);
+    const b = new Date(d2);
+    return (
+        a.getFullYear() === b.getFullYear() &&
+        a.getMonth() === b.getMonth() &&
+        a.getDate() === b.getDate()
+    );
+};
+
+
+// Create Booking
+
+// @desc    Book a seat for an event
+// @route   POST /api/bookings
+// @access  Private (student)
+exports.createBooking = async (req, res) => {
+    try {
+        const { eventId } = req.body;
+        const studentId = req.user._id;
+
+        // 1. Validate event exists
+        const event = await Event.findById(eventId);
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        // 2. Prevent booking for past events
+        if (new Date(event.date) < new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot book a seat for a past event',
+            });
+        }
+
+        // 3. Prevent booking on event day
+        if (isSameDay(event.date, new Date())) {
+            return res.status(400).json({
+                success: false,
+                message: 'Bookings are not accepted on the day of the event',
+            });
+        }
+
+        // 4. Check for duplicate booking (same student + same event)
+        const existingBooking = await Booking.findOne({
+            event: eventId,
+            student: studentId,
+            status: { $ne: 'cancelled' },
+        });
+        if (existingBooking) {
+            return res.status(409).json({
+                success: false,
+                message: 'You have already booked a seat for this event',
+                bookingId: existingBooking.bookingId,
+            });
+        }
+
+        // 5. Check seat availability (prevent overbooking)
+        const confirmedBookings = await Booking.countDocuments({
+            event: eventId,
+            status: 'confirmed',
+        });
+        if (confirmedBookings >= event.capacity) {
+            return res.status(400).json({
+                success: false,
+                message: 'No seats available. This event is fully booked',
+            });
+        }
+
+        // 6. Generate unique bookingId
+        const bookingId = `BK-${uuidv4().split('-')[0].toUpperCase()}-${Date.now()}`;
+
+        // 7. Generate QR code
+
+        // 8. Create booking
+        const booking = await Booking.create({
+            bookingId,
+            event: eventId,
+            student: studentId,
+            qrCode,
+            qrCodeData,
+            status: 'confirmed',
+        });
+
+        // 9. Add event to student's registeredEvents
+        await User.findByIdAndUpdate(studentId, {
+            $addToSet: { registeredEvents: eventId },
+        });
+
+        // 10. Populate for email
+
+        // 11. Send confirmation email (non-blocking)
+        return res.status(201).json({
+            success: true,
+            message: 'Booking confirmed successfully',
+            data: {
+                bookingId: booking.bookingId,
+                status: booking.status,
+                event: {
+                    id: event._id,
+                    title: event.title,
+                    date: event.date,
+                    location: event.location,
+                },
+                qrCode: booking.qrCode,
+                createdAt: booking.createdAt,
+            },
+        });
+    } catch (error) {
+        // Handle MongoDB duplicate key error (race condition safety net)
+        if (error.code === 11000) {
+            return res.status(409).json({
+                success: false,
+                message: 'You have already booked a seat for this event',
+            });
+        }
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+
