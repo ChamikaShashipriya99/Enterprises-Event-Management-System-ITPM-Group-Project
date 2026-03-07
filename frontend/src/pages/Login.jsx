@@ -9,8 +9,22 @@ const Login = () => {
     const [mfaRequired, setMfaRequired] = useState(false);
     const [mfaCode, setMfaCode] = useState('');
     const { login, setUser } = useContext(AuthContext);
+    const [errors, setErrors] = useState({});
     const navigate = useNavigate();
     const location = useLocation();
+
+    const validateForm = () => {
+        let newErrors = {};
+        if (!email) {
+            newErrors.email = 'Email is required';
+        } else if (!/\S+@\S+\.\S+/.test(email)) {
+            newErrors.email = 'Valid email is required';
+        }
+        if (!password) newErrors.password = 'Password is required';
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
 
     useEffect(() => {
         const params = new URLSearchParams(location.search);

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
+import Skeleton from '../components/Skeleton';
 
 const OrganizerDashboard = () => {
     const [events, setEvents] = useState([]);
@@ -20,7 +21,37 @@ const OrganizerDashboard = () => {
         fetchMyEvents();
     }, []);
 
-    if (loading) return <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>Loading dashboard...</div>;
+    if (loading) return (
+        <div style={{ padding: '2rem 5%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <Skeleton variant="title" width="300px" />
+                <Skeleton width="150px" height="45px" />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
+                <div className="glass-card" style={{ padding: '1.5rem' }}>
+                    <Skeleton variant="circle" width="40px" height="40px" style={{ marginBottom: '1rem' }} />
+                    <Skeleton variant="text" width="60%" />
+                    <Skeleton variant="text" width="40%" height="2rem" />
+                </div>
+                <div className="glass-card" style={{ padding: '1.5rem' }}>
+                    <Skeleton variant="circle" width="40px" height="40px" style={{ marginBottom: '1rem' }} />
+                    <Skeleton variant="text" width="60%" />
+                    <Skeleton variant="text" width="40%" height="2rem" />
+                </div>
+            </div>
+
+            <div className="glass-card" style={{ padding: '2rem' }}>
+                <Skeleton variant="title" width="200px" style={{ marginBottom: '1.5rem' }} />
+                {[1, 2, 3].map(i => (
+                    <div key={i} style={{ padding: '1rem', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', marginBottom: '1rem' }}>
+                        <Skeleton variant="text" width="40%" />
+                        <Skeleton variant="text" width="70%" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     return (
         <div style={{ padding: '2rem 5%' }}>

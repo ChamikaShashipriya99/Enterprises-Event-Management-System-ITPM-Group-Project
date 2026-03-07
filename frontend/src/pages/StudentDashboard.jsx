@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import eventService from '../services/eventService';
+import Skeleton from '../components/Skeleton';
 
 const StudentDashboard = () => {
     const { currentUser, refreshProfile } = useContext(AuthContext);
@@ -37,7 +38,28 @@ const StudentDashboard = () => {
         }
     }, []);
 
-    if (loading) return <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>Loading dashboard...</div>;
+    if (loading) return (
+        <div style={{ padding: '40px 5%' }}>
+            <div style={{ marginBottom: '40px' }}>
+                <Skeleton variant="title" width="400px" style={{ marginBottom: '10px' }} />
+                <Skeleton variant="text" width="60%" />
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
+                {[1, 2, 3].map(i => (
+                    <section key={i} className="glass-card" style={{ padding: '30px' }}>
+                        <Skeleton variant="title" width="150px" style={{ marginBottom: '20px' }} />
+                        {[1, 2].map(j => (
+                            <div key={j} style={{ padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '15px' }}>
+                                <Skeleton variant="text" width="70%" />
+                                <Skeleton variant="text" width="40%" />
+                            </div>
+                        ))}
+                    </section>
+                ))}
+            </div>
+        </div>
+    );
 
     return (
         <div style={{ padding: '40px 5%' }}>

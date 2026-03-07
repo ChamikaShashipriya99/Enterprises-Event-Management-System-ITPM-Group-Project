@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import eventService from '../services/eventService';
+import Skeleton from '../components/Skeleton';
 
 const AdminEvents = () => {
     const [events, setEvents] = useState([]);
@@ -52,7 +53,38 @@ const AdminEvents = () => {
         }
     };
 
-    if (loading) return <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>Loading events...</div>;
+    if (loading) return (
+        <div style={{ padding: '2rem 5%' }}>
+            <Skeleton variant="title" width="350px" style={{ marginBottom: '2rem' }} />
+
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '3rem'
+            }}>
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="glass-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                        <Skeleton variant="circle" width="40px" height="40px" style={{ margin: '0 auto 0.5rem' }} />
+                        <Skeleton variant="text" width="60%" style={{ margin: '0 auto' }} />
+                        <Skeleton variant="text" width="40%" height="1.8rem" style={{ margin: '0 auto' }} />
+                    </div>
+                ))}
+            </div>
+
+            <div className="glass-card" style={{ padding: '0' }}>
+                {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} style={{ padding: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between' }}>
+                        <Skeleton width="20%" />
+                        <Skeleton width="15%" />
+                        <Skeleton width="10%" />
+                        <Skeleton width="15%" />
+                        <Skeleton width="10%" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     const statCards = [
         { title: 'Total Events', value: stats.totalEvents, icon: '📅', color: '#6366f1' },

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
+import Skeleton from '../components/Skeleton';
 
 const OrganizerEvents = () => {
     const [events, setEvents] = useState([]);
@@ -32,7 +33,26 @@ const OrganizerEvents = () => {
         }
     };
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading events...</div>;
+    if (loading) return (
+        <div style={{ padding: '2rem 5%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <Skeleton variant="title" width="300px" />
+                <Skeleton width="120px" height="40px" />
+            </div>
+
+            <div className="glass-card" style={{ padding: '0' }}>
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between' }}>
+                        <Skeleton width="30%" />
+                        <Skeleton width="15%" />
+                        <Skeleton width="15%" />
+                        <Skeleton width="10%" />
+                        <Skeleton width="10%" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     return (
         <div style={{ padding: '2rem 5%' }}>

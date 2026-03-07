@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import userService from '../services/userService';
 import authService from '../services/authService';
+import Skeleton from '../components/Skeleton';
 
 const Profile = () => {
     const { currentUser, token, logout } = useContext(AuthContext);
@@ -10,6 +11,7 @@ const Profile = () => {
     const [mfaQrCode, setMfaQrCode] = useState(null);
     const [mfaCode, setMfaCode] = useState('');
     const [sessions, setSessions] = useState([]);
+    const [loading, setLoading] = useState(true);
     const navigate = useNavigate();
 
     const fetchProfile = async () => {
@@ -18,6 +20,8 @@ const Profile = () => {
             setProfile(data);
         } catch (err) {
             console.error('Failed to fetch profile', err);
+        } finally {
+            setLoading(false);
         }
     };
 
@@ -90,6 +94,34 @@ const Profile = () => {
             }
         }
     };
+
+    if (loading) return (
+        <div style={{ padding: '40px 5%', maxWidth: '1000px', margin: '0 auto' }}>
+            <div className="glass-card" style={{ padding: '40px', marginBottom: '30px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '30px', flexWrap: 'wrap' }}>
+                    <Skeleton variant="circle" width="120px" height="120px" />
+                    <div style={{ flex: 1 }}>
+                        <Skeleton variant="title" width="250px" />
+                        <Skeleton variant="text" width="200px" />
+                        <Skeleton variant="text" width="150px" />
+                    </div>
+                </div>
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px', marginBottom: '30px' }}>
+                <div className="glass-card" style={{ padding: '30px' }}>
+                    <Skeleton variant="title" width="150px" />
+                    <Skeleton variant="text" width="100%" />
+                    <Skeleton variant="text" width="60%" />
+                </div>
+                <div className="glass-card" style={{ padding: '30px' }}>
+                    <Skeleton variant="title" width="150px" />
+                    <Skeleton variant="text" width="100%" />
+                    <Skeleton variant="text" width="60%" />
+                </div>
+            </div>
+        </div>
+    );
 
     const handleDeleteAccount = async () => {
         if (window.confirm('Are you absolutely sure you want to delete your account? This action cannot be undone.')) {
