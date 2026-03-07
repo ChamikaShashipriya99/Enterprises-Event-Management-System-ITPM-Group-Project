@@ -124,4 +124,85 @@ exports.createBooking = async (req, res) => {
     }
 };
 
+//Cancel Booking
+
+// @desc    Cancel a booking
+// @route   PUT /api/bookings/:bookingId/cancel
+// @access  Private (student)
+exports.cancelBooking = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const { reason } = req.body;
+        const studentId = req.user._id;
+
+        // 1. Find booking
+        const booking = await Booking.findOne({ bookingId }).populate('event');
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        // 2. Ensure ownership
+        if (booking.student.toString() !== studentId.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: 'You are not authorized to cancel this booking',
+            });
+        }
+
+        // 3. Already cancelled check
+        if (booking.status === 'cancelled') {
+            return res.status(400).json({ success: false, message: 'Booking is already cancelled' });
+        }
+
+        // 4. Attended bookings cannot be cancelled
+        if (booking.status === 'attended') {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot cancel a booking for an event you have already attended',
+            });
+        }
+
+        // 5. Prevent cancellation ON the event day
+        if (isSameDay(booking.event.date, new Date())) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cancellations are not allowed on the day of the event',
+            });
+        }
+
+        // 6. Prevent cancellation for past events
+        if (new Date(booking.event.date) < new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: 'Cannot cancel a booking for an event that has already passed',
+            });
+        }
+
+        // 7. Update booking
+        booking.status = 'cancelled';
+        booking.cancelledAt = new Date();
+        booking.cancellationReason = reason || 'No reason provided';
+        await booking.save();
+
+        // 8. Remove from student's registeredEvents
+        await User.findByIdAndUpdate(studentId, {
+            $pull: { registeredEvents: booking.event._id },
+        });
+
+        // 9. Send cancellation email (non-blocking)
+
+        return res.status(200).json({
+            success: true,
+            message: 'Booking cancelled successfully',
+            data: {
+                bookingId: booking.bookingId,
+                status: booking.status,
+                cancelledAt: booking.cancelledAt,
+            },
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 
