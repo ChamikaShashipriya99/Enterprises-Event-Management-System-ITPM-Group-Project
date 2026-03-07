@@ -74,6 +74,10 @@ const Profile = () => {
                         <div style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '5px' }}>Member Since</div>
                         <div style={{ fontSize: '1.1rem' }}>{new Date(profile.createdAt).toLocaleDateString()}</div>
                     </div>
+                    <div>
+                        <div style={{ color: '#64748b', fontSize: '0.9rem', marginBottom: '5px' }}>Last Login</div>
+                        <div style={{ fontSize: '1.1rem' }}>{profile.lastLogin ? new Date(profile.lastLogin).toLocaleString() : 'First time login'}</div>
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '15px' }}>

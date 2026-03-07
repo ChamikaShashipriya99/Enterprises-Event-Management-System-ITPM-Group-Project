@@ -53,7 +53,25 @@ const authUser = async (req, res) => {
 
     const user = await User.findOne({ email });
 
-    if (user && (await user.matchPassword(password))) {
+    if (!user) {
+        return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Check if account is locked
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+        const remainingMinutes = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+        return res.status(403).json({
+            message: `Account is locked. Please try again in ${remainingMinutes} minutes.`
+        });
+    }
+
+    if (await user.matchPassword(password)) {
+        // Successful login
+        user.loginAttempts = 0;
+        user.lockUntil = undefined;
+        user.lastLogin = Date.now();
+        await user.save();
+
         res.json({
             _id: user._id,
             name: user.name,
@@ -62,6 +80,19 @@ const authUser = async (req, res) => {
             token: generateToken(user),
         });
     } else {
+        // Failed login
+        user.loginAttempts += 1;
+
+        if (user.loginAttempts >= 5) {
+            // Lock account for 15 minutes
+            user.lockUntil = Date.now() + 15 * 60 * 1000;
+            await user.save();
+            return res.status(403).json({
+                message: 'Too many failed attempts. Account locked for 15 minutes.'
+            });
+        }
+
+        await user.save();
         res.status(401).json({ message: 'Invalid email or password' });
     }
 };

@@ -18,6 +18,7 @@ const getUserProfile = async (req, res) => {
             registeredEvents: user.registeredEvents,
             certificates: user.certificates,
             createdAt: user.createdAt,
+            lastLogin: user.lastLogin,
         });
     } else {
         res.status(404).json({ message: 'User not found' });
