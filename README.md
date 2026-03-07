@@ -25,23 +25,32 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 
 ### User Features
 *   **Secure Authentication**: JWT-based sign-up and login flow.
+*   **Multi-Factor Authentication (MFA)**: Support for TOTP-based 2FA (Google Authenticator) for enhanced account security.
 *   **Google OAuth Integration**: Seamless one-click login via Google accounts.
 *   **Profile Management**: Dedicated profile page to view and update personal information (name, phone, avatar).
+*   **Account Discovery**: Real-time password strength meter and account activity logs.
 *   **Account Deletion**: Secure account closure with data persistence cleanup.
-*   **Role-Based Access**: Specialized dashboards for Students/Users.
+*   **Role-Based Access**: Specialized dashboards for Students, Organizers, and Admins.
 
 ### Admin & Organizer Features
 *   **Administrative Dashboard**: High-level system monitoring with real-time statistics on users and events.
 *   **User Directory**: Searchable management table displaying all registered enterprise members.
 *   **Event Oversight (Admin)**: Platform-wide visibility and moderation of all scheduled events.
-*   **Event Creation (Organizer)**: Dedicated tools for organizers to create, manage, and monitor their own events.
+*   **Event Creation (Organizer)**: Dedicated tools for organizers to create, manage, edit, and monitor their own events.
 *   **System Statistics**: Instant visibility into total users, student counts, organizer activity, and event volume.
 
 ### Security Features
+*   **Advanced Protection**: Integrated account lockout mechanism after 5 failed login attempts.
+*   **Multi-Factor Auth (MFA)**: Optional but highly recommended 2FA setup in the user profile.
+*   **Session Management**: Real-time tracking of active login sessions with the ability to revoke specific devices or "Log out of all devices."
 *   **Password Hashing**: Industry-standard encryption using `bcryptjs`.
-*   **Stateful Protection**: Protected API routes requiring valid JWT tokens.
-*   **RBAC (Role-Based Access Control)**: Backend and frontend enforcement of user privileges.
-*   **Stateless Sessions**: Optimized performance using JWT without server-side session overhead.
+*   **Verified Accounts**: Mandatory email verification workflow to ensure valid user identities.
+*   **Unified Validation**: Comprehensive `express-validator` middleware enforcing data integrity on every POST/PUT request.
+
+### UI/UX Excellence
+*   **Skeleton Loaders**: Shimmering animated placeholders used site-wide during data fetching for a premium feel.
+*   **Real-time Validation**: Instant frontend feedback for form fields (e.g., password complexity, email format, capacity checks).
+*   **Interactive Design**: Dynamic glassmorphism UI with smooth transitions and hover effects.
 
 ---
 
@@ -49,19 +58,20 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 
 ### Frontend
 *   **React.js**: (Vite-based) for a fast, component-based user interface.
-*   **React Router**: For client-side routing and protected navigation paths.
 *   **Context API**: For global authentication and user state management.
 *   **Axios**: For high-performance asynchronous API communication.
+*   **React Router**: For client-side routing and protected navigation paths.
 
 ### Backend
 *   **Node.js & Express.js**: Providing a scalable RESTful API architecture.
+*   **Express-Validator**: For robust, centralized input validation.
 *   **Passport.js**: Integrated for Google OAuth 2.0 strategy.
+*   **Speakeasy & QRCode**: Powering the MFA (Multi-Factor Authentication) system.
+*   **UA-Parser-JS**: For identifying device and browser info in session management.
 
-### Database
+### Database & Authentication
 *   **MongoDB**: NoSQL database for flexible and scalable data storage.
-*   **Mongoose**: ODM (Object Data Modeling) for schema-based data validation.
-
-### Authentication
+*   **Mongoose**: ODM for schema-based data validation and relationships.
 *   **JWT (JSON Web Tokens)**: For secure, stateless identity transmission.
 *   **Bcrypt.js**: For secure salted password hashing.
 
@@ -69,11 +79,12 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 
 ## System Architecture
 
-The system follows a classic **MERN** architecture pattern:
-1.  **Frontend (React)**: Communicates with the backend via REST API calls. Uses a `ProtectedRoute` component to handle role verification.
+The system follows a classic **MERN** architecture pattern with an emphasis on security:
+1.  **Frontend (React)**: Communicates with the backend via REST API calls. Uses a `ProtectedRoute` component to handle role verification and MFA checks.
 2.  **Backend (Express)**: Handles requests using modular controllers and routes.
-3.  **Middleware Layer**: Intercepts requests to verify JWT tokens (`authMiddleware`) and check user permissions (`roleMiddleware`).
-4.  **Database (MongoDB)**: Stores persistent user data and system records securely.
+3.  **Middleware Layer**: Interacts with every request to verify JWT tokens (`authMiddleware`), validate inputs (`validationMiddleware`), and check user permissions (`roleMiddleware`).
+4.  **Security Layer**: Manages session state, login rate limiting, and MFA verification.
+5.  **Database (MongoDB)**: Stores persistent user data, event records, and session information.
 
 ---
 
@@ -84,16 +95,16 @@ EEMS-ITPM/
 ├── backend/            # Express Server
 │   ├── config/         # DB and Passport configurations
 │   ├── controllers/    # Request handlers (auth, user, admin, event)
-│   ├── middleware/     # Auth, Role, and Permission guards
-│   ├── models/         # Mongoose schemas (User, Event)
+│   ├── middleware/     # Auth, Role, Validation, and Upload guards
+│   ├── models/         # Mongoose schemas (User, Event, Certificate, Booking)
 │   ├── routes/         # API endpoints
-│   ├── utils/          # Token generation and helpers
+│   ├── utils/          # Token generation, Emailing, and helpers
 │   └── server.js       # Application entry point
 ├── frontend/           # React App (Vite)
 │   ├── src/
-│   │   ├── components/ # Reusable UI components
+│   │   ├── components/ # Reusable UI (Skeleton, Password Meter, etc.)
 │   │   ├── context/    # Global State (AuthContext)
-│   │   ├── pages/      # View components (Login, Profile, Admin)
+│   │   ├── pages/      # View components (Login, Profile, Admin, Dashboards)
 │   │   ├── services/   # API abstraction layer
 │   │   └── App.jsx     # Main routing and navigation
 └── package.json        # Root scripts for concurrent execution
@@ -106,40 +117,35 @@ EEMS-ITPM/
 The **User Schema** in MongoDB includes:
 *   `name`: (String) Full name of the user.
 *   `email`: (String) Unique identifier for login.
-*   `password`: (String) Hashed credentials (optional for OAuth users).
+*   `isVerified`: (Boolean) Status of email verification.
+*   `password`: (String) Hashed credentials.
+*   `mfaEnabled`: (Boolean) Whether 2-step verification is active.
 *   `role`: (Enum) `student`, `organizer`, or `admin`.
-*   `phone`: (String) Optional contact information.
-*   `profilePicture`: (String) URL to user avatar.
+*   `sessions`: (Array) List of current active login devices with UA details.
+*   `lastLogin`: (Date) Timestamp of the most recent successful login.
+*   `loginAttempts`: (Number) Counter for security lockout.
 *   `registeredEvents`: (Array) List of event IDs user is attending.
-*   `certificates`: (Array) List of earned certificate URLs.
-*   `googleId`: (String) Identifier for Google OAuth users.
-*   `timestamps`: Automatically managed `createdAt` and `updatedAt`.
 
 ---
 
-## API Endpoints
+## API Endpoints (Highlights)
 
-### Authentication
-*   `POST /api/auth/register`: Create a new user account.
-*   `POST /api/auth/login`: Authenticate and receive a JWT.
-*   `GET /api/auth/google`: Initiate Google OAuth flow.
-
-### User Management
-*   `GET /api/users/profile`: Retrieve personal profile details.
-*   `PUT /api/users/profile`: Update name, phone, or avatar.
-*   `DELETE /api/users/profile`: Permanently remove user account.
+### Authentication & Identification
+*   `POST /api/auth/register`: Create a new user account (sends verification email).
+*   `POST /api/auth/login`: Authenticate and receive a JWT (handles MFA if enabled).
+*   `GET /api/auth/verify-email/:token`: Confirm user identity.
+*   `POST /api/auth/generate-mfa`: Setup 2FA with QR code.
+*   `GET /api/auth/sessions`: View all active login devices.
 
 ### Administrative Control
 *   `GET /api/admin/users`: List all system users (Admin only).
-*   `GET /api/admin/stats`: Fetch system-wide metrics (Admin only).
-*   `GET /api/admin/events`: Oversee all enterprise events (Admin only).
-*   `DELETE /api/admin/users/:id`: Remove specific user account (Admin only).
+*   `GET /api/admin/stats`: Fetch real-time system-wide metrics.
+*   `GET /api/admin/events`: Oversee all enterprise events.
 
 ### Event Management
 *   `POST /api/events`: Create a new corporate event (Organizer only).
-*   `GET /api/events/my-events`: List events for current organizer.
-*   `PUT /api/events/:id`: Update event details.
-*   `DELETE /api/events/:id`: Cancel or remove an event.
+*   `PUT /api/events/:id`: Edit event details with date/capacity validation.
+*   `POST /api/events/:id/register`: Register a student for an event with capacity checks.
 
 ---
 
