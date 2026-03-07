@@ -16,6 +16,8 @@ import AllEvents from './pages/AllEvents';
 import EventDetail from './pages/EventDetail';
 import CreateEvent from './pages/CreateEvent';
 import OrganizerEvents from './pages/OrganizerEvents';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
@@ -70,6 +72,8 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           {/* Protected Routes */}
           <Route path="/student-dashboard" element={

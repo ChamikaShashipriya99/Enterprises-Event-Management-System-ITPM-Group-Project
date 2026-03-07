@@ -1,12 +1,14 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, authUser } = require('../controllers/authController');
+const { registerUser, authUser, forgotPassword, resetPassword } = require('../controllers/authController');
 
 const passport = require('passport');
 const generateToken = require('../utils/generateToken');
 
 router.post('/register', registerUser);
 router.post('/login', authUser);
+router.post('/forgotpassword', forgotPassword);
+router.put('/resetpassword/:resettoken', resetPassword);
 
 // @desc    Auth with Google
 // @route   GET /api/auth/google
