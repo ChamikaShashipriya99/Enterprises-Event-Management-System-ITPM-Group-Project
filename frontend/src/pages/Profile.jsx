@@ -9,6 +9,7 @@ const Profile = () => {
     const [profile, setProfile] = useState(null);
     const [mfaQrCode, setMfaQrCode] = useState(null);
     const [mfaCode, setMfaCode] = useState('');
+    const [sessions, setSessions] = useState([]);
     const navigate = useNavigate();
 
     const fetchProfile = async () => {
@@ -20,9 +21,42 @@ const Profile = () => {
         }
     };
 
+    const fetchSessions = async () => {
+        try {
+            const data = await authService.getSessions(token);
+            setSessions(data);
+        } catch (err) {
+            console.error('Failed to fetch sessions', err);
+        }
+    };
+
     useEffect(() => {
-        if (token) fetchProfile();
+        if (token) {
+            fetchProfile();
+            fetchSessions();
+        }
     }, [token]);
+
+    const handleRevokeSession = async (sessionId) => {
+        try {
+            await authService.revokeSession(token, sessionId);
+            fetchSessions();
+        } catch (err) {
+            alert('Failed to revoke session');
+        }
+    };
+
+    const handleLogoutAll = async () => {
+        if (window.confirm('Are you sure you want to log out of all devices?')) {
+            try {
+                await authService.logoutAllDevices(token);
+                logout(); // Log out current device too
+                navigate('/login');
+            } catch (err) {
+                alert('Failed to logout of all devices');
+            }
+        }
+    };
 
     const handleGenerateMfa = async () => {
         try {
@@ -179,6 +213,70 @@ const Profile = () => {
                             Disable MFA
                         </button>
                     )}
+                </div>
+
+                <div style={{ padding: '30px', background: 'rgba(255,255,255,0.02)', borderRadius: '15px', border: '1px solid rgba(255,255,255,0.05)', marginBottom: '40px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                        <div>
+                            <h3 style={{ fontSize: '1.5rem', marginBottom: '5px' }}>Active Sessions</h3>
+                            <p style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Devices currently logged into your account.</p>
+                        </div>
+                        <button
+                            onClick={handleLogoutAll}
+                            style={{
+                                padding: '8px 15px',
+                                background: 'rgba(239, 68, 68, 0.1)',
+                                color: '#ef4444',
+                                border: '1px solid rgba(239, 68, 68, 0.2)',
+                                borderRadius: '20px',
+                                cursor: 'pointer',
+                                fontSize: '0.8rem',
+                                fontWeight: '600'
+                            }}
+                        >
+                            Logout All Devices
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        {sessions.map((session) => (
+                            <div key={session.sessionId} style={{
+                                padding: '15px',
+                                background: 'rgba(255,255,255,0.03)',
+                                borderRadius: '10px',
+                                border: '1px solid rgba(255,255,255,0.05)',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'center'
+                            }}>
+                                <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+                                    <div style={{ fontSize: '1.5rem' }}>
+                                        {session.os?.toLowerCase().includes('win') ? '💻' : session.os?.toLowerCase().includes('mac') ? '🖥️' : '📱'}
+                                    </div>
+                                    <div>
+                                        <div style={{ fontWeight: '600' }}>{session.browser} on {session.os} ({session.device})</div>
+                                        <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                                            IP: {session.ip} • Last active: {new Date(session.lastActivity).toLocaleString()}
+                                        </div>
+                                    </div>
+                                </div>
+                                {session.sessionId !== (JSON.parse(localStorage.getItem('user'))?.token?.split('.')[1] ? JSON.parse(atob(JSON.parse(localStorage.getItem('user')).token.split('.')[1])).sessionId : null) && (
+                                    <button
+                                        onClick={() => handleRevokeSession(session.sessionId)}
+                                        style={{
+                                            background: 'transparent',
+                                            border: 'none',
+                                            color: '#ef4444',
+                                            cursor: 'pointer',
+                                            fontSize: '0.85rem'
+                                        }}
+                                    >
+                                        Revoke
+                                    </button>
+                                )}
+                            </div>
+                        ))}
+                    </div>
                 </div>
 
                 <div style={{ display: 'flex', gap: '15px' }}>

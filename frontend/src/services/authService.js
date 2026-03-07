@@ -55,6 +55,27 @@ const disableMfa = async (token) => {
     return response.data;
 };
 
+const getSessions = async (token) => {
+    const response = await axios.get(API_URL + 'sessions', {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+};
+
+const revokeSession = async (token, sessionId) => {
+    const response = await axios.delete(API_URL + `sessions/${sessionId}`, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+};
+
+const logoutAllDevices = async (token) => {
+    const response = await axios.delete(API_URL + 'sessions', {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+};
+
 const authService = {
     register,
     login,
@@ -62,7 +83,10 @@ const authService = {
     getProfile,
     generateMfa,
     verifyMfaSetup,
-    disableMfa
+    disableMfa,
+    getSessions,
+    revokeSession,
+    logoutAllDevices
 };
 
 export default authService;

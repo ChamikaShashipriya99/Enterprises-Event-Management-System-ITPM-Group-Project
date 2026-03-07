@@ -4,6 +4,7 @@ const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
 const speakeasy = require('speakeasy');
 const QRCode = require('qrcode');
+const UAParser = require('ua-parser-js');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -112,6 +113,23 @@ const authUser = async (req, res) => {
         }
 
         // Successful login
+        const parser = new UAParser(req.headers['user-agent']);
+        const ua = parser.getResult();
+        const sessionId = crypto.randomBytes(16).toString('hex');
+
+        user.sessions.push({
+            sessionId,
+            device: ua.device.model || ua.device.vendor || 'Desktop',
+            browser: ua.browser.name,
+            os: ua.os.name,
+            ip: req.ip || req.connection.remoteAddress,
+        });
+
+        // Limit to last 10 sessions for security/performance
+        if (user.sessions.length > 10) {
+            user.sessions.shift();
+        }
+
         user.loginAttempts = 0;
         user.lockUntil = undefined;
         user.lastLogin = Date.now();
@@ -122,7 +140,7 @@ const authUser = async (req, res) => {
             name: user.name,
             email: user.email,
             role: user.role,
-            token: generateToken(user),
+            token: generateToken(user, sessionId),
         });
     } else {
         // Failed login
@@ -204,12 +222,27 @@ const resetPassword = async (req, res) => {
     user.resetPasswordExpire = undefined;
     await user.save();
 
+    // Create session for password reset login
+    const parser = new UAParser(req.headers['user-agent']);
+    const ua = parser.getResult();
+    const sessionId = crypto.randomBytes(16).toString('hex');
+
+    user.sessions.push({
+        sessionId,
+        device: ua.device.model || ua.device.vendor || 'Desktop',
+        browser: ua.browser.name,
+        os: ua.os.name,
+        ip: req.ip || req.connection.remoteAddress,
+    });
+
+    await user.save();
+
     res.status(200).json({
         _id: user._id,
         name: user.name,
         email: user.email,
         role: user.role,
-        token: generateToken(user),
+        token: generateToken(user, sessionId),
     });
 };
 
@@ -297,6 +330,61 @@ const disableMfa = async (req, res) => {
     }
 };
 
+// @desc    Get all active sessions
+// @route   GET /api/auth/sessions
+// @access  Private
+const getSessions = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            res.json(user.sessions);
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Revoke a specific session
+// @route   DELETE /api/auth/sessions/:sessionId
+// @access  Private
+const revokeSession = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.sessions = user.sessions.filter(s => s.sessionId !== req.params.sessionId);
+            await user.save();
+            res.json({ message: 'Session revoked successfully' });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Logout from all devices
+// @route   DELETE /api/auth/sessions
+// @access  Private
+const logoutAllDevices = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.sessions = [];
+            await user.save();
+            res.json({ message: 'Logged out from all devices' });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
 module.exports = {
     registerUser,
     authUser,
@@ -305,5 +393,8 @@ module.exports = {
     verifyEmail,
     generateMfaSecret,
     verifyMfaSetup,
-    disableMfa
+    disableMfa,
+    getSessions,
+    revokeSession,
+    logoutAllDevices
 };

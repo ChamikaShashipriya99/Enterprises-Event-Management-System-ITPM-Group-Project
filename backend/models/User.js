@@ -64,6 +64,17 @@ const userSchema = mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        sessions: [{
+            sessionId: String,
+            device: String,
+            browser: String,
+            os: String,
+            ip: String,
+            lastActivity: {
+                type: Date,
+                default: Date.now
+            }
+        }],
     },
     {
         timestamps: true,
