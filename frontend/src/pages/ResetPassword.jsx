@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
+import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
 
 const ResetPassword = () => {
     const [password, setPassword] = useState('');
@@ -12,12 +13,24 @@ const ResetPassword = () => {
     const { token } = useParams();
     const navigate = useNavigate();
 
+    const [errors, setErrors] = useState({});
+
+    const validateForm = () => {
+        let newErrors = {};
+        if (password.length < 8) {
+            newErrors.password = 'Password must be at least 8 characters';
+        }
+        if (password !== confirmPassword) {
+            newErrors.confirmPassword = 'Passwords do not match';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
-
-        if (password !== confirmPassword) {
-            return setError('Passwords do not match');
-        }
+        if (!validateForm()) return;
 
         setLoading(true);
         setMessage('');
@@ -63,9 +76,13 @@ const ResetPassword = () => {
                         placeholder="••••••••"
                         className="input-field"
                         value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        required
+                        onChange={(e) => {
+                            setPassword(e.target.value);
+                            if (errors.password) setErrors({ ...errors, password: '' });
+                        }}
                     />
+                    <PasswordStrengthMeter password={password} />
+                    {errors.password && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.password}</p>}
 
                     <div style={{ marginBottom: '5px', fontSize: '0.9rem', color: '#94a3b8' }}>Confirm New Password</div>
                     <input
@@ -73,9 +90,12 @@ const ResetPassword = () => {
                         placeholder="••••••••"
                         className="input-field"
                         value={confirmPassword}
-                        onChange={(e) => setConfirmPassword(e.target.value)}
-                        required
+                        onChange={(e) => {
+                            setConfirmPassword(e.target.value);
+                            if (errors.confirmPassword) setErrors({ ...errors, confirmPassword: '' });
+                        }}
                     />
+                    {errors.confirmPassword && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.confirmPassword}</p>}
 
                     <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
                         {loading ? 'Resetting...' : 'Reset Password'}

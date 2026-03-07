@@ -38,6 +38,8 @@ const Login = () => {
 
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
+
         try {
             const data = await login({ email, password, mfaToken: mfaCode });
 
@@ -85,9 +87,12 @@ const Login = () => {
                             placeholder="john@example.com"
                             className="input-field"
                             value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
+                            onChange={(e) => {
+                                setEmail(e.target.value);
+                                if (errors.email) setErrors({ ...errors, email: '' });
+                            }}
                         />
+                        {errors.email && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.email}</p>}
 
                         <div style={{ marginBottom: '5px', fontSize: '0.9rem', color: '#94a3b8' }}>Password</div>
                         <input
@@ -95,9 +100,12 @@ const Login = () => {
                             placeholder="••••••••"
                             className="input-field"
                             value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            required
+                            onChange={(e) => {
+                                setPassword(e.target.value);
+                                if (errors.password) setErrors({ ...errors, password: '' });
+                            }}
                         />
+                        {errors.password && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.password}</p>}
 
                         <div style={{ textAlign: 'right', marginBottom: '20px' }}>
                             <Link to="/forgot-password" style={{ color: '#6366f1', fontSize: '0.85rem', fontWeight: '500' }}>

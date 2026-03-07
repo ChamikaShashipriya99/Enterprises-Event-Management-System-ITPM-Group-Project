@@ -14,14 +14,20 @@ const {
     logoutAllDevices
 } = require('../controllers/authController');
 const { protect } = require('../middleware/authMiddleware');
+const {
+    registerValidation,
+    loginValidation,
+    forgotPasswordValidation,
+    resetPasswordValidation
+} = require('../middleware/validationMiddleware');
 
 const passport = require('passport');
 const generateToken = require('../utils/generateToken');
 
-router.post('/register', registerUser);
-router.post('/login', authUser);
-router.post('/forgotpassword', forgotPassword);
-router.put('/resetpassword/:resettoken', resetPassword);
+router.post('/register', registerValidation, registerUser);
+router.post('/login', loginValidation, authUser);
+router.post('/forgotpassword', forgotPasswordValidation, forgotPassword);
+router.put('/resetpassword/:resettoken', resetPasswordValidation, resetPassword);
 router.get('/verifyemail/:token', verifyEmail);
 
 // MFA Routes

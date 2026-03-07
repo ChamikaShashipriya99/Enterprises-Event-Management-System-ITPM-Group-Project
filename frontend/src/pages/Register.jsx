@@ -1,22 +1,43 @@
 import { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
+import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
 
 const Register = () => {
     const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'student' });
     const [success, setSuccess] = useState(false);
-    const [message, setMessage] = useState('');
+    const [errors, setErrors] = useState({});
     const { register } = useContext(AuthContext);
     const navigate = useNavigate();
 
+    const validateForm = () => {
+        let newErrors = {};
+        if (!formData.name.trim()) newErrors.name = 'Name is required';
+
+        const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+        if (!emailRegex.test(formData.email)) newErrors.email = 'Valid email is required';
+
+        if (formData.password.length < 8) {
+            newErrors.password = 'Password must be at least 8 characters';
+        } else if (!/\d/.test(formData.password)) {
+            newErrors.password = 'Password must contain at least one number';
+        }
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
+
         try {
             const data = await register(formData);
             setSuccess(true);
             setMessage(data.message || 'Registration successful! Please check your email to verify your account.');
         } catch (err) {
-            alert(err.response?.data?.message || 'Registration failed');
+            const errorMsg = err.response?.data?.message || 'Registration failed';
+            alert(errorMsg);
         }
     };
 
@@ -54,9 +75,12 @@ const Register = () => {
                             placeholder="John Doe"
                             className="input-field"
                             value={formData.name}
-                            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                            required
+                            onChange={(e) => {
+                                setFormData({ ...formData, name: e.target.value });
+                                if (errors.name) setErrors({ ...errors, name: '' });
+                            }}
                         />
+                        {errors.name && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.name}</p>}
 
                         <div style={{ marginBottom: '5px', fontSize: '0.9rem', color: '#94a3b8' }}>Email Address</div>
                         <input
@@ -64,19 +88,26 @@ const Register = () => {
                             placeholder="john@example.com"
                             className="input-field"
                             value={formData.email}
-                            onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                            required
+                            onChange={(e) => {
+                                setFormData({ ...formData, email: e.target.value });
+                                if (errors.email) setErrors({ ...errors, email: '' });
+                            }}
                         />
+                        {errors.email && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.email}</p>}
 
                         <div style={{ marginBottom: '5px', fontSize: '0.9rem', color: '#94a3b8' }}>Password</div>
                         <input
                             type="password"
-                            placeholder="Min. 8 characters"
+                            placeholder="Min. 8 characters + number"
                             className="input-field"
                             value={formData.password}
-                            onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                            required
+                            onChange={(e) => {
+                                setFormData({ ...formData, password: e.target.value });
+                                if (errors.password) setErrors({ ...errors, password: '' });
+                            }}
                         />
+                        <PasswordStrengthMeter password={formData.password} />
+                        {errors.password && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.password}</p>}
 
                         <div style={{ marginBottom: '5px', fontSize: '0.9rem', color: '#94a3b8' }}>I am a...</div>
                         <select

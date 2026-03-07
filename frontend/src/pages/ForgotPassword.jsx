@@ -8,8 +8,22 @@ const ForgotPassword = () => {
     const [error, setError] = useState('');
     const [loading, setLoading] = useState(false);
 
+    const [errors, setErrors] = useState({});
+
+    const validateForm = () => {
+        let newErrors = {};
+        const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+        if (!email.trim()) newErrors.email = 'Email is required';
+        else if (!emailRegex.test(email)) newErrors.email = 'Valid email is required';
+
+        setErrors(newErrors);
+        return Object.keys(newErrors).length === 0;
+    };
+
     const handleSubmit = async (e) => {
         e.preventDefault();
+        if (!validateForm()) return;
+
         setLoading(true);
         setMessage('');
         setError('');
@@ -51,9 +65,12 @@ const ForgotPassword = () => {
                         placeholder="john@example.com"
                         className="input-field"
                         value={email}
-                        onChange={(e) => setEmail(e.target.value)}
-                        required
+                        onChange={(e) => {
+                            setEmail(e.target.value);
+                            if (errors.email) setErrors({ ...errors, email: '' });
+                        }}
                     />
+                    {errors.email && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px', marginBottom: '10px' }}>{errors.email}</p>}
 
                     <button type="submit" className="btn-primary" style={{ width: '100%', marginTop: '10px' }} disabled={loading}>
                         {loading ? 'Sending...' : 'Send Reset Link'}
