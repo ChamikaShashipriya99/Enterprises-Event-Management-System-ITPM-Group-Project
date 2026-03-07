@@ -69,8 +69,13 @@ const OrganizerEvents = () => {
                                         </span>
                                     </td>
                                     <td style={{ padding: '20px' }}>
-                                        <div style={{ display: 'flex', gap: '1rem' }}>
-                                            <button style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer' }}>Edit</button>
+                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                            <Link
+                                                to={`/edit-event/${event._id}`}
+                                                style={{ textDecoration: 'none', color: '#6366f1', fontSize: '0.9rem', fontWeight: 'bold' }}
+                                            >
+                                                Edit
+                                            </Link>
                                             <button
                                                 onClick={() => handleDelete(event._id)}
                                                 style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}

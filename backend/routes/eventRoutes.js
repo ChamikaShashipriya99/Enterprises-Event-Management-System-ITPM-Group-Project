@@ -15,13 +15,13 @@ const { authorizeRoles } = require('../middleware/roleMiddleware');
 
 router.use(protect);
 
+// Organizer routes
+router.get('/my-events', authorizeRoles('organizer'), getOrganizerEvents);
+router.post('/', authorizeRoles('organizer'), createEvent);
+
 // General routes
 router.get('/', getEvents);
 router.get('/:id', getEvent);
-
-// Organizer routes
-router.post('/', authorizeRoles('organizer'), createEvent);
-router.get('/my-events', authorizeRoles('organizer'), getOrganizerEvents);
 router.put('/:id', authorizeRoles('organizer'), updateEvent);
 router.delete('/:id', authorizeRoles('organizer'), deleteEvent);
 
