@@ -3,7 +3,11 @@ const router = express.Router();
 
 const {
     createBooking,
-    cancelBooking
+    cancelBooking,
+    checkAvailability,
+    getMyBookings,
+    getBookingById
+
 } = require('../controllers/bookingController');
 
 const { protect } = require('../middleware/authMiddleware');
@@ -14,6 +18,12 @@ const { authorizeRoles } = require('../middleware/roleMiddleware');
 router.use(protect);
 
 // Student Routes
+
+// Get logged-in student's own bookings
+router.get('/my-bookings', authorizeRoles('student'), getMyBookings);
+
+// Get a single booking by bookingId (student sees own; admin sees all)
+router.get('/:bookingId', getBookingById);
 
 // Check available seats for an event (any authenticated user)
 router.get('/availability/:eventId', checkAvailability);

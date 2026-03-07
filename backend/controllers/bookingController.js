@@ -249,4 +249,57 @@ exports.cancelBooking = async (req, res) => {
     }
 };
 
+// Get Student's Bookings
+
+// @desc    Get all bookings for the logged-in student
+// @route   GET /api/bookings/my-bookings
+// @access  Private (student)
+exports.getMyBookings = async (req, res) => {
+    try {
+        const bookings = await Booking.find({ student: req.user._id })
+            .populate('event', 'title date location capacity')
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            count: bookings.length,
+            data: bookings,
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// Get Single Booking
+
+// @desc    Get a single booking by bookingId
+// @route   GET /api/bookings/:bookingId
+// @access  Private (student or admin)
+exports.getBookingById = async (req, res) => {
+    try {
+        const booking = await Booking.findOne({ bookingId: req.params.bookingId })
+            .populate('event', 'title date location capacity organizer')
+            .populate('student', 'name email');
+
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        // Students can only view their own bookings
+        if (
+            req.user.role === 'student' &&
+            booking.student._id.toString() !== req.user._id.toString()
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to view this booking',
+            });
+        }
+
+        return res.status(200).json({ success: true, data: booking });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 
