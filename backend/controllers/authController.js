@@ -2,6 +2,8 @@ const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
 const sendEmail = require('../utils/sendEmail');
 const crypto = require('crypto');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
@@ -65,7 +67,7 @@ const registerUser = async (req, res) => {
 // @route   POST /api/auth/login
 // @access  Public
 const authUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, mfaToken } = req.body;
 
     const user = await User.findOne({ email });
 
@@ -89,6 +91,26 @@ const authUser = async (req, res) => {
     }
 
     if (await user.matchPassword(password)) {
+        // MFA Check
+        if (user.isMfaEnabled) {
+            if (!mfaToken) {
+                return res.status(200).json({
+                    mfaRequired: true,
+                    message: 'MFA code required',
+                });
+            }
+
+            const verified = speakeasy.totp.verify({
+                secret: user.mfaSecret,
+                encoding: 'base32',
+                token: mfaToken,
+            });
+
+            if (!verified) {
+                return res.status(401).json({ message: 'Invalid MFA code' });
+            }
+        }
+
         // Successful login
         user.loginAttempts = 0;
         user.lockUntil = undefined;
@@ -208,4 +230,80 @@ const verifyEmail = async (req, res) => {
     res.status(200).json({ success: true, message: 'Email verified successfully!' });
 };
 
-module.exports = { registerUser, authUser, forgotPassword, resetPassword, verifyEmail };
+// @desc    Generate MFA Secret
+// @route   POST /api/auth/mfa/generate
+// @access  Private
+const generateMfaSecret = async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    const secret = speakeasy.generateSecret({
+        name: `EventBuddy (${user.email})`,
+    });
+
+    user.mfaSecret = secret.base32;
+    await user.save();
+
+    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+    res.json({
+        secret: secret.base32,
+        qrCodeUrl,
+    });
+};
+
+// @desc    Verify MFA Setup
+// @route   POST /api/auth/mfa/verify
+// @access  Private
+const verifyMfaSetup = async (req, res) => {
+    const { token } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user || !user.mfaSecret) {
+        return res.status(400).json({ message: 'MFA not initiated' });
+    }
+
+    const verified = speakeasy.totp.verify({
+        secret: user.mfaSecret,
+        encoding: 'base32',
+        token,
+    });
+
+    if (verified) {
+        user.isMfaEnabled = true;
+        await user.save();
+        res.json({ message: 'MFA enabled successfully' });
+    } else {
+        res.status(400).json({ message: 'Invalid verification token' });
+    }
+};
+
+// @desc    Disable MFA
+// @route   POST /api/auth/mfa/disable
+// @access  Private
+const disableMfa = async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        user.isMfaEnabled = false;
+        user.mfaSecret = undefined;
+        await user.save();
+        res.json({ message: 'MFA disabled successfully' });
+    } else {
+        res.status(404).json({ message: 'User not found' });
+    }
+};
+
+module.exports = {
+    registerUser,
+    authUser,
+    forgotPassword,
+    resetPassword,
+    verifyEmail,
+    generateMfaSecret,
+    verifyMfaSetup,
+    disableMfa
+};

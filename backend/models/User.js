@@ -59,6 +59,11 @@ const userSchema = mongoose.Schema(
             default: 0
         },
         lockUntil: Date,
+        mfaSecret: String,
+        isMfaEnabled: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,

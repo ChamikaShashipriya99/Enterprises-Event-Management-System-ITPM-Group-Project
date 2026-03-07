@@ -1,6 +1,16 @@
 const express = require('express');
 const router = express.Router();
-const { registerUser, authUser, forgotPassword, resetPassword, verifyEmail } = require('../controllers/authController');
+const {
+    registerUser,
+    authUser,
+    forgotPassword,
+    resetPassword,
+    verifyEmail,
+    generateMfaSecret,
+    verifyMfaSetup,
+    disableMfa
+} = require('../controllers/authController');
+const { protect } = require('../middleware/authMiddleware');
 
 const passport = require('passport');
 const generateToken = require('../utils/generateToken');
@@ -10,6 +20,11 @@ router.post('/login', authUser);
 router.post('/forgotpassword', forgotPassword);
 router.put('/resetpassword/:resettoken', resetPassword);
 router.get('/verifyemail/:token', verifyEmail);
+
+// MFA Routes
+router.post('/mfa/generate', protect, generateMfaSecret);
+router.post('/mfa/verify', protect, verifyMfaSetup);
+router.post('/mfa/disable', protect, disableMfa);
 
 // @desc    Auth with Google
 // @route   GET /api/auth/google

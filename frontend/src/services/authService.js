@@ -34,11 +34,35 @@ const getProfile = async (token) => {
     return null;
 };
 
+const generateMfa = async (token) => {
+    const response = await axios.post(API_URL + 'mfa/generate', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+};
+
+const verifyMfaSetup = async (token, mfaCode) => {
+    const response = await axios.post(API_URL + 'mfa/verify', { token: mfaCode }, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+};
+
+const disableMfa = async (token) => {
+    const response = await axios.post(API_URL + 'mfa/disable', {}, {
+        headers: { Authorization: `Bearer ${token}` }
+    });
+    return response.data;
+};
+
 const authService = {
     register,
     login,
     logout,
-    getProfile
+    getProfile,
+    generateMfa,
+    verifyMfaSetup,
+    disableMfa
 };
 
 export default authService;
