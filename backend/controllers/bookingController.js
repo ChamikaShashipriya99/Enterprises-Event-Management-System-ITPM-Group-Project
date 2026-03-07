@@ -14,6 +14,50 @@ const isSameDay = (d1, d2) => {
     );
 };
 
+//Check Seat Availability
+
+// @desc    Check available seats for an event
+// @route   GET /api/bookings/availability/:eventId
+// @access  Private (student)
+exports.checkAvailability = async (req, res) => {
+    try {
+        const event = await Event.findById(req.params.eventId);
+        if (!event) {
+            return res.status(404).json({ success: false, message: 'Event not found' });
+        }
+
+        // Check if event is in the past
+        if (new Date(event.date) < new Date()) {
+            return res.status(400).json({
+                success: false,
+                message: 'This event has already taken place',
+            });
+        }
+
+        const confirmedBookings = await Booking.countDocuments({
+            event: event._id,
+            status: 'confirmed',
+        });
+
+        const availableSeats = event.capacity - confirmedBookings;
+
+        return res.status(200).json({
+            success: true,
+            data: {
+                eventId: event._id,
+                eventTitle: event.title,
+                eventDate: event.date,
+                totalCapacity: event.capacity,
+                confirmedBookings,
+                availableSeats,
+                isAvailable: availableSeats > 0,
+            },
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
 
 // Create Booking
 

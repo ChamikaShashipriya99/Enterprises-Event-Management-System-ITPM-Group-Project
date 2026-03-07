@@ -15,6 +15,9 @@ router.use(protect);
 
 // Student Routes
 
+// Check available seats for an event (any authenticated user)
+router.get('/availability/:eventId', checkAvailability);
+
 // Create a new booking
 router.post('/', authorizeRoles('student'), validateCreateBooking, createBooking);
 
