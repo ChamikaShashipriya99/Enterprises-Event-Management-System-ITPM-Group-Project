@@ -56,8 +56,7 @@ const BookingCard = ({ booking, onCancelled, onCertificate }) => {
             padding: '1.5rem',
             backdropFilter: 'blur(12px)',
             transition: 'transform 0.2s, box-shadow 0.2s',
-            position: 'relative',
-            overflow: 'hidden'
+            position: 'relative'
         }}
             onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.3)'; }}
             onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
