@@ -16,6 +16,10 @@ import AllEvents from './pages/AllEvents';
 import EventDetail from './pages/EventDetail';
 import CreateEvent from './pages/CreateEvent';
 import OrganizerEvents from './pages/OrganizerEvents';
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
+import EditEvent from './pages/EditEvent';
+import VerifyEmail from './pages/VerifyEmail';
 
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
@@ -70,6 +74,9 @@ function App() {
         <Routes>
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
+          <Route path="/verify-email/:token" element={<VerifyEmail />} />
+          <Route path="/forgot-password" element={<ForgotPassword />} />
+          <Route path="/reset-password/:token" element={<ResetPassword />} />
 
           {/* Protected Routes */}
           <Route path="/student-dashboard" element={
@@ -78,6 +85,7 @@ function App() {
             </ProtectedRoute>
           } />
 
+          {/* Organizer Routes */}
           <Route path="/organizer-dashboard" element={
             <ProtectedRoute role="organizer">
               <OrganizerDashboard />
@@ -93,6 +101,12 @@ function App() {
           <Route path="/organizer-events" element={
             <ProtectedRoute role="organizer">
               <OrganizerEvents />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/edit-event/:id" element={
+            <ProtectedRoute role="organizer">
+              <EditEvent />
             </ProtectedRoute>
           } />
 

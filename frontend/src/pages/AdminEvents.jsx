@@ -1,9 +1,12 @@
 import { useState, useEffect } from 'react';
 import eventService from '../services/eventService';
+import Skeleton from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 
 const AdminEvents = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [modal, setModal] = useState({ isOpen: false, eventId: null });
     const [stats, setStats] = useState({
         totalEvents: 0,
         upcomingEvents: 0,
@@ -41,18 +44,52 @@ const AdminEvents = () => {
     }, []);
 
     const handleDelete = async (id) => {
-        if (window.confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
-            try {
-                await eventService.deleteEvent(id);
-                setEvents(events.filter(e => e._id !== id));
-            } catch (error) {
-                console.error('Error deleting event:', error);
-                alert('Failed to delete event');
-            }
+        setModal({ isOpen: true, eventId: id });
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await eventService.deleteEvent(modal.eventId);
+            setEvents(events.filter(e => e._id !== modal.eventId));
+            setModal({ isOpen: false, eventId: null });
+        } catch (error) {
+            console.error('Error deleting event:', error);
+            alert('Failed to delete event');
         }
     };
 
-    if (loading) return <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>Loading events...</div>;
+    if (loading) return (
+        <div style={{ padding: '2rem 5%' }}>
+            <Skeleton variant="title" width="350px" style={{ marginBottom: '2rem' }} />
+
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '3rem'
+            }}>
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="glass-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
+                        <Skeleton variant="circle" width="40px" height="40px" style={{ margin: '0 auto 0.5rem' }} />
+                        <Skeleton variant="text" width="60%" style={{ margin: '0 auto' }} />
+                        <Skeleton variant="text" width="40%" height="1.8rem" style={{ margin: '0 auto' }} />
+                    </div>
+                ))}
+            </div>
+
+            <div className="glass-card" style={{ padding: '0' }}>
+                {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} style={{ padding: '1.2rem', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between' }}>
+                        <Skeleton width="20%" />
+                        <Skeleton width="15%" />
+                        <Skeleton width="10%" />
+                        <Skeleton width="15%" />
+                        <Skeleton width="10%" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     const statCards = [
         { title: 'Total Events', value: stats.totalEvents, icon: '📅', color: '#6366f1' },
@@ -136,6 +173,14 @@ const AdminEvents = () => {
                     </tbody>
                 </table>
             </div>
+
+            <ConfirmModal
+                isOpen={modal.isOpen}
+                title="Delete Event"
+                message="Are you sure you want to cancel and delete this event? This will permanently remove all registration data."
+                onConfirm={confirmDelete}
+                onCancel={() => setModal({ isOpen: false, eventId: null })}
+            />
         </div>
     );
 };

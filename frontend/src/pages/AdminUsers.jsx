@@ -1,10 +1,13 @@
 import { useState, useEffect, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import userService from '../services/userService';
+import Skeleton from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 
 const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [modal, setModal] = useState({ isOpen: false, userId: null, userName: '' });
     const { token } = useContext(AuthContext);
 
     const fetchUsers = async () => {
@@ -23,17 +26,42 @@ const AdminUsers = () => {
     }, [token]);
 
     const handleDeleteUser = async (id, name) => {
-        if (window.confirm(`Are you sure you want to delete user: ${name}?`)) {
-            try {
-                await userService.adminDeleteUser(id, token);
-                setUsers(users.filter(user => user._id !== id));
-            } catch (err) {
-                alert(err.response?.data?.message || 'Failed to delete user');
-            }
+        setModal({ isOpen: true, userId: id, userName: name });
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await userService.adminDeleteUser(modal.userId, token);
+            setUsers(users.filter(user => user._id !== modal.userId));
+            setModal({ isOpen: false, userId: null, userName: '' });
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to delete user');
         }
     };
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading user directory...</div>;
+    if (loading) return (
+        <div style={{ padding: '40px 5%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+                <div>
+                    <Skeleton variant="title" width="300px" />
+                    <Skeleton variant="text" width="250px" />
+                </div>
+                <Skeleton width="180px" height="45px" />
+            </div>
+
+            <div className="glass-card" style={{ padding: '0' }}>
+                {[1, 2, 3, 4, 5].map(i => (
+                    <div key={i} style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between' }}>
+                        <Skeleton width="15%" />
+                        <Skeleton width="20%" />
+                        <Skeleton width="25%" />
+                        <Skeleton width="10%" />
+                        <Skeleton width="10%" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     return (
         <div style={{ padding: '40px 5%' }}>
@@ -96,6 +124,14 @@ const AdminUsers = () => {
                     </tbody>
                 </table>
             </div>
+
+            <ConfirmModal
+                isOpen={modal.isOpen}
+                title="Delete User"
+                message={`Are you sure you want to permanently delete user "${modal.userName}"? This action cannot be undone.`}
+                onConfirm={confirmDelete}
+                onCancel={() => setModal({ isOpen: false, userId: null, userName: '' })}
+            />
         </div>
     );
 };

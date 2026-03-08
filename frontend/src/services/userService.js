@@ -51,13 +51,25 @@ const getUserStats = async (token) => {
     return response.data;
 };
 
+// Upload profile picture
+const uploadImage = async (formData, token) => {
+    const response = await axios.post(API_USER_URL + 'upload', formData, {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${token}`
+        }
+    });
+    return response.data;
+};
+
 const userService = {
     getProfile,
     updateProfile,
     deleteAccount,
     getAllUsers,
     adminDeleteUser,
-    getUserStats
+    getUserStats,
+    uploadImage
 };
 
 export default userService;

@@ -17,12 +17,15 @@ export const AuthProvider = ({ children }) => {
 
     const login = async (userData) => {
         const data = await authService.login(userData);
-        setUser(data);
+        if (!data.mfaRequired) {
+            setUser(data);
+        }
+        return data;
     };
 
     const register = async (userData) => {
         const data = await authService.register(userData);
-        setUser(data);
+        return data;
     };
 
     const logout = () => {

@@ -1,45 +1,84 @@
 const User = require('../models/User');
 const generateToken = require('../utils/generateToken');
+const sendEmail = require('../utils/sendEmail');
+const crypto = require('crypto');
+const speakeasy = require('speakeasy');
+const QRCode = require('qrcode');
+const UAParser = require('ua-parser-js');
 
 // @desc    Register a new user
 // @route   POST /api/auth/register
 // @access  Public
 const registerUser = async (req, res) => {
-    const { name, email, password, role } = req.body;
+    try {
+        const { name, email, password, role, roleCode } = req.body;
 
-    // Email validation
-    const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
-    if (!emailRegex.test(email)) {
-        return res.status(400).json({ message: 'Please provide a valid email address' });
-    }
+        // Check for secret codes if role is admin or organizer
+        if (role === 'admin') {
+            const adminCode = process.env.ADMIN_CODE || 'admin123';
+            if (roleCode !== adminCode) {
+                return res.status(403).json({ message: 'Invalid Admin Secret Code' });
+            }
+        } else if (role === 'organizer') {
+            const organizerCode = process.env.ORGANIZER_CODE || 'organizer123';
+            if (roleCode !== organizerCode) {
+                return res.status(403).json({ message: 'Invalid Organizer Secret Code' });
+            }
+        }
 
-    if (!password) {
-        return res.status(400).json({ message: 'Please provide a password' });
-    }
+        // Email validation
+        const emailRegex = /^\w+([\.-]?\w+)*@\w+([\.-]?\w+)*(\.\w{2,3})+$/;
+        if (!emailRegex.test(email)) {
+            return res.status(400).json({ message: 'Please provide a valid email address' });
+        }
 
-    const userExists = await User.findOne({ email });
+        if (!password) {
+            return res.status(400).json({ message: 'Please provide a password' });
+        }
 
-    if (userExists) {
-        return res.status(400).json({ message: 'User already exists' });
-    }
+        const userExists = await User.findOne({ email });
 
-    const user = await User.create({
-        name,
-        email,
-        password,
-        role,
-    });
+        if (userExists) {
+            return res.status(400).json({ message: 'User already exists' });
+        }
 
-    if (user) {
-        res.status(201).json({
-            _id: user._id,
-            name: user.name,
-            email: user.email,
-            role: user.role,
-            token: generateToken(user),
+        const verificationToken = crypto.randomBytes(32).toString('hex');
+
+        const user = await User.create({
+            name,
+            email,
+            password,
+            role,
+            verificationToken,
         });
-    } else {
-        res.status(400).json({ message: 'Invalid user data' });
+
+        if (user) {
+            // Send verification email
+            const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+            const verificationUrl = `${frontendUrl}/verify-email/${verificationToken}`;
+            const message = `Welcome to EventBuddy! Please verify your email by clicking the link below:\n\n${verificationUrl}`;
+
+            try {
+                await sendEmail({
+                    email: user.email,
+                    subject: 'Email Verification',
+                    message,
+                });
+                res.status(201).json({
+                    message: 'Registration successful! Please check your email to verify your account.',
+                });
+            } catch (err) {
+                console.error('Initial email failed, but user created:', err);
+                res.status(201).json({
+                    message: 'Registration successful! However, we could not send the verification email. Please contact support.',
+                });
+            }
+        } else {
+            res.status(400).json({ message: 'Invalid user data' });
+        }
+    } catch (error) {
+        console.error('Registration Error:', error);
+        res.status(500).json({ message: error.message || 'Server error during registration' });
     }
 };
 
@@ -47,21 +86,333 @@ const registerUser = async (req, res) => {
 // @route   POST /api/auth/login
 // @access  Public
 const authUser = async (req, res) => {
-    const { email, password } = req.body;
+    const { email, password, mfaToken } = req.body;
 
     const user = await User.findOne({ email });
 
-    if (user && (await user.matchPassword(password))) {
+    if (!user) {
+        return res.status(401).json({ message: 'Invalid email or password' });
+    }
+
+    // Check if account is verified
+    if (!user.isVerified) {
+        return res.status(401).json({
+            message: 'Please verify your email to login. Check your inbox for the verification link.'
+        });
+    }
+
+    // Check if account is locked
+    if (user.lockUntil && user.lockUntil > Date.now()) {
+        const remainingMinutes = Math.ceil((user.lockUntil - Date.now()) / (60 * 1000));
+        return res.status(403).json({
+            message: `Account is locked. Please try again in ${remainingMinutes} minutes.`
+        });
+    }
+
+    if (await user.matchPassword(password)) {
+        // MFA Check
+        if (user.isMfaEnabled) {
+            if (!mfaToken) {
+                return res.status(200).json({
+                    mfaRequired: true,
+                    message: 'MFA code required',
+                });
+            }
+
+            const verified = speakeasy.totp.verify({
+                secret: user.mfaSecret,
+                encoding: 'base32',
+                token: mfaToken,
+            });
+
+            if (!verified) {
+                return res.status(401).json({ message: 'Invalid MFA code' });
+            }
+        }
+
+        // Successful login
+        const parser = new UAParser(req.headers['user-agent']);
+        const ua = parser.getResult();
+        const sessionId = crypto.randomBytes(16).toString('hex');
+
+        user.sessions.push({
+            sessionId,
+            device: ua.device.model || ua.device.vendor || 'Desktop',
+            browser: ua.browser.name,
+            os: ua.os.name,
+            ip: req.ip || req.connection.remoteAddress,
+        });
+
+        // Limit to last 10 sessions for security/performance
+        if (user.sessions.length > 10) {
+            user.sessions.shift();
+        }
+
+        user.loginAttempts = 0;
+        user.lockUntil = undefined;
+        user.lastLogin = Date.now();
+        await user.save();
+
         res.json({
             _id: user._id,
             name: user.name,
             email: user.email,
             role: user.role,
-            token: generateToken(user),
+            token: generateToken(user, sessionId),
         });
     } else {
+        // Failed login
+        user.loginAttempts += 1;
+
+        if (user.loginAttempts >= 5) {
+            // Lock account for 15 minutes
+            user.lockUntil = Date.now() + 15 * 60 * 1000;
+            await user.save();
+            return res.status(403).json({
+                message: 'Too many failed attempts. Account locked for 15 minutes.'
+            });
+        }
+
+        await user.save();
         res.status(401).json({ message: 'Invalid email or password' });
     }
 };
 
-module.exports = { registerUser, authUser };
+// @desc    Forgot password
+// @route   POST /api/auth/forgotpassword
+// @access  Public
+const forgotPassword = async (req, res) => {
+    const user = await User.findOne({ email: req.body.email });
+
+    if (!user) {
+        return res.status(404).json({ message: 'No user with that email' });
+    }
+
+    // Get reset token
+    const resetToken = user.getResetPasswordToken();
+
+    await user.save({ validateBeforeSave: false });
+
+    // Create reset url
+    const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+    const resetUrl = `${frontendUrl}/reset-password/${resetToken}`;
+
+    const message = `You are receiving this email because you (or someone else) has requested the reset of a password. Please make a put request to: \n\n ${resetUrl}`;
+
+    try {
+        await sendEmail({
+            email: user.email,
+            subject: 'Password reset token',
+            message,
+        });
+
+        res.status(200).json({ success: true, data: 'Email sent' });
+    } catch (err) {
+        console.log(err);
+        user.resetPasswordToken = undefined;
+        user.resetPasswordExpire = undefined;
+
+        await user.save({ validateBeforeSave: false });
+
+        return res.status(500).json({ message: 'Email could not be sent' });
+    }
+};
+
+// @desc    Reset password
+// @route   PUT /api/auth/resetpassword/:resettoken
+// @access  Public
+const resetPassword = async (req, res) => {
+    // Get hashed token
+    const resetPasswordToken = crypto.createHash('sha256').update(req.params.resettoken).digest('hex');
+
+    const user = await User.findOne({
+        resetPasswordToken,
+        resetPasswordExpire: { $gt: Date.now() },
+    });
+
+    if (!user) {
+        return res.status(400).json({ message: 'Invalid token' });
+    }
+
+    // Set new password
+    user.password = req.body.password;
+    user.resetPasswordToken = undefined;
+    user.resetPasswordExpire = undefined;
+    await user.save();
+
+    // Create session for password reset login
+    const parser = new UAParser(req.headers['user-agent']);
+    const ua = parser.getResult();
+    const sessionId = crypto.randomBytes(16).toString('hex');
+
+    user.sessions.push({
+        sessionId,
+        device: ua.device.model || ua.device.vendor || 'Desktop',
+        browser: ua.browser.name,
+        os: ua.os.name,
+        ip: req.ip || req.connection.remoteAddress,
+    });
+
+    await user.save();
+
+    res.status(200).json({
+        _id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        token: generateToken(user, sessionId),
+    });
+};
+
+// @desc    Verify email
+// @route   GET /api/auth/verifyemail/:token
+// @access  Public
+const verifyEmail = async (req, res) => {
+    const user = await User.findOne({ verificationToken: req.params.token });
+
+    if (!user) {
+        return res.status(400).json({ message: 'Invalid verification token' });
+    }
+
+    user.isVerified = true;
+    user.verificationToken = undefined;
+    await user.save();
+
+    res.status(200).json({ success: true, message: 'Email verified successfully!' });
+};
+
+// @desc    Generate MFA Secret
+// @route   POST /api/auth/mfa/generate
+// @access  Private
+const generateMfaSecret = async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+    }
+
+    const secret = speakeasy.generateSecret({
+        name: `EventBuddy (${user.email})`,
+    });
+
+    user.mfaSecret = secret.base32;
+    await user.save();
+
+    const qrCodeUrl = await QRCode.toDataURL(secret.otpauth_url);
+
+    res.json({
+        secret: secret.base32,
+        qrCodeUrl,
+    });
+};
+
+// @desc    Verify MFA Setup
+// @route   POST /api/auth/mfa/verify
+// @access  Private
+const verifyMfaSetup = async (req, res) => {
+    const { token } = req.body;
+    const user = await User.findById(req.user._id);
+
+    if (!user || !user.mfaSecret) {
+        return res.status(400).json({ message: 'MFA not initiated' });
+    }
+
+    const verified = speakeasy.totp.verify({
+        secret: user.mfaSecret,
+        encoding: 'base32',
+        token,
+    });
+
+    if (verified) {
+        user.isMfaEnabled = true;
+        await user.save();
+        res.json({ message: 'MFA enabled successfully' });
+    } else {
+        res.status(400).json({ message: 'Invalid verification token' });
+    }
+};
+
+// @desc    Disable MFA
+// @route   POST /api/auth/mfa/disable
+// @access  Private
+const disableMfa = async (req, res) => {
+    const user = await User.findById(req.user._id);
+
+    if (user) {
+        user.isMfaEnabled = false;
+        user.mfaSecret = undefined;
+        await user.save();
+        res.json({ message: 'MFA disabled successfully' });
+    } else {
+        res.status(404).json({ message: 'User not found' });
+    }
+};
+
+// @desc    Get all active sessions
+// @route   GET /api/auth/sessions
+// @access  Private
+const getSessions = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            res.json(user.sessions);
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Revoke a specific session
+// @route   DELETE /api/auth/sessions/:sessionId
+// @access  Private
+const revokeSession = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.sessions = user.sessions.filter(s => s.sessionId !== req.params.sessionId);
+            await user.save();
+            res.json({ message: 'Session revoked successfully' });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+// @desc    Logout from all devices
+// @route   DELETE /api/auth/sessions
+// @access  Private
+const logoutAllDevices = async (req, res) => {
+    try {
+        const user = await User.findById(req.user._id);
+
+        if (user) {
+            user.sessions = [];
+            await user.save();
+            res.json({ message: 'Logged out from all devices' });
+        } else {
+            res.status(404).json({ message: 'User not found' });
+        }
+    } catch (error) {
+        res.status(500).json({ message: 'Server error' });
+    }
+};
+
+module.exports = {
+    registerUser,
+    authUser,
+    forgotPassword,
+    resetPassword,
+    verifyEmail,
+    generateMfaSecret,
+    verifyMfaSetup,
+    disableMfa,
+    getSessions,
+    revokeSession,
+    logoutAllDevices
+};

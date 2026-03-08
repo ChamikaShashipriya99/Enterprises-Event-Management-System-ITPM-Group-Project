@@ -1,13 +1,20 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import ConfirmModal from './ConfirmModal';
 
 const Navbar = () => {
+    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const { currentUser, logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    const handleLogout = () => {
+    const handleLogoutTrigger = () => {
+        setIsLogoutModalOpen(true);
+    };
+
+    const confirmLogout = () => {
         logout();
+        setIsLogoutModalOpen(false);
         navigate('/login');
     };
 
@@ -64,7 +71,7 @@ const Navbar = () => {
                             <span style={{ fontSize: '0.8rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '20px' }}>
                                 {currentUser.name}
                             </span>
-                            <button onClick={handleLogout} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                            <button onClick={handleLogoutTrigger} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
                                 Logout
                             </button>
                         </div>
@@ -76,6 +83,15 @@ const Navbar = () => {
                     </>
                 )}
             </div>
+            <ConfirmModal
+                isOpen={isLogoutModalOpen}
+                title="Confirm Logout"
+                message="Are you sure you want to log out of your account?"
+                onConfirm={confirmLogout}
+                onCancel={() => setIsLogoutModalOpen(false)}
+                confirmText="Logout"
+                type="danger"
+            />
         </nav>
     );
 };

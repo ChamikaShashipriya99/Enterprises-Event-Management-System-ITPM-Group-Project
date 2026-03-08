@@ -1,10 +1,13 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
+import Skeleton from '../components/Skeleton';
+import ConfirmModal from '../components/ConfirmModal';
 
 const OrganizerEvents = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [modal, setModal] = useState({ isOpen: false, eventId: null });
 
     const fetchEvents = async () => {
         try {
@@ -22,17 +25,39 @@ const OrganizerEvents = () => {
     }, []);
 
     const handleDelete = async (id) => {
-        if (window.confirm('Securely delete this event? This action cannot be undone.')) {
-            try {
-                await eventService.deleteEvent(id);
-                setEvents(events.filter(e => e._id !== id));
-            } catch (error) {
-                alert('Migration failed: Could not delete event');
-            }
+        setModal({ isOpen: true, eventId: id });
+    };
+
+    const confirmDelete = async () => {
+        try {
+            await eventService.deleteEvent(modal.eventId);
+            setEvents(events.filter(e => e._id !== modal.eventId));
+            setModal({ isOpen: false, eventId: null });
+        } catch (error) {
+            alert('Action failed: Could not delete event');
         }
     };
 
-    if (loading) return <div style={{ padding: '40px', textAlign: 'center' }}>Loading events...</div>;
+    if (loading) return (
+        <div style={{ padding: '2rem 5%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
+                <Skeleton variant="title" width="300px" />
+                <Skeleton width="120px" height="40px" />
+            </div>
+
+            <div className="glass-card" style={{ padding: '0' }}>
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} style={{ padding: '20px', borderBottom: '1px solid rgba(255,255,255,0.05)', display: 'flex', justifyContent: 'space-between' }}>
+                        <Skeleton width="30%" />
+                        <Skeleton width="15%" />
+                        <Skeleton width="15%" />
+                        <Skeleton width="10%" />
+                        <Skeleton width="10%" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     return (
         <div style={{ padding: '2rem 5%' }}>
@@ -69,8 +94,13 @@ const OrganizerEvents = () => {
                                         </span>
                                     </td>
                                     <td style={{ padding: '20px' }}>
-                                        <div style={{ display: 'flex', gap: '1rem' }}>
-                                            <button style={{ background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer' }}>Edit</button>
+                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
+                                            <Link
+                                                to={`/edit-event/${event._id}`}
+                                                style={{ textDecoration: 'none', color: '#6366f1', fontSize: '0.9rem', fontWeight: 'bold' }}
+                                            >
+                                                Edit
+                                            </Link>
                                             <button
                                                 onClick={() => handleDelete(event._id)}
                                                 style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
@@ -85,6 +115,14 @@ const OrganizerEvents = () => {
                     </tbody>
                 </table>
             </div>
+
+            <ConfirmModal
+                isOpen={modal.isOpen}
+                title="Delete Event"
+                message="Are you sure you want to securely delete this event? This action cannot be undone."
+                onConfirm={confirmDelete}
+                onCancel={() => setModal({ isOpen: false, eventId: null })}
+            />
         </div>
     );
 };

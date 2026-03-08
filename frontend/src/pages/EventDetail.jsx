@@ -2,6 +2,7 @@ import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import eventService from '../services/eventService';
 import { AuthContext } from '../context/AuthContext';
+import Skeleton from '../components/Skeleton';
 
 const EventDetail = () => {
     const { id } = useParams();
@@ -54,7 +55,38 @@ const EventDetail = () => {
         }
     };
 
-    if (loading) return <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>Loading event details...</div>;
+    if (loading) return (
+        <div style={{ padding: '2rem 5%', maxWidth: '1000px', margin: '0 auto' }}>
+            <Skeleton width="150px" height="24px" style={{ marginBottom: '2rem' }} />
+
+            <div className="glass-card" style={{ padding: '3rem' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1.5rem', marginBottom: '2rem' }}>
+                    <div style={{ flex: 1 }}>
+                        <Skeleton width="200px" height="30px" style={{ borderRadius: '30px', marginBottom: '1rem' }} />
+                        <Skeleton variant="title" width="80%" height="3.5rem" />
+                    </div>
+                    <Skeleton width="180px" height="50px" />
+                </div>
+
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '2rem', padding: '2rem 0', borderTop: '1px solid rgba(255,255,255,0.1)', borderBottom: '1px solid rgba(255,255,255,0.1)', marginBottom: '2rem' }}>
+                    {[1, 2, 3].map(i => (
+                        <div key={i}>
+                            <Skeleton width="100px" height="16px" style={{ marginBottom: '0.5rem' }} />
+                            <Skeleton width="150px" height="24px" />
+                        </div>
+                    ))}
+                </div>
+
+                <div>
+                    <Skeleton variant="title" width="200px" />
+                    <Skeleton variant="text" width="100%" />
+                    <Skeleton variant="text" width="100%" />
+                    <Skeleton variant="text" width="100%" />
+                    <Skeleton variant="text" width="60%" />
+                </div>
+            </div>
+        </div>
+    );
     if (!event) return <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>Event not found</div>;
 
     return (

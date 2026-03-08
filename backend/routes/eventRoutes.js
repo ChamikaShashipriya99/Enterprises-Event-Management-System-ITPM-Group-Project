@@ -12,17 +12,18 @@ const {
 } = require('../controllers/eventController');
 const { protect } = require('../middleware/authMiddleware');
 const { authorizeRoles } = require('../middleware/roleMiddleware');
+const { eventValidation } = require('../middleware/validationMiddleware');
 
 router.use(protect);
+
+// Organizer routes
+router.get('/my-events', authorizeRoles('organizer'), getOrganizerEvents);
+router.post('/', authorizeRoles('organizer'), eventValidation, createEvent);
 
 // General routes
 router.get('/', getEvents);
 router.get('/:id', getEvent);
-
-// Organizer routes
-router.post('/', authorizeRoles('organizer'), createEvent);
-router.get('/my-events', authorizeRoles('organizer'), getOrganizerEvents);
-router.put('/:id', authorizeRoles('organizer'), updateEvent);
+router.put('/:id', authorizeRoles('organizer'), eventValidation, updateEvent);
 router.delete('/:id', authorizeRoles('organizer'), deleteEvent);
 
 // Student registration routes

@@ -13,8 +13,25 @@ const protect = async (req, res, next) => {
 
             const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
-            req.user = await User.findById(decoded.userId).select('-password');
+            const user = await User.findById(decoded.userId).select('-password');
 
+            if (!user) {
+                return res.status(401).json({ message: 'Not authorized, user not found' });
+            }
+
+            // Session Management: Check if sessionId exists and is active
+            if (decoded.sessionId) {
+                const session = user.sessions.find(s => s.sessionId === decoded.sessionId);
+                if (!session) {
+                    return res.status(401).json({ message: 'Session has been revoked' });
+                }
+
+                // Update last activity
+                session.lastActivity = Date.now();
+                await user.save();
+            }
+
+            req.user = user;
             return next();
         } catch (error) {
             console.error(error);

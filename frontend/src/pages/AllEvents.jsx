@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
+import Skeleton from '../components/Skeleton';
 
 const AllEvents = () => {
     const [events, setEvents] = useState([]);
@@ -26,7 +27,40 @@ const AllEvents = () => {
         event.description.toLowerCase().includes(searchTerm.toLowerCase())
     );
 
-    if (loading) return <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>Loading events...</div>;
+    if (loading) return (
+        <div style={{ padding: '2rem 5%' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+                <Skeleton variant="title" width="300px" />
+                <Skeleton width="300px" height="45px" style={{ borderRadius: '30px' }} />
+            </div>
+
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
+                gap: '2rem'
+            }}>
+                {[1, 2, 3, 4, 5, 6].map(i => (
+                    <div key={i} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
+                            <Skeleton width="80px" height="24px" style={{ borderRadius: '20px' }} />
+                            <Skeleton width="100px" height="16px" />
+                        </div>
+                        <Skeleton variant="title" width="80%" />
+                        <Skeleton variant="text" width="100%" />
+                        <Skeleton variant="text" width="90%" />
+                        <Skeleton variant="text" width="60%" style={{ marginBottom: '1.5rem' }} />
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                                <Skeleton variant="circle" width="32px" height="32px" />
+                                <Skeleton width="80px" height="16px" />
+                            </div>
+                            <Skeleton width="100px" height="36px" />
+                        </div>
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     return (
         <div style={{ padding: '2rem 5%' }}>

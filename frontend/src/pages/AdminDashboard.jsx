@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
+import Skeleton from '../components/Skeleton';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({
@@ -25,7 +26,37 @@ const AdminDashboard = () => {
         fetchStats();
     }, []);
 
-    if (loading) return <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>Loading stats...</div>;
+    if (loading) return (
+        <div style={{ padding: '2rem 5%' }}>
+            <Skeleton variant="title" width="400px" style={{ marginBottom: '2rem' }} />
+
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '3rem'
+            }}>
+                {[1, 2, 3, 4].map(i => (
+                    <div key={i} className="glass-card" style={{ padding: '1.5rem' }}>
+                        <Skeleton variant="circle" width="40px" height="40px" style={{ marginBottom: '0.5rem' }} />
+                        <Skeleton variant="text" width="60%" />
+                        <Skeleton variant="text" width="30%" height="2rem" />
+                    </div>
+                ))}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
+                {[1, 2].map(i => (
+                    <div key={i} className="glass-card" style={{ padding: '2rem' }}>
+                        <Skeleton variant="title" width="200px" style={{ marginBottom: '1rem' }} />
+                        <Skeleton variant="text" width="100%" />
+                        <Skeleton variant="text" width="80%" style={{ marginBottom: '1.5rem' }} />
+                        <Skeleton width="150px" height="40px" />
+                    </div>
+                ))}
+            </div>
+        </div>
+    );
 
     const statCards = [
         { title: 'Total Users', value: stats.totalUsers, icon: '👥', color: '#6366f1' },
