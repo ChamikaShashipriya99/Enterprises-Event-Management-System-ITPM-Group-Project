@@ -3,6 +3,7 @@ const Event = require('../models/Event');
 
 const {
     sendBookingConfirmationEmail,
+    sendCancellationEmail,
 } = require('../services/emailService');
 
 const User = require('../models/User');
@@ -247,6 +248,14 @@ exports.cancelBooking = async (req, res) => {
         });
 
         // 9. Send cancellation email (non-blocking)
+        const student = await User.findById(studentId);
+        sendCancellationEmail({
+            to: student.email,
+            studentName: student.name,
+            booking,
+            event: booking.event,
+            reason: booking.cancellationReason,
+        }).catch((err) => console.error('Cancellation email error:', err));
 
         return res.status(200).json({
             success: true,
