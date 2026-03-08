@@ -1,0 +1,58 @@
+import axios from 'axios';
+
+const API_URL = 'http://localhost:5000/api';
+
+const getAuthHeader = () => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    return {
+        headers: {
+            Authorization: `Bearer ${user?.token}`
+        }
+    };
+};
+
+// Check seat availability for an event
+const checkAvailability = async (eventId) => {
+    const response = await axios.get(`${API_URL}/bookings/availability/${eventId}`, getAuthHeader());
+    return response.data;
+};
+
+// Create a new booking
+const createBooking = async (eventId) => {
+    const response = await axios.post(`${API_URL}/bookings`, { eventId }, getAuthHeader());
+    return response.data;
+};
+
+// Get all bookings for logged-in student
+const getMyBookings = async () => {
+    const response = await axios.get(`${API_URL}/bookings/my-bookings`, getAuthHeader());
+    return response.data;
+};
+
+// Get a single booking by bookingId
+const getBookingById = async (bookingId) => {
+    const response = await axios.get(`${API_URL}/bookings/${bookingId}`, getAuthHeader());
+    return response.data;
+};
+
+// Cancel a booking
+const cancelBooking = async (bookingId, reason = '') => {
+    const response = await axios.put(
+        `${API_URL}/bookings/${bookingId}/cancel`,
+        { reason },
+        getAuthHeader()
+    );
+    return response.data;
+};
+
+
+
+const bookingService = {
+    checkAvailability,
+    createBooking,
+    getMyBookings,
+    getBookingById,
+    cancelBooking
+};
+
+export default bookingService;
