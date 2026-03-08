@@ -21,6 +21,10 @@ import ResetPassword from './pages/ResetPassword';
 import EditEvent from './pages/EditEvent';
 import VerifyEmail from './pages/VerifyEmail';
 
+// ADD — Booking Engine pages
+import MyBookings from './pages/bookings/MyBookings';
+import BookingDetail from './pages/bookings/BookingDetail';
+
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
 
@@ -144,6 +148,19 @@ function App() {
           <Route path="/events/:id" element={<EventDetail />} />
 
           <Route path="/" element={<LandingPage />} />
+
+          {/* ADD — Booking Engine routes */}
+          <Route path="/my-bookings" element={
+              <ProtectedRoute role="student">
+                  <MyBookings />
+              </ProtectedRoute>
+          } />
+
+          <Route path="/bookings/:bookingId" element={
+              <ProtectedRoute>
+                  <BookingDetail />
+              </ProtectedRoute>
+          } />
         </Routes>
       </Router>
     </AuthProvider>

@@ -49,6 +49,7 @@ const Navbar = () => {
                             <>
                                 <Link to="/student-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Explore Events</Link>
+                                <Link to="/my-bookings" style={{ color: '#f8fafc', textDecoration: 'none' }}>My Bookings</Link>
                             </>
                         )}
                         {currentUser.role === 'organizer' && (
@@ -56,6 +57,7 @@ const Navbar = () => {
                                 <Link to="/organizer-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/organizer-events" style={{ color: '#f8fafc', textDecoration: 'none' }}>My Events</Link>
                                 <Link to="/create-event" style={{ color: '#f8fafc', textDecoration: 'none' }}>Create Event</Link>
+                                <Link to="#" style={{ color: '#f8fafc', textDecoration: 'none' }}>Check-In</Link>
                             </>
                         )}
                         {currentUser.role === 'admin' && (
@@ -63,6 +65,7 @@ const Navbar = () => {
                                 <Link to="/admin-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/admin/users" style={{ color: '#f8fafc', textDecoration: 'none' }}>Users</Link>
                                 <Link to="/admin/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Events</Link>
+                                <Link to="#" style={{ color: '#f8fafc', textDecoration: 'none' }}>Bookings</Link>
                             </>
                         )}
                         <Link to="/profile" style={{ color: '#f8fafc', textDecoration: 'none' }}>Profile</Link>
