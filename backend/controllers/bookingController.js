@@ -1,6 +1,10 @@
 const Booking = require('../models/Booking');
 const Event = require('../models/Event');
 
+const {
+    sendBookingConfirmationEmail,
+} = require('../services/emailService');
+
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
 
@@ -138,8 +142,17 @@ exports.createBooking = async (req, res) => {
         });
 
         // 10. Populate for email
+         const student = await User.findById(studentId);
 
         // 11. Send confirmation email (non-blocking)
+        sendBookingConfirmationEmail({
+            to: student.email,
+            studentName: student.name,
+            booking,
+            event,
+        }).catch((err) => console.error('Email send error:', err));
+
+
         return res.status(201).json({
             success: true,
             message: 'Booking confirmed successfully',
