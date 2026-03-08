@@ -23,14 +23,14 @@ const bookingSchema = new mongoose.Schema(
             enum: ['confirmed', 'cancelled', 'attended'],
             default: 'confirmed',
         },
-        qrCode: {
+        /*qrCode: {
             type: String, // Base64 QR code image string
             required: false,
         },
         qrCodeData: {
             type: String, // Raw data encoded in QR
             required: false,
-        },
+        },*/
         checkedIn: {
             type: Boolean,
             default: false,
