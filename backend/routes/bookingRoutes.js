@@ -13,6 +13,10 @@ const {
 const { protect } = require('../middleware/authMiddleware');
 const { authorizeRoles } = require('../middleware/roleMiddleware');
 
+const {
+    validateCreateBooking,
+    validateCancelBooking,
+} = require('../middleware/bookingValidation');
 
 //All routes require authentication
 router.use(protect);

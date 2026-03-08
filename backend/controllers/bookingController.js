@@ -127,8 +127,8 @@ exports.createBooking = async (req, res) => {
             bookingId,
             event: eventId,
             student: studentId,
-            qrCode,
-            qrCodeData,
+            //qrCode,
+            //qrCodeData,
             status: 'confirmed',
         });
 
