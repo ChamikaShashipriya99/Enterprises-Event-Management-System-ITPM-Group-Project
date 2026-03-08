@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import bookingService from '../services/bookingService';
-import BookingCard from '../components/BookingCard';
+import bookingService from "../../services/bookingService";
+import BookingCard from "../../components/BookingCard";
 
 const MyBookings = () => {
     const [bookings, setBookings] = useState([]);
