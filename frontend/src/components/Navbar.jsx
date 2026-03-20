@@ -2,6 +2,7 @@ import { useContext, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import ConfirmModal from './ConfirmModal';
+import NotificationDropdown from './NotificationDropdown';
 
 const Navbar = () => {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -68,6 +69,7 @@ const Navbar = () => {
                         <Link to="/profile" style={{ color: '#f8fafc', textDecoration: 'none' }}>Profile</Link>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '1rem' }}>
+                            <NotificationDropdown currentUser={currentUser} />
                             <span style={{ fontSize: '0.8rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '20px' }}>
                                 {currentUser.name}
                             </span>
