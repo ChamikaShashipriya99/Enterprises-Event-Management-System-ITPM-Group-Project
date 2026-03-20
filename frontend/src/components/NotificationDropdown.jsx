@@ -138,8 +138,33 @@ const NotificationDropdown = ({ currentUser }) => {
                                 <div style={{ fontSize: '0.85rem', lineHeight: '1.4' }}>
                                     {notification.message}
                                 </div>
-                                <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
-                                    {new Date(notification.createdAt).toLocaleString()}
+                                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginTop: '4px' }}>
+                                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>
+                                        {new Date(notification.createdAt).toLocaleString()}
+                                    </div>
+                                    {!notification.isRead && (
+                                        <button 
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                markAsRead(notification._id);
+                                            }}
+                                            style={{
+                                                background: 'transparent',
+                                                border: '1px solid rgba(99, 102, 241, 0.5)',
+                                                color: '#6366f1',
+                                                fontSize: '0.65rem',
+                                                padding: '2px 8px',
+                                                borderRadius: '4px',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.2s',
+                                                fontWeight: 'bold'
+                                            }}
+                                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)'}
+                                            onMouseOut={(e) => e.currentTarget.style.background = 'transparent'}
+                                        >
+                                            Mark as Read
+                                        </button>
+                                    )}
                                 </div>
                             </div>
                         ))
