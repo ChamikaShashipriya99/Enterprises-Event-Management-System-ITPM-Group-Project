@@ -4,7 +4,7 @@ const Booking = require('../models/Booking');
 const sendEmail = require('./sendEmail');
 
 // Run every hour to check for events within the next 24 hours
-cron.schedule('0 * * * *', async () => {
+cron.schedule('* * * * *', async () => {
     try {
         console.log('--- Running Scheduled Reminder Job ---');
         
