@@ -97,8 +97,38 @@ const AllEvents = () => {
                         display: 'flex',
                         flexDirection: 'column',
                         transition: 'transform 0.3s ease',
-                        height: '100%'
+                        height: '100%',
+                        position: 'relative'
                     }}>
+                        {event.image ? (
+                            <img 
+                                src={`http://localhost:5000${event.image}`} 
+                                alt={event.title}
+                                style={{
+                                    width: 'calc(100% + 3rem)',
+                                    margin: '-1.5rem -1.5rem 1.5rem -1.5rem',
+                                    height: '180px',
+                                    objectFit: 'cover',
+                                    borderTopLeftRadius: 'inherit',
+                                    borderTopRightRadius: 'inherit'
+                                }}
+                            />
+                        ) : (
+                            <div style={{
+                                width: 'calc(100% + 3rem)',
+                                margin: '-1.5rem -1.5rem 1.5rem -1.5rem',
+                                height: '180px',
+                                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
+                                borderTopLeftRadius: 'inherit',
+                                borderTopRightRadius: 'inherit',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                fontSize: '3rem'
+                            }}>
+                                📅
+                            </div>
+                        )}
                         <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
                             <span style={{
                                 background: 'rgba(99, 102, 241, 0.1)',

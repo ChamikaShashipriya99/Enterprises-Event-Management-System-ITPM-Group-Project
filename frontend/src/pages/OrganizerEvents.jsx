@@ -85,7 +85,32 @@ const OrganizerEvents = () => {
                         ) : (
                             events.map(event => (
                                 <tr key={event._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <td style={{ padding: '20px', fontWeight: 'bold' }}>{event.title}</td>
+                                    <td style={{ padding: '20px', fontWeight: 'bold' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                            <div style={{ 
+                                                width: '50px', 
+                                                height: '50px', 
+                                                borderRadius: '8px', 
+                                                overflow: 'hidden',
+                                                background: 'rgba(255,255,255,0.05)',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                justifyContent: 'center',
+                                                flexShrink: 0
+                                            }}>
+                                                {event.image ? (
+                                                    <img 
+                                                        src={`http://localhost:5000${event.image}`} 
+                                                        alt={event.title} 
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                    />
+                                                ) : (
+                                                    <span style={{ fontSize: '1.2rem' }}>📅</span>
+                                                )}
+                                            </div>
+                                            <span>{event.title}</span>
+                                        </div>
+                                    </td>
                                     <td style={{ padding: '20px' }}>{new Date(event.date).toLocaleDateString()}</td>
                                     <td style={{ padding: '20px', color: '#94a3b8' }}>{event.location}</td>
                                     <td style={{ padding: '20px' }}>

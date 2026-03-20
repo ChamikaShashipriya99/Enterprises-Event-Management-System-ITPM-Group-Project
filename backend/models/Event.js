@@ -22,6 +22,10 @@ const eventSchema = new mongoose.Schema({
         type: Number,
         required: [true, 'Please add event capacity']
     },
+    image: {
+        type: String,
+        default: '/uploads/default-event.jpg'
+    },
     organizer: {
         type: mongoose.Schema.ObjectId,
         ref: 'User',
