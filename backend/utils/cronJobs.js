@@ -1,6 +1,7 @@
 const cron = require('node-cron');
 const Event = require('../models/Event');
 const Booking = require('../models/Booking');
+const Notification = require('../models/Notification');
 const sendEmail = require('./sendEmail');
 
 // Run every hour to check for events within the next 24 hours
@@ -64,6 +65,13 @@ EventBuddy Team`;
                         // Mark reminder as sent to avoid duplicate emails on the next hour tick
                         booking.reminderSent = true;
                         await booking.save();
+
+                        // Create in-app notification
+                        await Notification.create({
+                            user: booking.student._id,
+                            message: `Reminder: Your upcoming event "${event.title}" is happening soon on ${eventDateStr} at ${eventTimeStr}. Location: ${event.location}`
+                        });
+
                         sentCount++;
                         
                         console.log(`Reminder sent to ${booking.student.email} for event ${event.title}`);
