@@ -66,6 +66,10 @@ const Navbar = () => {
                                 <Link to="/admin/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Events</Link>
                             </>
                         )}
+                        
+                        <div style={{ width: '1px', background: 'rgba(255,255,255,0.2)', height: '24px', margin: '0 10px' }}></div>
+
+                        <Link to="/lost-and-found" style={{ color: '#e879f9', textDecoration: 'none', fontWeight: 'bold' }}>Recovery Hub</Link>
                         <Link to="/profile" style={{ color: '#f8fafc', textDecoration: 'none' }}>Profile</Link>
 
                         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '1rem' }}>

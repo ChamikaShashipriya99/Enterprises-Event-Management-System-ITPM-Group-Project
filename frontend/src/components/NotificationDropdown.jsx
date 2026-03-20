@@ -8,26 +8,26 @@ const NotificationDropdown = ({ currentUser }) => {
     const token = localStorage.getItem('token') || (currentUser && currentUser.token) || '';
     const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:5000';
 
-    useEffect(() => {
-        const fetchNotifications = async () => {
-            if (!token) return;
-            try {
-                const res = await fetch(`${apiUrl}/api/notifications`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                if (res.ok) {
-                    const data = await res.json();
-                    setNotifications(data);
-                }
-            } catch (error) {
-                console.error('Error fetching notifications:', error);
+    const fetchNotifications = async () => {
+        if (!token) return;
+        try {
+            const res = await fetch(`${apiUrl}/api/notifications`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            if (res.ok) {
+                const data = await res.json();
+                setNotifications(data);
             }
-        };
+        } catch (error) {
+            console.error('Error fetching notifications:', error);
+        }
+    };
 
+    useEffect(() => {
         if (currentUser) {
             fetchNotifications();
-            // Automatically poll for new notifications every 60 seconds
-            const interval = setInterval(fetchNotifications, 60000);
+            // Automatically poll for new notifications every 5 seconds (perfect for live presentation)
+            const interval = setInterval(fetchNotifications, 5000);
             return () => clearInterval(interval);
         }
     }, [currentUser, token, apiUrl]);
@@ -59,7 +59,7 @@ const NotificationDropdown = ({ currentUser }) => {
     return (
         <div ref={dropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <button 
-                onClick={() => setIsOpen(!isOpen)}
+                onClick={() => { setIsOpen(!isOpen); if (!isOpen) fetchNotifications(); }}
                 style={{
                     background: 'transparent',
                     border: 'none',

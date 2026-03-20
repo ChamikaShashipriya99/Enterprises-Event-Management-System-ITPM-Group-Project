@@ -20,6 +20,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import EditEvent from './pages/EditEvent';
 import VerifyEmail from './pages/VerifyEmail';
+import LostAndFoundFeed from './pages/LostAndFoundFeed';
+import ReportItem from './pages/ReportItem';
 
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
@@ -142,6 +144,19 @@ function App() {
 
           <Route path="/events" element={<AllEvents />} />
           <Route path="/events/:id" element={<EventDetail />} />
+
+          {/* Smart Lost & Found Recovery Hub */}
+          <Route path="/lost-and-found" element={
+            <ProtectedRoute>
+              <LostAndFoundFeed />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/report-item" element={
+            <ProtectedRoute>
+              <ReportItem />
+            </ProtectedRoute>
+          } />
 
           <Route path="/" element={<LandingPage />} />
         </Routes>
