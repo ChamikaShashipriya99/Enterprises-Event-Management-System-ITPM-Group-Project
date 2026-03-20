@@ -12,6 +12,7 @@ import StudentDashboard from './pages/StudentDashboard';
 import OrganizerDashboard from './pages/OrganizerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminEvents from './pages/AdminEvents';
+import AdminLostFound from './pages/AdminLostFound';
 import AllEvents from './pages/AllEvents';
 import EventDetail from './pages/EventDetail';
 import CreateEvent from './pages/CreateEvent';
@@ -139,6 +140,12 @@ function App() {
           <Route path="/admin/events" element={
             <ProtectedRoute role="admin">
               <AdminEvents />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/lost-found" element={
+            <ProtectedRoute role="admin">
+              <AdminLostFound />
             </ProtectedRoute>
           } />
 

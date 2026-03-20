@@ -7,6 +7,8 @@ const LostAndFoundFeed = () => {
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState('All'); // 'All', 'Lost', 'Found'
+    const [searchTerm, setSearchTerm] = useState('');
+    const [categoryFilter, setCategoryFilter] = useState('All Categories');
 
     const fetchItems = async () => {
         try {
@@ -39,8 +41,29 @@ const LostAndFoundFeed = () => {
     };
 
     const displayItems = items.filter(item => {
-        if (tab === 'All') return true;
-        return item.type === tab;
+        // Tab Filter
+        let tabMatch = false;
+        if (tab === 'All') tabMatch = true;
+        else if (tab === 'My Reports') {
+            const currentUser = JSON.parse(localStorage.getItem('user'));
+            tabMatch = currentUser && currentUser._id === item.reporter?._id;
+        } else {
+            tabMatch = item.type === tab;
+        }
+        if (!tabMatch) return false;
+
+        // Category Filter
+        if (categoryFilter !== 'All Categories' && item.category !== categoryFilter) return false;
+
+        // Search Filter
+        if (searchTerm) {
+            const lowerSearch = searchTerm.toLowerCase();
+            const matchName = item.itemName.toLowerCase().includes(lowerSearch);
+            const matchDesc = item.description.toLowerCase().includes(lowerSearch);
+            if (!matchName && !matchDesc) return false;
+        }
+
+        return true;
     });
 
     return (
@@ -57,27 +80,53 @@ const LostAndFoundFeed = () => {
                 </Link>
             </div>
 
-            {/* Filter Tabs */}
-            <div style={{ display: 'flex', gap: '10px', marginBottom: '30px' }}>
-                {['All', 'Lost', 'Found'].map((t) => (
-                    <button
-                        key={t}
-                        onClick={() => setTab(t)}
-                        style={{
-                            padding: '10px 24px',
-                            background: tab === t ? '#6366f1' : 'rgba(255,255,255,0.05)',
-                            color: 'white',
-                            border: '1px solid',
-                            borderColor: tab === t ? '#6366f1' : 'rgba(255,255,255,0.1)',
-                            borderRadius: '30px',
-                            cursor: 'pointer',
-                            fontWeight: 'bold',
-                            transition: 'all 0.2s',
-                        }}
+            {/* Search and Filters */}
+            <div style={{ display: 'flex', flexWrap: 'wrap', gap: '15px', marginBottom: '30px', alignItems: 'center', justifyContent: 'space-between' }}>
+                {/* Tabs */}
+                <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
+                    {['All', 'Lost', 'Found', 'My Reports'].map((t) => (
+                        <button
+                            key={t}
+                            onClick={() => setTab(t)}
+                            style={{
+                                padding: '10px 24px',
+                                background: tab === t ? '#6366f1' : 'rgba(255,255,255,0.05)',
+                                color: 'white',
+                                border: '1px solid',
+                                borderColor: tab === t ? '#6366f1' : 'rgba(255,255,255,0.1)',
+                                borderRadius: '30px',
+                                cursor: 'pointer',
+                                fontWeight: 'bold',
+                                transition: 'all 0.2s',
+                            }}
+                        >
+                            {t === 'All' ? 'All Items' : t}
+                        </button>
+                    ))}
+                </div>
+
+                {/* Search Bar & Category Dropdown */}
+                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', flex: 1, minWidth: '300px', justifyContent: 'flex-end' }}>
+                    <input 
+                        type="text" 
+                        placeholder="Search items by name or description..." 
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{ padding: '10px 15px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', flex: '1', minWidth: '200px', outline: 'none' }}
+                    />
+                    <select 
+                        value={categoryFilter} 
+                        onChange={(e) => setCategoryFilter(e.target.value)}
+                        style={{ padding: '10px 15px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', outline: 'none', cursor: 'pointer' }}
                     >
-                        {t === 'All' ? 'All Items' : `${t} Items`}
-                    </button>
-                ))}
+                        <option value="All Categories" style={{color: 'black'}}>All Categories</option>
+                        <option value="Electronics" style={{color: 'black'}}>Electronics</option>
+                        <option value="Clothing" style={{color: 'black'}}>Clothing</option>
+                        <option value="Wallet" style={{color: 'black'}}>Wallet / ID</option>
+                        <option value="Keys" style={{color: 'black'}}>Keys</option>
+                        <option value="Other" style={{color: 'black'}}>Other</option>
+                    </select>
+                </div>
             </div>
 
             {loading ? (
@@ -104,6 +153,7 @@ const LostAndFoundFeed = () => {
                         const isLost = item.type === 'Lost';
                         const currentUser = JSON.parse(localStorage.getItem('user'));
                         const isOwner = currentUser && currentUser._id === item.reporter?._id;
+                        const isAdmin = currentUser && currentUser.role === 'admin';
 
                         return (
                             <div key={item._id} className="glass-card" style={{ 
@@ -164,7 +214,7 @@ const LostAndFoundFeed = () => {
                                             ✅ Returned successfully
                                         </div>
                                     ) : (
-                                        isOwner && (
+                                        (isOwner || isAdmin) && (
                                             <button 
                                                 onClick={() => handleResolve(item._id)}
                                                 className="btn-primary" 
