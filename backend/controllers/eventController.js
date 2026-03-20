@@ -1,5 +1,6 @@
 const Event = require('../models/Event');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // @desc    Create new event
 // @route   POST /api/events
@@ -8,6 +9,17 @@ exports.createEvent = async (req, res, next) => {
     try {
         req.body.organizer = req.user.id;
         const event = await Event.create(req.body);
+
+        // Broadcast notification to all students
+        const students = await User.find({ role: 'student' });
+        if (students && students.length > 0) {
+            const notifications = students.map(student => ({
+                user: student._id,
+                message: `New Event Alert! "${event.title}" has just been announced for ${new Date(event.date).toLocaleDateString()}. Check it out in the Explore tab!`
+            }));
+            await Notification.insertMany(notifications);
+        }
+
         res.status(201).json({ success: true, data: event });
     } catch (error) {
         next(error);
