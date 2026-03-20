@@ -28,15 +28,18 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 *   **Multi-Factor Authentication (MFA)**: Support for TOTP-based 2FA (Google Authenticator) for enhanced account security.
 *   **Google OAuth Integration**: Seamless one-click login via Google accounts.
 *   **Profile Management**: Dedicated profile page to view and update personal information (name, phone, avatar).
+*   **In-App Notification Hub**: Real-time dropdown bell alerting users of new events and upcoming 24-hr reminders.
+*   **Event Exploration**: Visual, searchable event discovery and registration with beautiful poster image banners.
 *   **Account Discovery**: Real-time password strength meter and account activity logs.
 *   **Account Deletion**: Secure account closure with data persistence cleanup.
 *   **Role-Based Access**: Specialized dashboards for Students, Organizers, and Admins.
 
 ### Admin & Organizer Features
 *   **Administrative Dashboard**: High-level system monitoring with real-time statistics on users and events.
-*   **User Directory**: Searchable management table displaying all registered enterprise members.
+*   **Advanced User Directory**: Dynamic management table with real-time search, role-based filtering, and vivid profile picture rendering.
+*   **Automated Event Reminders**: Background Cron Job system automatically dispatches email and in-app alerts to users 24 hours prior to their registered events.
 *   **Event Oversight (Admin)**: Platform-wide visibility and moderation of all scheduled events.
-*   **Event Creation (Organizer)**: Dedicated tools for organizers to create, manage, edit, and monitor their own events.
+*   **Event Orchestration (Organizer)**: Create, manage, edit, and monitor events, complete with automated file upload handling for gorgeous Event Posters.
 *   **System Statistics**: Instant visibility into total users, student counts, organizer activity, and event volume.
 
 ### Security Features
@@ -64,7 +67,9 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 
 ### Backend
 *   **Node.js & Express.js**: Providing a scalable RESTful API architecture.
+*   **Node-Cron & Nodemailer**: Intelligent task scheduler and emailers powering the automated 24-hour event reminder system.
 *   **Express-Validator**: For robust, centralized input validation.
+*   **Multer**: Handling complex multipart/form-data uploads securely for Event Posters and avatars.
 *   **Passport.js**: Integrated for Google OAuth 2.0 strategy.
 *   **Speakeasy & QRCode**: Powering the MFA (Multi-Factor Authentication) system.
 *   **UA-Parser-JS**: For identifying device and browser info in session management.
