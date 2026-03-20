@@ -12,6 +12,9 @@ const app = express();
 
 connectDB();
 
+// Initialize automated background jobs
+require('./utils/cronJobs');
+
 app.use(cors());
 app.use(express.json());
 app.use(passport.initialize());
