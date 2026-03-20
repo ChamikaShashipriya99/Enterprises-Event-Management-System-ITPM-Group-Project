@@ -1,5 +1,6 @@
 const LostItem = require('../models/LostItem');
 const Notification = require('../models/Notification');
+const User = require('../models/User');
 
 // @desc    Report a new lost or found item
 // @route   POST /api/lost-found
@@ -50,6 +51,32 @@ const reportItem = async (req, res) => {
                 await Notification.create({
                     user: match.reporter,
                     message: `Smart Match Alert 🧩: A new '${type}' report for '${itemName}' was just added. It might match your '${match.itemName}'!`,
+                    isRead: false
+                });
+            }
+        }
+
+        // ============================================
+        // ADMIN NOTIFICATION LOGIC
+        // ============================================
+        const admins = await User.find({ role: 'admin' });
+        for (const admin of admins) {
+            await Notification.create({
+                user: admin._id,
+                message: `Moderation Alert: A new '${type}' report for a '${itemName}' was just submitted by a user.`,
+                isRead: false
+            });
+        }
+
+        // ============================================
+        // ADMIN BROADCAST LOGIC (If Admin Reports)
+        // ============================================
+        if (req.user.role === 'admin') {
+            const students = await User.find({ role: 'student' });
+            for (const student of students) {
+                await Notification.create({
+                    user: student._id,
+                    message: `Official Hub Alert 📢: An Administrator has reported a '${type}' item (${itemName}). Please check the Recovery Hub!`,
                     isRead: false
                 });
             }
