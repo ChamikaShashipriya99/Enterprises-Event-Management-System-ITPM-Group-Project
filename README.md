@@ -28,8 +28,10 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 *   **Multi-Factor Authentication (MFA)**: Support for TOTP-based 2FA (Google Authenticator) for enhanced account security.
 *   **Google OAuth Integration**: Seamless one-click login via Google accounts.
 *   **Profile Management**: Dedicated profile page to view and update personal information (name, phone, avatar).
-*   **In-App Notification Hub**: Real-time dropdown bell alerting users of new events and upcoming 24-hr reminders.
+*   **In-App Notification Hub**: Real-time dropdown bell alerting users of new events and upcoming 24-hr reminders, featuring 5-second asynchronous polling and instant Mark-as-Read controls.
 *   **Event Exploration**: Visual, searchable event discovery and registration with beautiful poster image banners.
+*   **Smart Recovery Hub**: A global timeline for reporting lost or found items, complete with categorical filtering, text search, and a "My Reports" tab.
+*   **Smart Match Engine**: Automatically detects when a newly reported "Found" item matches the category of a previously "Lost" item, instantly broadcasting an In-App Notification alert to the original owner.
 *   **Account Discovery**: Real-time password strength meter and account activity logs.
 *   **Account Deletion**: Secure account closure with data persistence cleanup.
 *   **Role-Based Access**: Specialized dashboards for Students, Organizers, and Admins.
@@ -40,6 +42,7 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 *   **Automated Event Reminders**: Background Cron Job system automatically dispatches email and in-app alerts to users 24 hours prior to their registered events.
 *   **Event Oversight (Admin)**: Platform-wide visibility and moderation of all scheduled events.
 *   **Event Orchestration (Organizer)**: Create, manage, edit, and monitor events, complete with automated file upload handling for gorgeous Event Posters.
+*   **Recovery Hub Moderation**: A powerful Admin-exclusive Dashboard table featuring real-time searching (by item, category, or reporter), layered filtering, and remote Resolution override buttons.
 *   **System Statistics**: Instant visibility into total users, student counts, organizer activity, and event volume.
 
 ### Security Features
@@ -151,6 +154,11 @@ The **User Schema** in MongoDB includes:
 *   `POST /api/events`: Create a new corporate event (Organizer only).
 *   `PUT /api/events/:id`: Edit event details with date/capacity validation.
 *   `POST /api/events/:id/register`: Register a student for an event with capacity checks.
+
+### Smart Lost & Found Hub
+*   `POST /api/lost-found`: Submit a new item report (automatically triggers the Smart Match Engine and notifies Admins).
+*   `GET /api/lost-found`: Fetch the asynchronous feed of active and resolved items.
+*   `PUT /api/lost-found/:id/resolve`: Mark an item as successfully returned (restricted to the Owner and Admins).
 
 ---
 
