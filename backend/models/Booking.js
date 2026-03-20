@@ -56,6 +56,10 @@ const bookingSchema = new mongoose.Schema(
             type: String,
             required: false,
         },
+        reminderSent: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,
