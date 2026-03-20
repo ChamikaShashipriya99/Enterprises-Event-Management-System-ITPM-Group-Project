@@ -7,6 +7,8 @@ import ConfirmModal from '../components/ConfirmModal';
 const AdminUsers = () => {
     const [users, setUsers] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState('');
+    const [roleFilter, setRoleFilter] = useState('all');
     const [modal, setModal] = useState({ isOpen: false, userId: null, userName: '' });
     const { token } = useContext(AuthContext);
 
@@ -63,15 +65,57 @@ const AdminUsers = () => {
         </div>
     );
 
+    const filteredUsers = users.filter(user => {
+        const matchesSearch = user.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+                              user.email.toLowerCase().includes(searchTerm.toLowerCase());
+        const matchesRole = roleFilter === 'all' || user.role === roleFilter;
+        return matchesSearch && matchesRole;
+    });
+
     return (
         <div style={{ padding: '40px 5%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '40px' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '40px', flexWrap: 'wrap', gap: '1rem' }}>
                 <div>
                     <h1 style={{ fontSize: '2.5rem', marginBottom: '10px' }}>User Management</h1>
                     <p style={{ color: '#94a3b8' }}>Directory of all registered enterprise members.</p>
                 </div>
-                <div className="glass-card" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
-                    Total Records: <span style={{ color: '#6366f1', fontWeight: 'bold' }}>{users.length}</span>
+                <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
+                    <input
+                        type="text"
+                        placeholder="Search name or email..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            padding: '10px 15px',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '8px',
+                            color: 'white',
+                            minWidth: '220px',
+                            outline: 'none'
+                        }}
+                    />
+                    <select
+                        value={roleFilter}
+                        onChange={(e) => setRoleFilter(e.target.value)}
+                        style={{
+                            padding: '10px 15px',
+                            background: 'rgba(255,255,255,0.05)',
+                            border: '1px solid rgba(255,255,255,0.1)',
+                            borderRadius: '8px',
+                            color: 'white',
+                            outline: 'none',
+                            cursor: 'pointer'
+                        }}
+                    >
+                        <option value="all" style={{color: 'black'}}>All Roles</option>
+                        <option value="student" style={{color: 'black'}}>Student</option>
+                        <option value="organizer" style={{color: 'black'}}>Organizer</option>
+                        <option value="admin" style={{color: 'black'}}>Admin</option>
+                    </select>
+                    <div className="glass-card" style={{ padding: '10px 20px', fontSize: '0.9rem' }}>
+                        Total Records: <span style={{ color: '#6366f1', fontWeight: 'bold' }}>{filteredUsers.length}</span>
+                    </div>
                 </div>
             </div>
 
@@ -88,39 +132,71 @@ const AdminUsers = () => {
                         </tr>
                     </thead>
                     <tbody>
-                        {users.map(user => (
-                            <tr key={user._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
-                                <td style={{ padding: '20px', fontSize: '0.8rem', color: '#64748b' }}>{user._id.substring(user._id.length - 8)}...</td>
-                                <td style={{ padding: '20px' }}>{user.name}</td>
-                                <td style={{ padding: '20px', color: '#94a3b8' }}>{user.email}</td>
-                                <td style={{ padding: '20px' }}>
-                                    <span style={{
-                                        padding: '4px 10px',
-                                        borderRadius: '4px',
-                                        fontSize: '0.8rem',
-                                        background: user.role === 'admin' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.1)',
-                                        color: user.role === 'admin' ? '#ef4444' : '#6366f1'
-                                    }}>
-                                        {user.role}
-                                    </span>
-                                </td>
-                                <td style={{ padding: '20px', color: '#64748b' }}>{new Date(user.createdAt).toLocaleDateString()}</td>
-                                <td style={{ padding: '20px' }}>
-                                    <button
-                                        onClick={() => handleDeleteUser(user._id, user.name)}
-                                        style={{
-                                            background: 'none',
-                                            border: 'none',
-                                            color: '#ef4444',
-                                            cursor: 'pointer',
-                                            fontSize: '0.9rem'
-                                        }}
-                                    >
-                                        Delete
-                                    </button>
-                                </td>
+                        {filteredUsers.length === 0 ? (
+                            <tr>
+                                <td colSpan="6" style={{ padding: '2rem', textAlign: 'center', color: '#64748b' }}>No users found matching your filters.</td>
                             </tr>
-                        ))}
+                        ) : (
+                            filteredUsers.map(user => (
+                                <tr key={user._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }}>
+                                    <td style={{ padding: '20px', fontSize: '0.8rem', color: '#64748b' }}>{user._id.substring(user._id.length - 8)}...</td>
+                                    <td style={{ padding: '20px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                            <div style={{ 
+                                                width: '40px', 
+                                                height: '40px', 
+                                                borderRadius: '50%', 
+                                                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', 
+                                                display: 'flex', 
+                                                alignItems: 'center', 
+                                                justifyContent: 'center', 
+                                                fontWeight: 'bold', 
+                                                flexShrink: 0, 
+                                                overflow: 'hidden' 
+                                            }}>
+                                                {user.profilePicture ? (
+                                                    <img 
+                                                        src={`http://localhost:5000${user.profilePicture}`} 
+                                                        alt={user.name} 
+                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                    />
+                                                ) : (
+                                                    <span style={{ fontSize: '1.1rem', color: 'white' }}>{user.name.charAt(0).toUpperCase()}</span>
+                                                )}
+                                            </div>
+                                            <span style={{ fontWeight: '600' }}>{user.name}</span>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '20px', color: '#94a3b8' }}>{user.email}</td>
+                                    <td style={{ padding: '20px' }}>
+                                        <span style={{
+                                            padding: '4px 10px',
+                                            borderRadius: '4px',
+                                            fontSize: '0.8rem',
+                                            background: user.role === 'admin' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(99, 102, 241, 0.1)',
+                                            color: user.role === 'admin' ? '#ef4444' : '#6366f1'
+                                        }}>
+                                            {user.role}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '20px', color: '#64748b' }}>{new Date(user.createdAt).toLocaleDateString()}</td>
+                                    <td style={{ padding: '20px' }}>
+                                        <button
+                                            onClick={() => handleDeleteUser(user._id, user.name)}
+                                            style={{
+                                                background: 'none',
+                                                border: 'none',
+                                                color: '#ef4444',
+                                                cursor: 'pointer',
+                                                fontSize: '0.9rem'
+                                            }}
+                                        >
+                                            Delete
+                                        </button>
+                                    </td>
+                                </tr>
+                            ))
+                        )}
                     </tbody>
                 </table>
             </div>
