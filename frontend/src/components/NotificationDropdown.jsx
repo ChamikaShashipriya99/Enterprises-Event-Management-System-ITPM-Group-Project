@@ -4,6 +4,7 @@ const NotificationDropdown = ({ currentUser }) => {
     const [notifications, setNotifications] = useState([]);
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
+    const prevUnreadCountRef = useRef(0);
 
     const token = localStorage.getItem('token') || (currentUser && currentUser.token) || '';
     const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:5000';
@@ -55,6 +56,37 @@ const NotificationDropdown = ({ currentUser }) => {
     };
 
     const unreadCount = notifications.filter(n => !n.isRead).length;
+
+    useEffect(() => {
+        if (unreadCount > prevUnreadCountRef.current) {
+            try {
+                // Synthesize a crisp "Ping!" sound using Web Audio API (No MP3 file needed!)
+                const AudioContext = window.AudioContext || window.webkitAudioContext;
+                if (AudioContext) {
+                    const audioCtx = new AudioContext();
+                    if (audioCtx.state === 'suspended') audioCtx.resume();
+                    const oscillator = audioCtx.createOscillator();
+                    const gainNode = audioCtx.createGain();
+                    
+                    oscillator.type = 'sine';
+                    oscillator.frequency.setValueAtTime(880, audioCtx.currentTime); // Start at A5
+                    oscillator.frequency.exponentialRampToValueAtTime(1760, audioCtx.currentTime + 0.1); // Slide up to A6
+                    
+                    gainNode.gain.setValueAtTime(0, audioCtx.currentTime);
+                    gainNode.gain.linearRampToValueAtTime(0.1, audioCtx.currentTime + 0.05); // Fade in
+                    gainNode.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.3); // Fade out quickly
+                    
+                    oscillator.connect(gainNode);
+                    gainNode.connect(audioCtx.destination);
+                    oscillator.start();
+                    oscillator.stop(audioCtx.currentTime + 0.3);
+                }
+            } catch (err) {
+                console.log("Audio playback was blocked natively by browser policy");
+            }
+        }
+        prevUnreadCountRef.current = unreadCount;
+    }, [unreadCount]);
 
     return (
         <div ref={dropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
