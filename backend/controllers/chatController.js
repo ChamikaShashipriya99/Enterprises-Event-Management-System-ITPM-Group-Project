@@ -274,6 +274,47 @@ const accessGlobalChat = async (req, res) => {
     }
 };
 
+// @desc    Toggle emoji reaction on a message
+// @route   POST /api/chat/message/:messageId/react
+// @access  Private
+const toggleReaction = async (req, res) => {
+    const { messageId } = req.params;
+    const { emoji } = req.body;
+    const userId = req.user._id;
+
+    try {
+        const message = await Message.findById(messageId);
+        if (!message) {
+            res.status(404);
+            throw new Error('Message not found');
+        }
+
+        const existingReactionIndex = message.reactions.findIndex(
+            (r) => r.emoji === emoji && r.user.toString() === userId.toString()
+        );
+
+        if (existingReactionIndex > -1) {
+            // Remove reaction
+            message.reactions.splice(existingReactionIndex, 1);
+        } else {
+            // Add reaction
+            message.reactions.push({ emoji, user: userId });
+        }
+
+        await message.save();
+        
+        const updatedMessage = await Message.findById(messageId)
+            .populate('sender', 'name profilePicture email')
+            .populate('chat')
+            .populate('reactions.user', 'name');
+
+        res.json(updatedMessage);
+    } catch (error) {
+        res.status(400);
+        throw new Error(error.message);
+    }
+};
+
 module.exports = {
     accessChat,
     fetchChats,
@@ -283,4 +324,5 @@ module.exports = {
     accessGlobalChat,
     editMessage,
     deleteMessage,
+    toggleReaction,
 };

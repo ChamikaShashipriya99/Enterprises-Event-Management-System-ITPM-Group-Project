@@ -8,6 +8,7 @@ const {
     accessGlobalChat,
     editMessage,
     deleteMessage,
+    toggleReaction,
 } = require('../controllers/chatController');
 const { protect } = require('../middleware/authMiddleware');
 const chatUpload = require('../middleware/chatUploadMiddleware');
@@ -20,6 +21,7 @@ router.route('/users').get(protect, searchUsers);
 router.route('/message').post(protect, sendMessage);
 router.route('/message/:chatId').get(protect, allMessages);
 router.route('/message/:messageId').put(protect, editMessage).delete(protect, deleteMessage);
+router.route('/message/:messageId/react').post(protect, toggleReaction);
 
 router.post('/upload', protect, chatUpload.single('file'), (req, res) => {
     if (req.file) {

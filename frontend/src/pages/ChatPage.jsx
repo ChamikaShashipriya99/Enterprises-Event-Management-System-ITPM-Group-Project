@@ -257,14 +257,31 @@ const ChatPage = () => {
             }
         };
 
+        const reactionListener = (updatedMessage) => {
+            setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
+        };
+
         socket.on("message-received", messageListener);
         socket.on("messages-read", readListener);
+        socket.on("reaction-updated", reactionListener);
 
         return () => {
             socket.off("message-received", messageListener);
             socket.off("messages-read", readListener);
+            socket.off("reaction-updated", reactionListener);
         };
     }, [socket, currentUser]);
+
+    const handleToggleReaction = async (messageId, emoji) => {
+        try {
+            const data = await chatService.toggleReaction(messageId, emoji, currentUser.token);
+            socket.emit("message-reacted", data);
+            setMessages(prev => prev.map(m => m._id === messageId ? data : m));
+        } catch (error) {
+            console.error("Error toggling reaction", error);
+            toast.error("Failed to react to message");
+        }
+    };
 
     const handleSearch = async (e) => {
         setSearch(e.target.value);
@@ -630,6 +647,40 @@ const ChatPage = () => {
                                                         setEditContent(m.content);
                                                     }}>✎ Edit</button>
                                                     <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
+                                                </div>
+                                            )}
+
+                                            <div className="reaction-picker">
+                                                {['👍', '❤️', '😂', '😮', '😢', '🔥'].map(emoji => (
+                                                    <span 
+                                                        key={emoji} 
+                                                        className="reaction-emoji"
+                                                        onClick={() => handleToggleReaction(m._id, emoji)}
+                                                    >
+                                                        {emoji}
+                                                    </span>
+                                                ))}
+                                            </div>
+
+                                            {m.reactions && m.reactions.length > 0 && (
+                                                <div className="message-reactions">
+                                                    {Object.entries(
+                                                        m.reactions.reduce((acc, r) => {
+                                                            acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                                                            return acc;
+                                                        }, {})
+                                                    ).map(([emoji, count]) => {
+                                                        const hasReacted = m.reactions.some(r => r.emoji === emoji && r.user._id === currentUser._id);
+                                                        return (
+                                                            <div 
+                                                                key={emoji} 
+                                                                className={`reaction-badge ${hasReacted ? 'active' : ''}`}
+                                                                onClick={() => handleToggleReaction(m._id, emoji)}
+                                                            >
+                                                                {emoji} {count > 1 ? count : ''}
+                                                            </div>
+                                                        );
+                                                    })}
                                                 </div>
                                             )}
                                         </div>

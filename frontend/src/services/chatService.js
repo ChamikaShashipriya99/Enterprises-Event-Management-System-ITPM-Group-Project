@@ -80,6 +80,17 @@ const deleteMessage = async (messageId, token) => {
     return response.data;
 };
 
+const toggleReaction = async (messageId, emoji, token) => {
+    const response = await axios.post(
+        `${API_URL}message/${messageId}/react`,
+        { emoji },
+        {
+            headers: { Authorization: `Bearer ${token}` },
+        }
+    );
+    return response.data;
+};
+
 const chatService = {
     fetchChats,
     accessChat,
@@ -90,6 +101,7 @@ const chatService = {
     uploadFile,
     updateMessage,
     deleteMessage,
+    toggleReaction,
 };
 
 export default chatService;

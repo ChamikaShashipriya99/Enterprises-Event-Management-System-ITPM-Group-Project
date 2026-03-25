@@ -46,6 +46,10 @@ const socketHandler = (io) => {
             socket.in(data.chatId).emit('message-removed', data.messageId);
         });
 
+        socket.on('message-reacted', (updatedMessage) => {
+            socket.in(updatedMessage.chat._id).emit('reaction-updated', updatedMessage);
+        });
+
         socket.on('mark-as-read', async (data) => {
             const { chatId, userId } = data;
             try {
