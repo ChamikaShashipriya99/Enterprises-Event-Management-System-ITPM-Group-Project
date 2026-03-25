@@ -38,8 +38,8 @@ const sendMessage = async (content, chatId, token, fileUrl, fileType) => {
     return response.data;
 };
 
-const fetchMessages = async (chatId, token) => {
-    const response = await axios.get(`${API_URL}message/${chatId}`, {
+const fetchMessages = async (chatId, token, page = 1) => {
+    const response = await axios.get(`${API_URL}message/${chatId}?page=${page}&limit=20`, {
         headers: { Authorization: `Bearer ${token}` },
     });
     return response.data;

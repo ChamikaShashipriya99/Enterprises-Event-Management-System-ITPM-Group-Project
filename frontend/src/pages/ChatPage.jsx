@@ -22,6 +22,9 @@ const ChatPage = () => {
     const [previewImage, setPreviewImage] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [showMediaOnly, setShowMediaOnly] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
 
     const { currentUser, socket } = useContext(AuthContext);
     const messagesEndRef = useRef(null);
@@ -97,8 +100,10 @@ const ChatPage = () => {
 
             try {
                 setLoading(true);
-                const data = await chatService.fetchMessages(selectedChat._id, currentUser.token);
-                setMessages(data);
+                setPage(1);
+                const data = await chatService.fetchMessages(selectedChat._id, currentUser.token, 1);
+                setMessages(data.messages);
+                setHasMore(data.hasMore);
                 setLoading(false);
                 socket.emit("join-chat", selectedChat._id);
                 
@@ -113,7 +118,22 @@ const ChatPage = () => {
         selectedChatCompare = selectedChat;
         setSearchTerm("");
         setShowMediaOnly(false);
+        // On mobile, close sidebar when a chat is selected
+        if (window.innerWidth <= 768) setIsSidebarOpen(false);
     }, [selectedChat]);
+
+    const fetchMoreMessages = async () => {
+        if (!hasMore || loading) return;
+        try {
+            const nextPage = page + 1;
+            const data = await chatService.fetchMessages(selectedChat._id, currentUser.token, nextPage);
+            setMessages(prev => [...data.messages, ...prev]);
+            setHasMore(data.hasMore);
+            setPage(nextPage);
+        } catch (error) {
+            console.error("Error fetching more messages", error);
+        }
+    };
 
     const filteredMessages = messages.filter(m => {
         const matchesSearch = m.content?.toLowerCase().includes(searchTerm.toLowerCase());
@@ -256,9 +276,22 @@ const ChatPage = () => {
     };
 
     return (
-        <div className="chat-container">
+        <div className={`chat-container ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+            {/* Sidebar Toggle (Mobile Only) */}
+            <button 
+                className="mobile-menu-btn"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            >
+                {isSidebarOpen ? '✕' : '☰'}
+            </button>
+
+            {/* Sidebar Overlay (Mobile Only) */}
+            {isSidebarOpen && window.innerWidth <= 768 && (
+                <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+            )}
+
             {/* Sidebar */}
-            <div className="chat-sidebar">
+            <div className={`chat-sidebar ${isSidebarOpen ? 'active' : ''}`}>
                 <div className="chat-search">
                     <input
                         type="text"
@@ -368,6 +401,17 @@ const ChatPage = () => {
                             </div>
                         </div>
                         <div className="chat-messages">
+                            {hasMore && (
+                                <div style={{ textAlign: 'center', padding: '10px' }}>
+                                    <button 
+                                        className="btn-primary" 
+                                        style={{ background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', padding: '5px 15px' }}
+                                        onClick={fetchMoreMessages}
+                                    >
+                                        Load Earlier Messages
+                                    </button>
+                                </div>
+                            )}
                             {loading && messages.length === 0 ? (
                                 <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading...</div>
                             ) : (

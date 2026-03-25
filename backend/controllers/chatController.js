@@ -126,17 +126,31 @@ const sendMessage = async (req, res) => {
 // @access  Private
 const allMessages = async (req, res) => {
     try {
-        const messages = await Message.find({ chat: req.params.chatId })
+        const { chatId } = req.params;
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 20;
+        const skip = (page - 1) * limit;
+
+        const messages = await Message.find({ chat: chatId })
             .populate('sender', 'name profilePicture email')
-            .populate('chat');
+            .populate('chat')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const totalMessages = await Message.countDocuments({ chat: chatId });
 
         // Mark messages as read
         await Message.updateMany(
-            { chat: req.params.chatId, sender: { $ne: req.user._id }, isRead: false },
+            { chat: chatId, sender: { $ne: req.user._id }, isRead: false },
             { $set: { isRead: true } }
         );
 
-        res.json(messages);
+        // Reverse to show in chronological order
+        res.json({
+            messages: messages.reverse(),
+            hasMore: totalMessages > skip + limit
+        });
     } catch (error) {
         res.status(400);
         throw new Error(error.message);
