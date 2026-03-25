@@ -80,6 +80,19 @@ const Navbar = () => {
                                 <Link to="/admin/users" style={{ color: '#f8fafc', textDecoration: 'none' }}>Users</Link>
                                 <Link to="/admin/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Events</Link>
                                 <Link to="/admin/lost-found" style={{ color: '#f8fafc', textDecoration: 'none' }}>Recovery Hub</Link>
+                                <Link to="/chat" style={{ color: '#f8fafc', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    Messages
+                                    {unreadCount > 0 && (
+                                        <span style={{ 
+                                            background: '#ef4444', 
+                                            color: 'white', 
+                                            fontSize: '0.65rem', 
+                                            padding: '2px 6px', 
+                                            borderRadius: '10px',
+                                            fontWeight: 'bold'
+                                        }}>{unreadCount}</span>
+                                    )}
+                                </Link>
                             </>
                         )}
                         

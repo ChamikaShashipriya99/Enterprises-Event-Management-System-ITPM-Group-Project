@@ -62,6 +62,10 @@ const socketHandler = (io) => {
             });
         });
 
+        socket.on("clear-chat", (data) => {
+            socket.in(data.chatId).emit("chat-cleared", data);
+        });
+
         socket.on('mark-as-read', async (data) => {
             const { chatId, userId } = data;
             try {

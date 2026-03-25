@@ -102,6 +102,16 @@ const togglePinMessage = async (chatId, messageId, token) => {
     return response.data;
 };
 
+const clearChat = async (chatId, token) => {
+    const response = await axios.delete(
+        `${API_URL}${chatId}/clear`,
+        {
+            headers: { Authorization: `Bearer ${token}` },
+        }
+    );
+    return response.data;
+};
+
 const chatService = {
     fetchChats,
     accessChat,
@@ -114,6 +124,7 @@ const chatService = {
     deleteMessage,
     toggleReaction,
     togglePinMessage,
+    clearChat,
 };
 
 export default chatService;

@@ -202,13 +202,39 @@ const deleteMessage = async (req, res) => {
             res.status(404);
             throw new Error('Message not found');
         }
-        if (message.sender.toString() !== req.user._id.toString()) {
+        if (message.sender.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
             res.status(401);
             throw new Error('Not authorized to delete this message');
         }
 
-        await Message.deleteOne({ _id: req.params.messageId });
-        res.json({ message: 'Message deleted successfully', messageId: req.params.messageId, chatId: message.chat });
+        if (req.user.role === 'admin' && message.sender.toString() !== req.user._id.toString()) {
+            // Soft delete for Admins
+            message.content = 'Message removed by administrator';
+            message.fileUrl = null;
+            message.fileType = 'text';
+            message.isDeletedByAdmin = true;
+            message.reactions = [];
+            await message.save();
+
+            const updatedMessage = await Message.findById(message._id)
+                .populate('sender', 'name profilePicture email')
+                .populate('chat');
+
+            res.json({ 
+                message: 'Message soft-deleted by admin', 
+                type: 'soft', 
+                updatedMessage 
+            });
+        } else {
+            // Hard delete for owner
+            await Message.deleteOne({ _id: req.params.messageId });
+            res.json({ 
+                message: 'Message deleted successfully', 
+                type: 'hard', 
+                messageId: req.params.messageId, 
+                chatId: message.chat 
+            });
+        }
     } catch (error) {
         res.status(400);
         throw new Error(error.message);
@@ -345,6 +371,8 @@ const togglePinMessage = async (req, res) => {
             );
         } else {
             // Pin (Limit to 5 for premium feel)
+            // Note: We allow admins to pin/unpin anything. 
+            // Regular students can also pin/unpin for now (collaborative).
             if (chat.pinnedMessages.length >= 5) {
                 chat.pinnedMessages.shift(); // Remove oldest pin
             }
@@ -369,6 +397,33 @@ const togglePinMessage = async (req, res) => {
     }
 };
 
+// @desc    Clear all messages in a chat (Admin only)
+// @route   DELETE /api/chat/:chatId/clear
+// @access  Private/Admin
+const clearChatMessages = async (req, res) => {
+    const { chatId } = req.params;
+
+    if (req.user.role !== 'admin') {
+        res.status(401);
+        throw new Error('Not authorized as an admin');
+    }
+
+    try {
+        await Message.deleteMany({ chat: chatId });
+        
+        // Reset lastMessage and pinnedMessages in Chat model
+        await Chat.findByIdAndUpdate(chatId, {
+            lastMessage: null,
+            pinnedMessages: []
+        });
+
+        res.status(200).json({ message: 'Chat history cleared' });
+    } catch (error) {
+        res.status(400);
+        throw new Error(error.message);
+    }
+};
+
 module.exports = {
     accessChat,
     fetchChats,
@@ -380,4 +435,5 @@ module.exports = {
     deleteMessage,
     toggleReaction,
     togglePinMessage,
+    clearChatMessages,
 };

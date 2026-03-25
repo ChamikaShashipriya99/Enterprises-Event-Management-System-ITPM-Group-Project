@@ -269,18 +269,43 @@ const ChatPage = () => {
             }
         };
 
+        const chatClearedListener = ({ chatId }) => {
+            if (selectedChatCompare && selectedChatCompare._id === chatId) {
+                setMessages([]);
+                setSelectedChat(prev => ({ ...prev, lastMessage: null, pinnedMessages: [] }));
+                toast("Chat history was cleared by an admin", { icon: '🧹' });
+            }
+        };
+
         socket.on("message-received", messageListener);
         socket.on("messages-read", readListener);
         socket.on("reaction-updated", reactionListener);
         socket.on("chat-pinned-updated", pinnedUpdateListener);
+        socket.on("chat-cleared", chatClearedListener);
 
         return () => {
             socket.off("message-received", messageListener);
             socket.off("messages-read", readListener);
             socket.off("reaction-updated", reactionListener);
             socket.off("chat-pinned-updated", pinnedUpdateListener);
+            socket.off("chat-cleared", chatClearedListener);
         };
     }, [socket, currentUser]);
+
+    const handleClearChat = async () => {
+        if (!window.confirm("Are you sure you want to clear the entire chat history? This cannot be undone.")) return;
+        
+        try {
+            await chatService.clearChat(selectedChat._id, currentUser.token);
+            socket.emit("clear-chat", { chatId: selectedChat._id });
+            setMessages([]);
+            setSelectedChat(prev => ({ ...prev, lastMessage: null, pinnedMessages: [] }));
+            toast.success("Chat history cleared");
+        } catch (error) {
+            console.error("Error clearing chat", error);
+            toast.error("Failed to clear chat");
+        }
+    };
 
     const handleTogglePin = async (messageId) => {
         try {
@@ -380,23 +405,19 @@ const ChatPage = () => {
     const handleConfirmDelete = async () => {
         if (!deleteConfirmId) return;
         try {
-            await chatService.deleteMessage(deleteConfirmId, currentUser.token);
-            socket.emit("message-deleted", { messageId: deleteConfirmId, chatId: selectedChat._id });
-            setMessages(messages.filter(m => m._id !== deleteConfirmId));
-            setDeleteConfirmId(null);
+            const data = await chatService.deleteMessage(deleteConfirmId, currentUser.token);
             
-            toast.success("Message removed", {
-                style: {
-                    background: '#1e293b',
-                    color: '#f8fafc',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    borderRadius: '12px',
-                },
-                iconTheme: {
-                    primary: '#ef4444',
-                    secondary: '#fff',
-                },
-            });
+            if (data.type === 'soft') {
+                socket.emit("message-edited", data.updatedMessage);
+                setMessages(prev => prev.map(m => m._id === deleteConfirmId ? data.updatedMessage : m));
+                toast.success("Message removed by admin");
+            } else {
+                socket.emit("message-deleted", { messageId: deleteConfirmId, chatId: selectedChat._id });
+                setMessages(prev => prev.filter(m => m._id !== deleteConfirmId));
+                toast.success("Message deleted");
+            }
+            
+            setDeleteConfirmId(null);
         } catch (error) {
             console.error("Error deleting message", error);
             toast.error("Failed to delete message");
@@ -579,6 +600,15 @@ const ChatPage = () => {
                                 >
                                     {showMediaOnly ? 'Show All' : 'Gallery'}
                                 </button>
+                                {currentUser.role === 'admin' && selectedChat.chatName === 'Global Students' && (
+                                    <button 
+                                        className="btn-primary" 
+                                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ef4444' }}
+                                        onClick={handleClearChat}
+                                    >
+                                        🧹 Clear Chat
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -630,12 +660,17 @@ const ChatPage = () => {
                                             className={`message-bubble ${m.sender._id === currentUser._id ? 'message-sent' : 'message-received'}`}
                                         >
                                             {selectedChat.isGroupChat && m.sender._id !== currentUser._id && (
-                                                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', marginBottom: '4px', opacity: 0.8 }}>
+                                                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', marginBottom: '4px', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '5px' }}>
                                                     {m.sender.name}
+                                                    {m.sender.role === 'admin' && <span className="admin-badge">ADMIN</span>}
                                                 </div>
                                             )}
                                             
-                                            {editMessageId === m._id ? (
+                                            {m.isDeletedByAdmin ? (
+                                                <div className="admin-deleted-placeholder">
+                                                    <i>⚠️ This message was removed by an administrator</i>
+                                                </div>
+                                            ) : editMessageId === m._id ? (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
                                                     <input 
                                                         className="input-field" 
@@ -667,7 +702,7 @@ const ChatPage = () => {
                                                 </>
                                             )}
 
-                                            {m.fileUrl && (
+                                            {m.fileUrl && !m.isDeletedByAdmin && (
                                                 m.fileType === 'image' ? (
                                                     <img 
                                                         src={`${ENDPOINT}${m.fileUrl}`} 
@@ -693,36 +728,40 @@ const ChatPage = () => {
                                                 )
                                             )}
 
-                                            {!editMessageId && (
+                                            {!editMessageId && !m.isDeletedByAdmin && (
                                                 <div className="message-actions">
                                                     <button className="action-btn" onClick={() => handleTogglePin(m._id)}>
                                                         {selectedChat.pinnedMessages?.some(p => p._id === m._id) ? '📍 Unpin' : '📌 Pin'}
                                                     </button>
-                                                    {m.sender._id === currentUser._id && (
+                                                    {(m.sender._id === currentUser._id || currentUser.role === 'admin') && (
                                                         <>
-                                                            <button className="action-btn" onClick={() => {
-                                                                setEditMessageId(m._id);
-                                                                setEditContent(m.content);
-                                                            }}>✎ Edit</button>
+                                                            {m.sender._id === currentUser._id && (
+                                                                <button className="action-btn" onClick={() => {
+                                                                    setEditMessageId(m._id);
+                                                                    setEditContent(m.content);
+                                                                }}>✎ Edit</button>
+                                                            )}
                                                             <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
                                                         </>
                                                     )}
                                                 </div>
                                             )}
 
-                                            <div className="reaction-picker">
-                                                {['👍', '❤️', '😂', '😮', '😢', '🔥'].map(emoji => (
-                                                    <span 
-                                                        key={emoji} 
-                                                        className="reaction-emoji"
-                                                        onClick={() => handleToggleReaction(m._id, emoji)}
-                                                    >
-                                                        {emoji}
-                                                    </span>
-                                                ))}
-                                            </div>
+                                            {!m.isDeletedByAdmin && (
+                                                <div className="reaction-picker">
+                                                    {['👍', '❤️', '😂', '😮', '😢', '🔥'].map(emoji => (
+                                                        <span 
+                                                            key={emoji} 
+                                                            className="reaction-emoji"
+                                                            onClick={() => handleToggleReaction(m._id, emoji)}
+                                                        >
+                                                            {emoji}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
 
-                                            {m.reactions && m.reactions.length > 0 && (
+                                            {m.reactions && m.reactions.length > 0 && !m.isDeletedByAdmin && (
                                                 <div className="message-reactions">
                                                     {Object.entries(
                                                         m.reactions.reduce((acc, r) => {
@@ -730,7 +769,7 @@ const ChatPage = () => {
                                                             return acc;
                                                         }, {})
                                                     ).map(([emoji, count]) => {
-                                                        const hasReacted = m.reactions.some(r => r.emoji === emoji && r.user._id === currentUser._id);
+                                                        const hasReacted = m.reactions.some(r => r.emoji === emoji && r.user?._id === currentUser._id || r.user === currentUser._id);
                                                         return (
                                                             <div 
                                                                 key={emoji} 

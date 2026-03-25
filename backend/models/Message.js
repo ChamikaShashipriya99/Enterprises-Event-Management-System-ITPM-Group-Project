@@ -38,6 +38,10 @@ const messageSchema = mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        isDeletedByAdmin: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,
