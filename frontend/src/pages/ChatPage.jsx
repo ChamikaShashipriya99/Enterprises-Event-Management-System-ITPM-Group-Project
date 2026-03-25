@@ -25,6 +25,7 @@ const ChatPage = () => {
     const [page, setPage] = useState(1);
     const [hasMore, setHasMore] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [deleteConfirmId, setDeleteConfirmId] = useState(null);
 
     const { currentUser, socket } = useContext(AuthContext);
     const messagesEndRef = useRef(null);
@@ -62,6 +63,15 @@ const ChatPage = () => {
 
         socket.on("message-removed", (messageId) => {
             setMessages(prev => prev.filter(m => m._id !== messageId));
+            toast("A message was deleted", {
+                icon: '🗑️',
+                style: {
+                    background: '#1e293b',
+                    color: '#f8fafc',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    borderRadius: '12px',
+                }
+            });
         });
 
         return () => {
@@ -212,14 +222,34 @@ const ChatPage = () => {
         }
     };
 
-    const handleDeleteMessage = async (messageId) => {
-        if (!window.confirm("Are you sure you want to delete this message?")) return;
+    const handleDeleteMessage = (messageId) => {
+        setDeleteConfirmId(messageId);
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteConfirmId) return;
         try {
-            const data = await chatService.deleteMessage(messageId, currentUser.token);
-            socket.emit("message-deleted", { messageId, chatId: selectedChat._id });
-            setMessages(messages.filter(m => m._id !== messageId));
+            await chatService.deleteMessage(deleteConfirmId, currentUser.token);
+            socket.emit("message-deleted", { messageId: deleteConfirmId, chatId: selectedChat._id });
+            setMessages(messages.filter(m => m._id !== deleteConfirmId));
+            setDeleteConfirmId(null);
+            
+            toast.success("Message removed", {
+                style: {
+                    background: '#1e293b',
+                    color: '#f8fafc',
+                    border: '1px solid rgba(239, 68, 68, 0.2)',
+                    borderRadius: '12px',
+                },
+                iconTheme: {
+                    primary: '#ef4444',
+                    secondary: '#fff',
+                },
+            });
         } catch (error) {
             console.error("Error deleting message", error);
+            toast.error("Failed to delete message");
+            setDeleteConfirmId(null);
         }
     };
 
@@ -544,6 +574,35 @@ const ChatPage = () => {
                     <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
                         <img src={previewImage} alt="preview" />
                         <button className="lightbox-close" onClick={() => setPreviewImage(null)}>&times;</button>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Delete Confirmation Modal */}
+            {deleteConfirmId && (
+                <div className="lightbox-overlay" onClick={() => setDeleteConfirmId(null)}>
+                    <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ padding: '30px', textAlign: 'center', maxWidth: '400px' }}>
+                        <div style={{ fontSize: '3rem', marginBottom: '15px' }}>⚠️</div>
+                        <h3 style={{ marginBottom: '10px' }}>Delete Message?</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '25px', fontSize: '0.9rem' }}>
+                            Are you sure you want to remove this message? This action cannot be undone.
+                        </p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                            <button 
+                                className="btn-primary" 
+                                style={{ background: 'rgba(255,255,255,0.05)', padding: '10px 25px' }}
+                                onClick={() => setDeleteConfirmId(null)}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                className="btn-primary" 
+                                style={{ background: '#ef4444', padding: '10px 25px' }}
+                                onClick={handleConfirmDelete}
+                            >
+                                Delete
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
