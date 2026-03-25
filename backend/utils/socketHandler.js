@@ -1,11 +1,23 @@
+const User = require('../models/User');
+
 const socketHandler = (io) => {
     io.on('connection', (socket) => {
         console.log('New client connected:', socket.id);
+        let currentUserData = null;
 
-        socket.on('setup', (userData) => {
+        socket.on('setup', async (userData) => {
             if (userData && userData._id) {
+                currentUserData = userData;
                 socket.join(userData._id);
-                console.log('User joined room:', userData._id);
+                console.log(userData._id);
+                
+                // Mark user as online
+                const onlineUser = await User.findByIdAndUpdate(userData._id, { isOnline: true }, { new: true });
+                socket.broadcast.emit('user-status-changed', {
+                    userId: onlineUser._id,
+                    isOnline: true
+                });
+
                 socket.emit('connected');
             }
         });
@@ -17,18 +29,36 @@ const socketHandler = (io) => {
 
         socket.on('new-message', (newMessageReceived) => {
             const chat = newMessageReceived.chat;
-
             if (!chat.participants) return console.log('Chat participants not defined');
-
-            // Emit to the chat room directly
             socket.in(chat._id).emit('message-received', newMessageReceived);
+        });
+
+        socket.on('message-edited', (updatedMessage) => {
+            socket.in(updatedMessage.chat._id).emit('message-updated', updatedMessage);
+        });
+
+        socket.on('message-deleted', (data) => {
+            socket.in(data.chatId).emit('message-removed', data.messageId);
         });
 
         socket.on('typing', (room) => socket.in(room).emit('typing', room));
         socket.on('stop-typing', (room) => socket.in(room).emit('stop-typing', room));
 
-        socket.on('disconnect', () => {
-            console.log('Client disconnected:', socket.id);
+        socket.on('disconnect', async () => {
+            console.log('USER DISCONNECTED');
+            if (currentUserData) {
+                const user = await User.findById(currentUserData._id);
+                if (user) {
+                    user.isOnline = false;
+                    user.lastSeen = Date.now();
+                    await user.save();
+                    socket.broadcast.emit('user-status-changed', {
+                        userId: user._id,
+                        isOnline: false,
+                        lastSeen: user.lastSeen
+                    });
+                }
+            }
         });
     });
 };

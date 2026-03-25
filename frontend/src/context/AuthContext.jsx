@@ -1,19 +1,41 @@
 import { createContext, useState, useEffect } from 'react';
 import authService from '../services/authService';
+import io from 'socket.io-client';
+
+const ENDPOINT = "http://localhost:5000";
 
 export const AuthContext = createContext();
 
 export const AuthProvider = ({ children }) => {
     const [user, setUser] = useState(null);
     const [loading, setLoading] = useState(true);
+    const [socket, setSocket] = useState(null);
 
     useEffect(() => {
         const storedUser = localStorage.getItem('user');
         if (storedUser) {
-            setUser(JSON.parse(storedUser));
+            const parsedUser = JSON.parse(storedUser);
+            setUser(parsedUser);
         }
         setLoading(false);
     }, []);
+
+    useEffect(() => {
+        if (user) {
+            const newSocket = io(ENDPOINT, {
+                transports: ['websocket'],
+                upgrade: false
+            });
+            newSocket.emit("setup", user);
+            setSocket(newSocket);
+
+            return () => {
+                newSocket.disconnect();
+            };
+        } else {
+            setSocket(null);
+        }
+    }, [user]);
 
     const login = async (userData) => {
         const data = await authService.login(userData);
@@ -49,7 +71,8 @@ export const AuthProvider = ({ children }) => {
         register,
         logout,
         refreshProfile,
-        loading
+        loading,
+        socket
     };
 
     return (

@@ -28,6 +28,10 @@ const messageSchema = mongoose.Schema(
             enum: ['text', 'image', 'file'],
             default: 'text',
         },
+        isEdited: {
+            type: Boolean,
+            default: false,
+        },
     },
     {
         timestamps: true,

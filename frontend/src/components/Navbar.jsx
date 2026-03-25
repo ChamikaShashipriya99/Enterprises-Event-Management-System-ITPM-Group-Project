@@ -1,13 +1,44 @@
-import { useContext, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useContext, useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import ConfirmModal from './ConfirmModal';
 import NotificationDropdown from './NotificationDropdown';
+import chatService from '../services/chatService';
 
 const Navbar = () => {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-    const { currentUser, logout } = useContext(AuthContext);
+    const [unreadCount, setUnreadCount] = useState(0);
+    const { currentUser, logout, socket } = useContext(AuthContext);
     const navigate = useNavigate();
+    const location = useLocation();
+
+    useEffect(() => {
+        const fetchInitialUnreadCount = async () => {
+            if (currentUser?.token && location.pathname !== '/chat') {
+                try {
+                    const chats = await chatService.fetchChats(currentUser.token);
+                    const totalUnread = chats.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0);
+                    setUnreadCount(totalUnread);
+                } catch (error) {
+                    console.error("Error fetching unread count", error);
+                }
+            } else if (location.pathname === '/chat') {
+                setUnreadCount(0); // On chat page, reset count in navbar
+            }
+        };
+        fetchInitialUnreadCount();
+    }, [currentUser, location.pathname]);
+
+    useEffect(() => {
+        if (!socket || location.pathname === '/chat') return;
+
+        const messageListener = (newMessage) => {
+            setUnreadCount(prev => prev + 1);
+        };
+
+        socket.on("message-received", messageListener);
+        return () => socket.off("message-received", messageListener);
+    }, [socket, location.pathname]);
 
     const handleLogoutTrigger = () => {
         setIsLogoutModalOpen(true);
@@ -50,7 +81,19 @@ const Navbar = () => {
                             <>
                                 <Link to="/student-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Explore Events</Link>
-                                <Link to="/chat" style={{ color: '#f8fafc', textDecoration: 'none' }}>Messages</Link>
+                                <Link to="/chat" style={{ color: '#f8fafc', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    Messages
+                                    {unreadCount > 0 && (
+                                        <span style={{ 
+                                            background: '#ef4444', 
+                                            color: 'white', 
+                                            fontSize: '0.65rem', 
+                                            padding: '2px 6px', 
+                                            borderRadius: '10px',
+                                            fontWeight: 'bold'
+                                        }}>{unreadCount}</span>
+                                    )}
+                                </Link>
                             </>
                         )}
                         {currentUser.role === 'organizer' && (

@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useContext, useRef } from 'react';
 import io from 'socket.io-client';
 import { AuthContext } from '../context/AuthContext';
-import chatService from '../services/chatService';
+import chatService from "../services/chatService";
 
-const ENDPOINT = 'http://localhost:5000';
-let socket, selectedChatCompare;
+const ENDPOINT = "http://localhost:5000";
+var selectedChatCompare;
 
 const ChatPage = () => {
     const [chats, setChats] = useState([]);
@@ -17,8 +17,10 @@ const ChatPage = () => {
     const [search, setSearch] = useState("");
     const [searchResult, setSearchResult] = useState([]);
     const [loading, setLoading] = useState(false);
+    const [editMessageId, setEditMessageId] = useState(null);
+    const [editContent, setEditContent] = useState("");
 
-    const { currentUser } = useContext(AuthContext);
+    const { currentUser, socket } = useContext(AuthContext);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
 
@@ -31,19 +33,39 @@ const ChatPage = () => {
     }, [messages]);
 
     useEffect(() => {
-        socket = io(ENDPOINT, {
-            transports: ['websocket'],
-            upgrade: false
-        });
-        socket.emit("setup", currentUser);
-        socket.on("connected", () => setSocketConnected(true));
+        if (!socket) return;
+
+        setSocketConnected(true);
         socket.on("typing", () => setIsTyping(true));
         socket.on("stop-typing", () => setIsTyping(false));
 
+        socket.on("user-status-changed", (data) => {
+            setChats(prevChats => 
+                prevChats.map(chat => {
+                    const updatedParticipants = chat.participants.map(p => 
+                        p._id === data.userId ? { ...p, isOnline: data.isOnline, lastSeen: data.lastSeen } : p
+                    );
+                    return { ...chat, participants: updatedParticipants };
+                })
+            );
+        });
+
+        socket.on("message-updated", (updatedMessage) => {
+            setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
+        });
+
+        socket.on("message-removed", (messageId) => {
+            setMessages(prev => prev.filter(m => m._id !== messageId));
+        });
+
         return () => {
-            socket.disconnect();
+            socket.off("typing");
+            socket.off("stop-typing");
+            socket.off("user-status-changed");
+            socket.off("message-updated");
+            socket.off("message-removed");
         };
-    }, []);
+    }, [socket]);
 
     useEffect(() => {
         const fetchInitialData = async () => {
@@ -76,6 +98,9 @@ const ChatPage = () => {
                 setMessages(data);
                 setLoading(false);
                 socket.emit("join-chat", selectedChat._id);
+                
+                // Reset unread count for this chat locally
+                setChats(prev => prev.map(c => c._id === selectedChat._id ? { ...c, unreadCount: 0 } : c));
             } catch (error) {
                 console.error("Error fetching messages", error);
                 setLoading(false);
@@ -86,16 +111,20 @@ const ChatPage = () => {
     }, [selectedChat]);
 
     useEffect(() => {
+        if (!socket) return;
         const messageListener = (newMessageReceived) => {
             if (!selectedChatCompare || selectedChatCompare._id !== newMessageReceived.chat._id) {
-                // Future: notify user
+                // Update unread count for non-selected chat
+                setChats(prev => prev.map(c => 
+                    c._id === newMessageReceived.chat._id ? { ...c, unreadCount: (c.unreadCount || 0) + 1, lastMessage: newMessageReceived } : c
+                ));
             } else {
                 setMessages([...messages, newMessageReceived]);
             }
         };
         socket.on("message-received", messageListener);
         return () => socket.off("message-received", messageListener);
-    });
+    }, [socket, messages]);
 
     const handleSearch = async (e) => {
         setSearch(e.target.value);
@@ -135,6 +164,30 @@ const ChatPage = () => {
             } catch (error) {
                 console.error("Error sending message", error);
             }
+        }
+    };
+
+    const handleEditMessage = async () => {
+        if (!editContent) return;
+        try {
+            const data = await chatService.updateMessage(editMessageId, editContent, currentUser.token);
+            socket.emit("message-edited", data);
+            setMessages(messages.map(m => m._id === editMessageId ? data : m));
+            setEditMessageId(null);
+            setEditContent("");
+        } catch (error) {
+            console.error("Error updating message", error);
+        }
+    };
+
+    const handleDeleteMessage = async (messageId) => {
+        if (!window.confirm("Are you sure you want to delete this message?")) return;
+        try {
+            const data = await chatService.deleteMessage(messageId, currentUser.token);
+            socket.emit("message-deleted", { messageId, chatId: selectedChat._id });
+            setMessages(messages.filter(m => m._id !== messageId));
+        } catch (error) {
+            console.error("Error deleting message", error);
         }
     };
 
@@ -186,7 +239,7 @@ const ChatPage = () => {
     };
 
     const getSender = (participants) => {
-        if (!participants || participants.length === 0) return { name: "Unknown" };
+        if (!participants || participants.length === 0) return { name: "Unknown", isOnline: false };
         return participants[0]._id === currentUser._id ? participants[1] : participants[0];
     };
 
@@ -238,11 +291,18 @@ const ChatPage = () => {
                             >
                                 <div className="user-avatar" style={isGroup ? { background: '#10b981' } : {}}>
                                     {isGroup ? 'G' : sender.name.charAt(0)}
+                                    {!isGroup && (
+                                        <div 
+                                            className={`status-dot ${sender.isOnline ? 'status-online' : 'status-offline'}`}
+                                            style={{ position: 'absolute', bottom: 0, right: 0, border: '2px solid #0f172a', margin: 0 }}
+                                        />
+                                    )}
                                 </div>
                                 <div style={{ flex: 1 }}>
                                     <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
                                         {sender.name}
                                         {isGroup && <span className="group-badge">Group</span>}
+                                        {chat.unreadCount > 0 && <span className="unread-badge">{chat.unreadCount}</span>}
                                     </div>
                                     {chat.lastMessage && (
                                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
@@ -260,13 +320,23 @@ const ChatPage = () => {
             <div className="chat-window">
                 {selectedChat ? (
                     <>
-                        <div className="chat-header">
-                            <div className="user-avatar" style={selectedChat.isGroupChat ? { background: '#10b981' } : {}}>
-                                {selectedChat.isGroupChat ? 'G' : getSender(selectedChat.participants).name.charAt(0)}
+                        <div className="chat-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <div className="user-avatar" style={selectedChat.isGroupChat ? { background: '#10b981' } : {}}>
+                                    {selectedChat.isGroupChat ? 'G' : getSender(selectedChat.participants).name.charAt(0)}
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>
+                                        {selectedChat.isGroupChat ? selectedChat.chatName : getSender(selectedChat.participants).name}
+                                    </h2>
+                                    {!selectedChat.isGroupChat && (
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                            {getSender(selectedChat.participants).isOnline ? 'Online' : 
+                                                `Last seen ${new Date(getSender(selectedChat.participants).lastSeen).toLocaleTimeString()}`}
+                                        </div>
+                                    )}
+                                </div>
                             </div>
-                            <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>
-                                {selectedChat.isGroupChat ? selectedChat.chatName : getSender(selectedChat.participants).name}
-                            </h2>
                         </div>
                         <div className="chat-messages">
                             {loading && messages.length === 0 ? (
@@ -282,7 +352,32 @@ const ChatPage = () => {
                                                 {m.sender.name}
                                             </div>
                                         )}
-                                        <div>{m.content}</div>
+                                        
+                                        {editMessageId === m._id ? (
+                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                                <input 
+                                                    className="input-field" 
+                                                    style={{ marginBottom: 0, padding: '5px' }}
+                                                    value={editContent}
+                                                    onChange={(e) => setEditContent(e.target.value)}
+                                                />
+                                                <div style={{ display: 'flex', gap: '5px' }}>
+                                                    <button className="btn-primary" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={handleEditMessage}>Save</button>
+                                                    <button className="btn-primary" style={{ padding: '2px 8px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.1)' }} onClick={() => setEditMessageId(null)}>Cancel</button>
+                                                </div>
+                                            </div>
+                                        ) : (
+                                            <>
+                                                <div>
+                                                    {m.content}
+                                                    {m.isEdited && <span className="edited-tag">(edited)</span>}
+                                                </div>
+                                                <div style={{ fontSize: '0.65rem', opacity: 0.6, marginTop: '4px', textAlign: 'right' }}>
+                                                    {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                </div>
+                                            </>
+                                        )}
+
                                         {m.fileUrl && (
                                             m.fileType === 'image' ? (
                                                 <img 
@@ -302,6 +397,16 @@ const ChatPage = () => {
                                                     <span>Download Attachment</span>
                                                 </a>
                                             )
+                                        )}
+
+                                        {m.sender._id === currentUser._id && !editMessageId && (
+                                            <div className="message-actions">
+                                                <button className="action-btn" onClick={() => {
+                                                    setEditMessageId(m._id);
+                                                    setEditContent(m.content);
+                                                }}>✎ Edit</button>
+                                                <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
+                                            </div>
                                         )}
                                     </div>
                                 ))

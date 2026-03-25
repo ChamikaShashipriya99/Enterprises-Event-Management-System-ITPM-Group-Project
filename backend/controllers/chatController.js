@@ -51,17 +51,32 @@ const accessChat = async (req, res) => {
 // @access  Private
 const fetchChats = async (req, res) => {
     try {
-        Chat.find({ participants: { $elemMatch: { $eq: req.user._id } } })
+        let chats = await Chat.find({
+            participants: { $elemMatch: { $eq: req.user._id } },
+        })
             .populate('participants', '-password')
+            .populate('groupAdmin', '-password')
             .populate('lastMessage')
-            .sort({ updatedAt: -1 })
-            .then(async (results) => {
-                results = await User.populate(results, {
-                    path: 'lastMessage.sender',
-                    select: 'name profilePicture email',
+            .sort({ updatedAt: -1 });
+
+        chats = await User.populate(chats, {
+            path: 'lastMessage.sender',
+            select: 'name profilePicture email',
+        });
+
+        // Add unread count to each chat
+        const chatsWithUnread = await Promise.all(
+            chats.map(async (chat) => {
+                const unreadCount = await Message.countDocuments({
+                    chat: chat._id,
+                    sender: { $ne: req.user._id },
+                    isRead: false,
                 });
-                res.status(200).send(results);
-            });
+                return { ...chat._doc, unreadCount };
+            })
+        );
+
+        res.status(200).send(chatsWithUnread);
     } catch (error) {
         res.status(400);
         throw new Error(error.message);
@@ -114,7 +129,68 @@ const allMessages = async (req, res) => {
         const messages = await Message.find({ chat: req.params.chatId })
             .populate('sender', 'name profilePicture email')
             .populate('chat');
+
+        // Mark messages as read
+        await Message.updateMany(
+            { chat: req.params.chatId, sender: { $ne: req.user._id }, isRead: false },
+            { $set: { isRead: true } }
+        );
+
         res.json(messages);
+    } catch (error) {
+        res.status(400);
+        throw new Error(error.message);
+    }
+};
+
+// @desc    Edit a message
+// @route   PUT /api/chat/message/:messageId
+// @access  Private
+const editMessage = async (req, res) => {
+    const { content } = req.body;
+    try {
+        const message = await Message.findById(req.params.messageId);
+        if (!message) {
+            res.status(404);
+            throw new Error('Message not found');
+        }
+        if (message.sender.toString() !== req.user._id.toString()) {
+            res.status(401);
+            throw new Error('Not authorized to edit this message');
+        }
+
+        message.content = content;
+        message.isEdited = true;
+        await message.save();
+
+        const fullMessage = await Message.findById(message._id)
+            .populate('sender', 'name profilePicture email')
+            .populate('chat');
+
+        res.json(fullMessage);
+    } catch (error) {
+        res.status(400);
+        throw new Error(error.message);
+    }
+};
+
+// @desc    Delete a message
+// @route   DELETE /api/chat/message/:messageId
+// @access  Private
+const deleteMessage = async (req, res) => {
+    try {
+        const message = await Message.findById(req.params.messageId);
+        if (!message) {
+            res.status(404);
+            throw new Error('Message not found');
+        }
+        if (message.sender.toString() !== req.user._id.toString()) {
+            res.status(401);
+            throw new Error('Not authorized to delete this message');
+        }
+
+        await Message.deleteOne({ _id: req.params.messageId });
+        res.json({ message: 'Message deleted successfully', messageId: req.params.messageId, chatId: message.chat });
     } catch (error) {
         res.status(400);
         throw new Error(error.message);
@@ -191,4 +267,6 @@ module.exports = {
     allMessages,
     searchUsers,
     accessGlobalChat,
+    editMessage,
+    deleteMessage,
 };

@@ -62,6 +62,24 @@ const uploadFile = async (formData, token) => {
     return response.data;
 };
 
+const updateMessage = async (messageId, content, token) => {
+    const response = await axios.put(
+        `${API_URL}message/${messageId}`,
+        { content },
+        {
+            headers: { Authorization: `Bearer ${token}` },
+        }
+    );
+    return response.data;
+};
+
+const deleteMessage = async (messageId, token) => {
+    const response = await axios.delete(`${API_URL}message/${messageId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+};
+
 const chatService = {
     fetchChats,
     accessChat,
@@ -70,6 +88,8 @@ const chatService = {
     fetchMessages,
     accessGlobalChat,
     uploadFile,
+    updateMessage,
+    deleteMessage,
 };
 
 export default chatService;
