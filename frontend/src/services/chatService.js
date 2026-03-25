@@ -119,6 +119,13 @@ const getAuditLogs = async (token) => {
     return response.data;
 };
 
+const getChatStats = async (token) => {
+    const response = await axios.get(`${API_URL}stats`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+};
+
 const chatService = {
     fetchChats,
     accessChat,
@@ -133,6 +140,7 @@ const chatService = {
     togglePinMessage,
     clearChat,
     getAuditLogs,
+    getChatStats,
 };
 
 export default chatService;

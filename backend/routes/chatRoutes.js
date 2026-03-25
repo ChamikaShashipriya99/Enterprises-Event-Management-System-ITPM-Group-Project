@@ -12,6 +12,7 @@ const {
     togglePinMessage,
     clearChatMessages,
     getAuditLogs,
+    getChatStats,
 } = require('../controllers/chatController');
 const { protect } = require('../middleware/authMiddleware');
 const chatUpload = require('../middleware/chatUploadMiddleware');
@@ -29,6 +30,7 @@ router.route('/message/:messageId').delete(protect, deleteMessage);
 router.route('/message/:messageId/react').post(protect, toggleReaction);
 router.route('/:chatId/pin/:messageId').post(protect, togglePinMessage);
 router.route('/:chatId/clear').delete(protect, clearChatMessages);
+router.get('/stats', protect, getChatStats);
 router.route('/audit-logs').get(protect, getAuditLogs);
 
 router.post('/upload', protect, chatUpload.single('file'), (req, res) => {

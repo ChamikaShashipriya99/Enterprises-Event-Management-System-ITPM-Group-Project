@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
+import chatService from '../services/chatService';
 import Skeleton from '../components/Skeleton';
 
 const AdminDashboard = () => {
@@ -10,13 +11,29 @@ const AdminDashboard = () => {
         totalOrganizers: 0,
         totalStudents: 0
     });
+    const [chatStats, setChatStats] = useState({
+        activeNow: 0,
+        todayMsgs: 0,
+        mediaShared: 0,
+        moderationActions: 0
+    });
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const response = await eventService.getAdminStats();
-                setStats(response.data);
+                setLoading(true);
+                const user = JSON.parse(localStorage.getItem('user'));
+                const token = user?.token;
+                
+                // Fetch both system stats and chat stats
+                const [eventRes, chatRes] = await Promise.all([
+                    eventService.getAdminStats(),
+                    chatService.getChatStats(token)
+                ]);
+                
+                setStats(eventRes.data);
+                setChatStats(chatRes);
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching admin stats:', error);
@@ -87,6 +104,41 @@ const AdminDashboard = () => {
                         <div style={{ fontSize: '2rem' }}>{card.icon}</div>
                         <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500' }}>{card.title}</div>
                         <div style={{ fontSize: '2rem', fontWeight: 'bold', color: card.color }}>{card.value}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Community Pulse Section */}
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700' }}>
+                Student <span style={{ color: '#10b981' }}>Community Pulse</span> 📊
+            </h2>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '3rem'
+            }}>
+                {[
+                    { title: 'Active Now', value: chatStats.activeNow, icon: '⚡', color: '#f59e0b', desc: 'Online Students' },
+                    { title: "Today's Volume", value: chatStats.todayMsgs, icon: '💬', color: '#0ea5e9', desc: 'Last 24 hours' },
+                    { title: 'Media Shared', value: chatStats.mediaShared, icon: '🖼️', color: '#10b981', desc: 'Attachments' },
+                    { title: 'Moderation Status', value: chatStats.moderationActions, icon: '🛡️', color: '#ef4444', desc: 'Actions Today' }
+                ].map((card, index) => (
+                    <div key={index} className="glass-card" style={{
+                        padding: '1.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.3rem',
+                        borderLeft: `4px solid ${card.color}`,
+                        transition: 'transform 0.3s ease'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '1.5rem' }}>{card.icon}</span>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>Real-time</span>
+                        </div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500', marginTop: '0.5rem' }}>{card.title}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{card.value}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{card.desc}</div>
                     </div>
                 ))}
             </div>

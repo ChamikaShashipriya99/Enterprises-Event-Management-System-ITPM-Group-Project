@@ -492,6 +492,44 @@ const getAuditLogs = async (req, res) => {
     }
 };
 
+// @desc    Get Chat Statistics for Admin Dashboard
+// @route   GET /api/chat/stats
+// @access  Private/Admin
+const getChatStats = async (req, res) => {
+    if (req.user.role !== 'admin') {
+        res.status(401);
+        throw new Error('Not authorized as an admin');
+    }
+
+    try {
+        const last24h = new Date(Date.now() - 24 * 60 * 60 * 1000);
+        const todayStart = new Date();
+        todayStart.setHours(0, 0, 0, 0);
+
+        // 1. Active Now (Students)
+        const activeNow = await User.countDocuments({ isOnline: true, role: 'student' });
+
+        // 2. Today's Volume (Total messages in last 24h)
+        const todayMsgs = await Message.countDocuments({ createdAt: { $gte: last24h } });
+
+        // 3. Media Shared (Messages with fileUrl)
+        const mediaShared = await Message.countDocuments({ fileUrl: { $ne: null } });
+
+        // 4. Moderation Status (Actions logged today)
+        const moderationActions = await AuditLog.countDocuments({ createdAt: { $gte: todayStart } });
+
+        res.status(200).json({
+            activeNow,
+            todayMsgs,
+            mediaShared,
+            moderationActions
+        });
+    } catch (error) {
+        console.error('Error fetching chat stats:', error);
+        res.status(500).json({ message: 'Failed to fetch statistics' });
+    }
+};
+
 module.exports = {
     accessChat,
     fetchChats,
@@ -505,4 +543,5 @@ module.exports = {
     togglePinMessage,
     clearChatMessages,
     getAuditLogs,
+    getChatStats,
 };
