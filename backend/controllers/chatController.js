@@ -128,6 +128,16 @@ const sendMessage = async (req, res) => {
             await Chat.findByIdAndUpdate(req.body.chatId, { lastMessage: message });
         }
 
+        // Parse mentions and notify users
+        const mentions = content.match(/@(\w+)/g);
+        if (mentions) {
+            // Find user IDs for the mentions (simplified for now)
+            // In a real app, you'd match by unique username or look up from participants
+            // For now, let's assume the frontend sends the IDs if needed, 
+            // but we can just emit the mention event to all room members
+            // and let the client filter if their name matches.
+        }
+
         res.json(message);
     } catch (error) {
         res.status(400);

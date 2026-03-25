@@ -205,6 +205,7 @@ h1, h2, h3 {
     border-top: 1px solid var(--glass-border);
     display: flex;
     gap: 12px;
+    position: relative; /* Critical for absolute children like mentions dropdown */
 }
 
 .chat-search {
@@ -476,6 +477,104 @@ h1, h2, h3 {
     float: none !important;
     clear: both !important;
     font-weight: 600;
+}
+/* Read Receipt Styles */
+.read-receipt {
+    color: #94a3b8;
+    transition: all 0.3s ease;
+}
+
+.read-receipt.read {
+    color: #94a3b8; /* Semi-read */
+}
+
+.read-receipt.read-all {
+    color: #38bdf8 !important; /* Blue double check */
+    text-shadow: 0 0 10px rgba(56, 189, 248, 0.4);
+}
+
+/* Read By Modal */
+.read-by-modal {
+    max-width: 400px;
+    background: #0f172a;
+    border: 1px solid rgba(255,255,255,0.1);
+    border-radius: 16px;
+    padding: 0;
+    overflow: hidden;
+}
+
+.read-by-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.read-by-item {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 12px;
+    border-radius: 10px;
+    transition: background 0.3s ease;
+}
+
+.read-by-item:hover {
+    background: rgba(255,255,255,0.05);
+}
+
+.read-by-item .user-info {
+    flex: 1;
+}
+
+.read-by-item .user-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.read-by-item .user-role {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    text-transform: capitalize;
+}
+
+.seen-check {
+    color: #38bdf8;
+    font-weight: bold;
+    font-size: 0.9rem;
+}
+
+/* Mentions Dropdown */
+.mentions-dropdown {
+    position: absolute;
+    bottom: 100%;
+    left: 20px;
+    width: 250px;
+    max-height: 200px;
+    overflow-y: auto;
+    background: #1e293b;
+    border: 1px solid rgba(255,255,255,0.1);
+    box-shadow: 0 -4px 20px rgba(0,0,0,0.5);
+    z-index: 100;
+    margin-bottom: 10px;
+    border-radius: 12px;
+}
+
+.mention-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 15px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.mention-item:hover {
+    background: rgba(99, 102, 241, 0.1);
+}
+
+.mention-item span {
+    font-size: 0.9rem;
+    color: #f8fafc;
 }
 
 .message-announcement .admin-badge {

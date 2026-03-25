@@ -31,6 +31,11 @@ const ChatPage = () => {
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
+    const [selectedReadBy, setSelectedReadBy] = useState(null);
+    const [mentionSearch, setMentionSearch] = useState("");
+    const [showMentions, setShowMentions] = useState(false);
+    const [mentionSuggestions, setMentionSuggestions] = useState([]);
+    const [mentionIndex, setMentionIndex] = useState(-1);
 
     const { currentUser, socket } = useContext(AuthContext);
     const messagesEndRef = useRef(null);
@@ -400,6 +405,16 @@ const ChatPage = () => {
         }
     };
 
+    const handleMentionSelect = (user) => {
+        const words = newMessage.split(" ");
+        words.pop(); // Remove the @part
+        const updatedMessage = [...words, `@${user.name} `].join(" ");
+        setNewMessage(updatedMessage);
+        setShowMentions(false);
+        setMentionSuggestions([]);
+        setMentionIndex(-1);
+    };
+
     const handleEditMessage = async () => {
         if (!editContent) return;
         try {
@@ -466,8 +481,40 @@ const ChatPage = () => {
         }
     };
 
-    const typingHandler = (e) => {
-        setNewMessage(e.target.value);
+    const typingHandler = async (e) => {
+        const value = e.target.value;
+        setNewMessage(value);
+
+        // Mention Detection
+        const lastWord = value.split(" ").pop();
+
+        if (lastWord.startsWith("@")) {
+            const searchPart = lastWord.substring(1);
+            setMentionSearch(searchPart);
+            setShowMentions(true);
+            
+            // If it's a group chat (like Global), search all students
+            // Otherwise just use current participants for efficiency, or also search all
+            if (searchPart.length >= 2) {
+                try {
+                    const results = await chatService.searchUsers(searchPart, currentUser.token);
+                    setMentionSuggestions(results.filter(u => u._id !== currentUser._id));
+                } catch (err) {
+                    console.error("Mention search failed", err);
+                }
+            } else if (selectedChat?.participants) {
+                // Fallback to participants for short queries
+                setMentionSuggestions(
+                    selectedChat.participants.filter(u => 
+                        u._id !== currentUser._id && 
+                        u.name.toLowerCase().includes(searchPart.toLowerCase())
+                    )
+                );
+            }
+        } else {
+            setShowMentions(false);
+            setMentionSuggestions([]);
+        }
 
         if (!socketConnected) return;
 
@@ -706,7 +753,11 @@ const ChatPage = () => {
                                             ) : (
                                                 <>
                                                     <div>
-                                                        {m.content}
+                                                        {m.content.split(/(@\w+(?:\s\w+)?)/g).map((part, i) => (
+                                                            part.startsWith("@") ? (
+                                                                <span key={i} style={{ color: '#38bdf8', fontWeight: 'bold' }}>{part}</span>
+                                                            ) : part
+                                                        ))}
                                                         {m.isEdited && <span className="edited-tag">(edited)</span>}
                                                     </div>
                                                     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '5px', marginTop: '4px' }}>
@@ -714,9 +765,17 @@ const ChatPage = () => {
                                                             {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                                                         </span>
                                                         {m.sender._id === currentUser._id && (
-                                                            <span className={`read-receipt ${m.isRead ? 'read' : ''}`} style={{ fontSize: '0.8rem', lineHeight: 1 }}>
-                                                                ✓✓
-                                                            </span>
+                                                            <div 
+                                                                className={`read-receipt ${m.readBy?.length > 1 ? 'read' : ''} ${m.readBy?.length === selectedChat?.participants?.length ? 'read-all' : ''}`} 
+                                                                style={{ fontSize: '0.8rem', lineHeight: 1, cursor: 'pointer' }}
+                                                                title={m.readBy?.length > 1 ? `${m.readBy.length - 1} people seen` : 'Sent'}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedReadBy(m.readBy);
+                                                                }}
+                                                            >
+                                                                {m.readBy?.length > 1 ? '✓✓' : '✓'}
+                                                            </div>
                                                         )}
                                                     </div>
                                                 </>
@@ -816,6 +875,23 @@ const ChatPage = () => {
                             <div ref={messagesEndRef} />
                         </div>
                         <div className="chat-input-area">
+                            {showMentions && mentionSuggestions.length > 0 && (
+                                <div className="mentions-dropdown glass-card">
+                                    {mentionSuggestions.map(user => (
+                                        <div 
+                                            key={user._id} 
+                                            className="mention-item"
+                                            onClick={() => handleMentionSelect(user)}
+                                        >
+                                            <div className="user-avatar" style={{ width: '24px', height: '24px', fontSize: '0.7rem' }}>
+                                                {user.name.charAt(0)}
+                                            </div>
+                                            <span>{user.name}</span>
+                                            <span className="user-role" style={{ fontSize: '0.6rem', opacity: 0.6 }}>{user.role || 'Student'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                             <input
                                 type="file"
                                 style={{ display: 'none' }}
@@ -919,6 +995,35 @@ const ChatPage = () => {
                             >
                                 Delete
                             </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Read By Modal */}
+            {selectedReadBy && (
+                <div className="modal-overlay" onClick={() => setSelectedReadBy(null)}>
+                    <div className="modal-content read-by-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Seen by</h3>
+                            <button className="close-btn" onClick={() => setSelectedReadBy(null)}>×</button>
+                        </div>
+                        <div className="read-by-list">
+                            {selectedReadBy.filter(u => u._id !== currentUser._id).length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                                    No one has seen this yet
+                                </div>
+                            ) : (
+                                selectedReadBy.filter(u => u._id !== currentUser._id).map(user => (
+                                    <div key={user._id} className="read-by-item">
+                                        <div className="user-avatar">{user.name.charAt(0)}</div>
+                                        <div className="user-info">
+                                            <div className="user-name">{user.name}</div>
+                                            <div className="user-role">{user.role}</div>
+                                        </div>
+                                        <div className="seen-check">✓✓</div>
+                                    </div>
+                                ))
+                            )}
                         </div>
                     </div>
                 </div>
