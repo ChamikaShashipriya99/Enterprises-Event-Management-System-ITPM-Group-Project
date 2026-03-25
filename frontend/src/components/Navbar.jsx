@@ -50,6 +50,7 @@ const Navbar = () => {
                             <>
                                 <Link to="/student-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Explore Events</Link>
+                                <Link to="/chat" style={{ color: '#f8fafc', textDecoration: 'none' }}>Messages</Link>
                             </>
                         )}
                         {currentUser.role === 'organizer' && (

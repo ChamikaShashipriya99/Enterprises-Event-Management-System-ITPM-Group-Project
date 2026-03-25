@@ -23,6 +23,7 @@ import EditEvent from './pages/EditEvent';
 import VerifyEmail from './pages/VerifyEmail';
 import LostAndFoundFeed from './pages/LostAndFoundFeed';
 import ReportItem from './pages/ReportItem';
+import ChatPage from './pages/ChatPage';
 
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
@@ -162,6 +163,12 @@ function App() {
           <Route path="/report-item" element={
             <ProtectedRoute>
               <ReportItem />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/chat" element={
+            <ProtectedRoute role="student">
+              <ChatPage />
             </ProtectedRoute>
           } />
 
