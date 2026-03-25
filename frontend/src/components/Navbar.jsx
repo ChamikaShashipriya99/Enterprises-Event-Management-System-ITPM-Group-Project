@@ -7,38 +7,9 @@ import chatService from '../services/chatService';
 
 const Navbar = () => {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-    const [unreadCount, setUnreadCount] = useState(0);
-    const { currentUser, logout, socket } = useContext(AuthContext);
+    const { currentUser, logout, socket, unreadCount } = useContext(AuthContext);
     const navigate = useNavigate();
     const location = useLocation();
-
-    useEffect(() => {
-        const fetchInitialUnreadCount = async () => {
-            if (currentUser?.token && location.pathname !== '/chat') {
-                try {
-                    const chats = await chatService.fetchChats(currentUser.token);
-                    const totalUnread = chats.reduce((sum, chat) => sum + (chat.unreadCount || 0), 0);
-                    setUnreadCount(totalUnread);
-                } catch (error) {
-                    console.error("Error fetching unread count", error);
-                }
-            } else if (location.pathname === '/chat') {
-                setUnreadCount(0); // On chat page, reset count in navbar
-            }
-        };
-        fetchInitialUnreadCount();
-    }, [currentUser, location.pathname]);
-
-    useEffect(() => {
-        if (!socket || location.pathname === '/chat') return;
-
-        const messageListener = (newMessage) => {
-            setUnreadCount(prev => prev + 1);
-        };
-
-        socket.on("message-received", messageListener);
-        return () => socket.off("message-received", messageListener);
-    }, [socket, location.pathname]);
 
     const handleLogoutTrigger = () => {
         setIsLogoutModalOpen(true);

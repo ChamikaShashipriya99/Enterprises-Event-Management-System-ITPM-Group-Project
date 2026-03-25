@@ -70,12 +70,16 @@ const LandingPage = () => {
   );
 };
 
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
+        <Toaster position="top-right" reverseOrder={false} />
         <Navbar />
         <Routes>
+          {/* ... existing routes ... */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/verify-email/:token" element={<VerifyEmail />} />
@@ -174,8 +178,8 @@ function App() {
 
           <Route path="/" element={<LandingPage />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

@@ -5,7 +5,7 @@ import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
 
 const StudentDashboard = () => {
-    const { currentUser, refreshProfile } = useContext(AuthContext);
+    const { currentUser, refreshProfile, unreadCount } = useContext(AuthContext);
     const [registeredEvents, setRegisteredEvents] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -162,6 +162,9 @@ const StudentDashboard = () => {
             {/* Floating Chat Button */}
             <Link to="/chat" className="floating-chat-btn" title="Open Chat">
                 💬
+                {unreadCount > 0 && (
+                    <span className="floating-badge">{unreadCount}</span>
+                )}
             </Link>
         </div>
     );
