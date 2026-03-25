@@ -1,4 +1,5 @@
 const User = require('../models/User');
+const Message = require('../models/Message');
 
 const socketHandler = (io) => {
     io.on('connection', (socket) => {
@@ -39,6 +40,19 @@ const socketHandler = (io) => {
 
         socket.on('message-deleted', (data) => {
             socket.in(data.chatId).emit('message-removed', data.messageId);
+        });
+
+        socket.on('mark-as-read', async (data) => {
+            const { chatId, userId } = data;
+            try {
+                await Message.updateMany(
+                    { chat: chatId, sender: { $ne: userId }, isRead: false },
+                    { $set: { isRead: true } }
+                );
+                socket.in(chatId).emit('messages-read', { chatId, readerId: userId });
+            } catch (error) {
+                console.error("Error marking messages as read:", error);
+            }
         });
 
         socket.on('typing', (room) => socket.in(room).emit('typing', room));

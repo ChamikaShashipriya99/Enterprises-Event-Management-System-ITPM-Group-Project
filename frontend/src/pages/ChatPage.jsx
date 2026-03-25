@@ -116,6 +116,7 @@ const ChatPage = () => {
                 setHasMore(data.hasMore);
                 setLoading(false);
                 socket.emit("join-chat", selectedChat._id);
+                socket.emit("mark-as-read", { chatId: selectedChat._id, userId: currentUser._id });
                 
                 // Reset unread count for this chat locally
                 setChats(prev => prev.map(c => c._id === selectedChat._id ? { ...c, unreadCount: 0 } : c));
@@ -156,17 +157,30 @@ const ChatPage = () => {
         if (!socket) return;
         const messageListener = (newMessageReceived) => {
             if (!selectedChatCompare || selectedChatCompare._id !== newMessageReceived.chat._id) {
-                // Update unread count for non-selected chat
+                // ... logic for unread count already exists
                 setChats(prev => prev.map(c => 
                     c._id === newMessageReceived.chat._id ? { ...c, unreadCount: (c.unreadCount || 0) + 1, lastMessage: newMessageReceived } : c
                 ));
             } else {
-                setMessages([...messages, newMessageReceived]);
+                setMessages(prev => [...prev, newMessageReceived]);
+                socket.emit("mark-as-read", { chatId: selectedChatCompare._id, userId: currentUser._id });
             }
         };
+
+        const readListener = (data) => {
+            if (selectedChatCompare && selectedChatCompare._id === data.chatId && data.readerId !== currentUser._id) {
+                setMessages(prev => prev.map(m => m.sender._id === currentUser._id ? { ...m, isRead: true } : m));
+            }
+        };
+
         socket.on("message-received", messageListener);
-        return () => socket.off("message-received", messageListener);
-    }, [socket, messages]);
+        socket.on("messages-read", readListener);
+
+        return () => {
+            socket.off("message-received", messageListener);
+            socket.off("messages-read", readListener);
+        };
+    }, [socket, currentUser]);
 
     const handleSearch = async (e) => {
         setSearch(e.target.value);
@@ -485,8 +499,15 @@ const ChatPage = () => {
                                                         {m.content}
                                                         {m.isEdited && <span className="edited-tag">(edited)</span>}
                                                     </div>
-                                                    <div style={{ fontSize: '0.65rem', opacity: 0.6, marginTop: '4px', textAlign: 'right' }}>
-                                                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '5px', marginTop: '4px' }}>
+                                                        <span style={{ fontSize: '0.65rem', opacity: 0.6 }}>
+                                                            {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        {m.sender._id === currentUser._id && (
+                                                            <span className={`read-receipt ${m.isRead ? 'read' : ''}`} style={{ fontSize: '0.8rem', lineHeight: 1 }}>
+                                                                ✓✓
+                                                            </span>
+                                                        )}
                                                     </div>
                                                 </>
                                             )}
