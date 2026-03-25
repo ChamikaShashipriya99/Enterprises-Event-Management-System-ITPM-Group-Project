@@ -21,7 +21,7 @@ const accessChat = async (req, res) => {
 
     isChat = await User.populate(isChat, {
         path: 'lastMessage.sender',
-        select: 'name profilePicture email',
+        select: 'name profilePicture email role',
     });
 
     if (isChat.length > 0) {
@@ -59,13 +59,13 @@ const fetchChats = async (req, res) => {
             .populate('lastMessage')
             .populate({
                 path: 'pinnedMessages',
-                populate: { path: 'sender', select: 'name profilePicture' }
+                populate: { path: 'sender', select: 'name profilePicture role' }
             })
             .sort({ updatedAt: -1 });
 
         chats = await User.populate(chats, {
             path: 'lastMessage.sender',
-            select: 'name profilePicture email',
+            select: 'name profilePicture email role',
         });
 
         // Add unread count to each chat
@@ -109,7 +109,7 @@ const sendMessage = async (req, res) => {
     try {
         var message = await Message.create(newMessage);
 
-        message = await message.populate('sender', 'name profilePicture');
+        message = await message.populate('sender', 'name profilePicture role');
         message = await message.populate('chat');
         message = await User.populate(message, {
             path: 'chat.participants',
@@ -136,7 +136,7 @@ const allMessages = async (req, res) => {
         const skip = (page - 1) * limit;
 
         const messages = await Message.find({ chat: chatId })
-            .populate('sender', 'name profilePicture email')
+            .populate('sender', 'name profilePicture email role')
             .populate('chat')
             .sort({ createdAt: -1 })
             .skip(skip)

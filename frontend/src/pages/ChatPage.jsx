@@ -657,11 +657,11 @@ const ChatPage = () => {
                                         <div 
                                             key={m._id} 
                                             id={`msg-${m._id}`}
-                                            className={`message-bubble ${m.sender._id === currentUser._id ? 'message-sent' : 'message-received'}`}
+                                            className={`message-bubble ${m.sender._id === currentUser._id ? 'message-sent' : 'message-received'} ${m.sender.role === 'admin' ? 'message-admin' : ''}`}
                                         >
-                                            {selectedChat.isGroupChat && m.sender._id !== currentUser._id && (
+                                            {selectedChat.isGroupChat && (m.sender._id !== currentUser._id || m.sender.role === 'admin') && (
                                                 <div style={{ fontSize: '0.7rem', fontWeight: 'bold', marginBottom: '4px', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                    {m.sender.name}
+                                                    {m.sender._id !== currentUser._id ? m.sender.name : 'You (Admin)'}
                                                     {m.sender.role === 'admin' && <span className="admin-badge">ADMIN</span>}
                                                 </div>
                                             )}

@@ -452,6 +452,19 @@ h1, h2, h3 {
     opacity: 0.8;
 }
 
+.message-admin {
+    background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%) !important;
+    border: 1px solid rgba(255, 255, 255, 0.2) !important;
+    box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+    color: white !important;
+}
+
+.message-admin .admin-badge {
+    background: white !important;
+    color: #4f46e5 !important;
+    box-shadow: 0 0 5px rgba(255, 255, 255, 0.5);
+}
+
 @keyframes highlightPulse {
     0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.8); background: rgba(99, 102, 241, 0.3); }
     100% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); background: transparent; }
