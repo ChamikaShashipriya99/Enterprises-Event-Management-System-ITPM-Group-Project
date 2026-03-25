@@ -750,9 +750,12 @@ const ChatPage = () => {
 
                                             {!editMessageId && !m.isDeletedByAdmin && (
                                                 <div className="message-actions">
-                                                    <button className="action-btn" onClick={() => handleTogglePin(m._id)}>
-                                                        {selectedChat.pinnedMessages?.some(p => p._id === m._id) ? '📍 Unpin' : '📌 Pin'}
-                                                    </button>
+                                                    {/* Students cannot unpin admin messages */}
+                                                    {!(currentUser.role === 'student' && m.sender?.role === 'admin' && selectedChat.pinnedMessages?.some(p => p?._id === m._id)) && (
+                                                        <button className="action-btn" onClick={() => handleTogglePin(m._id)}>
+                                                            {selectedChat.pinnedMessages?.some(p => p?._id === m._id) ? '📍 Unpin' : '📌 Pin'}
+                                                        </button>
+                                                    )}
                                                     {(m.sender._id === currentUser._id || currentUser.role === 'admin') && (
                                                         <>
                                                             {m.sender._id === currentUser._id && (
@@ -761,7 +764,10 @@ const ChatPage = () => {
                                                                     setEditContent(m.content);
                                                                 }}>✎ Edit</button>
                                                             )}
-                                                            <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
+                                                            {/* Students cannot delete admin messages */}
+                                                            {!(currentUser.role === 'student' && m.sender?.role === 'admin') && (
+                                                                <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
+                                                            )}
                                                         </>
                                                     )}
                                                 </div>

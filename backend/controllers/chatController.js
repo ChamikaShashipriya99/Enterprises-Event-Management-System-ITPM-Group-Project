@@ -214,7 +214,7 @@ const deleteMessage = async (req, res) => {
         }
         if (message.sender.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
             res.status(401);
-            throw new Error('Not authorized to delete this message');
+            throw new Error('Not authorized to delete this message. Administrative messages are protected.');
         }
 
         if (req.user.role === 'admin' && message.sender.toString() !== req.user._id.toString()) {
@@ -380,6 +380,15 @@ const togglePinMessage = async (req, res) => {
         const isPinned = chat.pinnedMessages.includes(messageId);
 
         if (isPinned) {
+            // Protection: Students cannot unpin messages sent by admins
+            if (req.user.role === 'student') {
+                const messageToUnpin = await Message.findById(messageId).populate('sender', 'role');
+                if (messageToUnpin && messageToUnpin.sender.role === 'admin') {
+                    res.status(401);
+                    throw new Error('Administrative messages cannot be unpinned by students');
+                }
+            }
+
             // Unpin
             chat.pinnedMessages = chat.pinnedMessages.filter(
                 (id) => id.toString() !== messageId.toString()
