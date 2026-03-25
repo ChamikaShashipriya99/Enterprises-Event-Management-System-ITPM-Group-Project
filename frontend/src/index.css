@@ -279,3 +279,28 @@ h1, h2, h3 {
     border-radius: 4px;
     margin-left: 8px;
 }
+
+/* Floating Chat Button */
+.floating-chat-btn {
+    position: fixed;
+    bottom: 30px;
+    right: 30px;
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--primary) 0%, #a855f7 100%);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 4px 20px rgba(99, 102, 241, 0.5);
+    cursor: pointer;
+    transition: transform 0.3s, box-shadow 0.3s;
+    z-index: 1000;
+    text-decoration: none;
+    font-size: 1.5rem;
+}
+
+.floating-chat-btn:hover {
+    transform: scale(1.1);
+    box-shadow: 0 6px 25px rgba(99, 102, 241, 0.7);
+}
