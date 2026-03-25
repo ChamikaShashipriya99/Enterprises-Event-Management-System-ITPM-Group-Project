@@ -154,10 +154,10 @@ const allMessages = async (req, res) => {
 
         const totalMessages = await Message.countDocuments({ chat: chatId });
 
-        // Mark messages as read
+        // Mark messages as read by current user
         await Message.updateMany(
-            { chat: chatId, sender: { $ne: req.user._id }, isRead: false },
-            { $set: { isRead: true } }
+            { chat: chatId, sender: { $ne: req.user._id }, readBy: { $ne: req.user._id } },
+            { $addToSet: { readBy: req.user._id }, $set: { isRead: true } }
         );
 
         // Reverse to show in chronological order
@@ -561,6 +561,21 @@ const getChatStats = async (req, res) => {
             }
         ]);
 
+        // 5. Moderation Insights (Phase 30)
+        // Self-Deletion Rate
+        const totalUserMsgs = await Message.countDocuments({ senderRole: 'student' }); // Requires senderRole to be reliable
+        const userDeletions = await AuditLog.countDocuments({ action: 'USER_DELETE' });
+        const selfDeletionRate = totalUserMsgs > 0 ? ((userDeletions / totalUserMsgs) * 100).toFixed(1) : 0;
+
+        // Announcement Reach (Latest Announcement)
+        const latestAnnouncement = await Message.findOne({ isAnnouncement: true }).sort({ createdAt: -1 });
+        let announcementReach = 0;
+        if (latestAnnouncement) {
+            const totalStudents = await User.countDocuments({ role: 'student' });
+            const readCount = latestAnnouncement.readBy ? latestAnnouncement.readBy.length : 0;
+            announcementReach = totalStudents > 0 ? ((readCount / totalStudents) * 100).toFixed(0) : 0;
+        }
+
         res.status(200).json({
             activeNow,
             todayMsgs,
@@ -571,7 +586,13 @@ const getChatStats = async (req, res) => {
             fileBreakdown: fileBreakdown.map(f => ({ 
                 name: f._id.charAt(0) === 't' ? 'Text' : f._id.charAt(0).toUpperCase() + f._id.slice(1), 
                 value: f.count 
-            }))
+            })),
+            insights: {
+                selfDeletionRate,
+                announcementReach,
+                totalUserMsgs,
+                userDeletions
+            }
         });
     } catch (error) {
         console.error('Error fetching chat stats:', error);

@@ -23,33 +23,51 @@ const AdminDashboard = () => {
         moderationActions: 0,
         hourlyActivity: [],
         topContributors: [],
-        fileBreakdown: []
+        fileBreakdown: [],
+        insights: {
+            selfDeletionRate: 0,
+            announcementReach: 0
+        }
     });
     const [loading, setLoading] = useState(true);
+    const { socket } = useContext(AuthContext);
+
+    const fetchStats = async (showLoading = false) => {
+        try {
+            if (showLoading) setLoading(true);
+            const user = JSON.parse(localStorage.getItem('user'));
+            const token = user?.token;
+            
+            const [eventRes, chatRes] = await Promise.all([
+                eventService.getAdminStats(),
+                chatService.getChatStats(token)
+            ]);
+            
+            setStats(eventRes.data);
+            setChatStats(chatRes);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching admin stats:', error);
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                setLoading(true);
-                const user = JSON.parse(localStorage.getItem('user'));
-                const token = user?.token;
-                
-                // Fetch both system stats and chat stats
-                const [eventRes, chatRes] = await Promise.all([
-                    eventService.getAdminStats(),
-                    chatService.getChatStats(token)
-                ]);
-                
-                setStats(eventRes.data);
-                setChatStats(chatRes);
-                setLoading(false);
-            } catch (error) {
-                console.error('Error fetching admin stats:', error);
-                setLoading(false);
-            }
-        };
-        fetchStats();
-    }, []);
+        fetchStats(true);
+
+        if (socket) {
+            const handleUpdate = () => fetchStats(false);
+            socket.on("message-received", handleUpdate);
+            socket.on("message-deleted", handleUpdate);
+            socket.on("message-pinned", handleUpdate);
+
+            return () => {
+                socket.off("message-received", handleUpdate);
+                socket.off("message-deleted", handleUpdate);
+                socket.off("message-pinned", handleUpdate);
+            };
+        }
+    }, [socket]);
 
     if (loading) return (
         <div style={{ padding: '2rem 5%' }}>
@@ -224,6 +242,38 @@ const AdminDashboard = () => {
                                 <Legend verticalAlign="bottom" height={36}/>
                             </PieChart>
                         </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* Moderation Insights Section */}
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem' }}>
+                Moderation <span style={{ color: '#ec4899' }}>Insights</span> 🧠
+            </h2>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '3rem'
+            }}>
+                <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #ef4444' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#94a3b8' }}>Self-Deletion Rate</span>
+                        <span style={{ fontSize: '1.2rem' }}>🗑️</span>
+                    </div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{chatStats.insights?.selfDeletionRate}%</div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                        Frequency of student-initiated message removals.
+                    </div>
+                </div>
+                <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #a855f7' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#94a3b8' }}>Announcement Reach</span>
+                        <span style={{ fontSize: '1.2rem' }}>📢</span>
+                    </div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{chatStats.insights?.announcementReach}%</div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                        Percentage of students who read the latest admin update.
                     </div>
                 </div>
             </div>
