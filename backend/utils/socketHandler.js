@@ -46,8 +46,20 @@ const socketHandler = (io) => {
             socket.in(data.chatId).emit('message-removed', data.messageId);
         });
 
-        socket.on('message-reacted', (updatedMessage) => {
-            socket.in(updatedMessage.chat._id).emit('reaction-updated', updatedMessage);
+        socket.on("message-reacted", (updatedMessage) => {
+            const chat = updatedMessage.chat;
+            if (!chat.participants) return;
+            chat.participants.forEach(user => {
+                if (user._id == updatedMessage.sender._id) return;
+                socket.in(user._id).emit("reaction-updated", updatedMessage);
+            });
+        });
+
+        socket.on("message-pinned", (updatedChat) => {
+            if (!updatedChat.participants) return;
+            updatedChat.participants.forEach(user => {
+                socket.in(user._id).emit("chat-pinned-updated", updatedChat);
+            });
         });
 
         socket.on('mark-as-read', async (data) => {

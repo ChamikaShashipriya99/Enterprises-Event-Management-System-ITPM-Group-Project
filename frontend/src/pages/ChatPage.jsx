@@ -261,16 +261,52 @@ const ChatPage = () => {
             setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
         };
 
+        const pinnedUpdateListener = (updatedChat) => {
+            if (selectedChatCompare && selectedChatCompare._id === updatedChat._id) {
+                setSelectedChat(updatedChat);
+                // Update in chats list too
+                setChats(prev => prev.map(c => c._id === updatedChat._id ? { ...c, pinnedMessages: updatedChat.pinnedMessages } : c));
+            }
+        };
+
         socket.on("message-received", messageListener);
         socket.on("messages-read", readListener);
         socket.on("reaction-updated", reactionListener);
+        socket.on("chat-pinned-updated", pinnedUpdateListener);
 
         return () => {
             socket.off("message-received", messageListener);
             socket.off("messages-read", readListener);
             socket.off("reaction-updated", reactionListener);
+            socket.off("chat-pinned-updated", pinnedUpdateListener);
         };
     }, [socket, currentUser]);
+
+    const handleTogglePin = async (messageId) => {
+        try {
+            const data = await chatService.togglePinMessage(selectedChat._id, messageId, currentUser.token);
+            socket.emit("message-pinned", data);
+            setSelectedChat(data);
+            setChats(prev => prev.map(c => c._id === data._id ? { ...c, pinnedMessages: data.pinnedMessages } : c));
+            toast.success(data.pinnedMessages.some(m => m._id === messageId) ? "Message pinned" : "Message unpinned");
+        } catch (error) {
+            console.error("Error toggling pin", error);
+            toast.error("Failed to pin message");
+        }
+    };
+
+    const jumpToMessage = (messageId) => {
+        const element = document.getElementById(`msg-${messageId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+            element.classList.add("highlight-pulse");
+            setTimeout(() => element.classList.remove("highlight-pulse"), 2000);
+        } else {
+            toast("Searching for message...", { icon: '🔍' });
+            // Advanced: If message not in DOM, we'd need to fetch more pages. 
+            // For now, prompt to load more.
+        }
+    };
 
     const handleToggleReaction = async (messageId, emoji) => {
         try {
@@ -545,6 +581,22 @@ const ChatPage = () => {
                                 </button>
                             </div>
                         </div>
+
+                        {selectedChat.pinnedMessages && selectedChat.pinnedMessages.length > 0 && (
+                            <div className="pinned-messages-bar">
+                                <div className="pinned-icon">📌</div>
+                                <div className="pinned-carousel">
+                                    {selectedChat.pinnedMessages.map((pm, idx) => (
+                                        <div key={pm._id} className="pinned-item" onClick={() => jumpToMessage(pm._id)}>
+                                            <span className="pinned-sender">{pm.sender?.name}:</span>
+                                            <span className="pinned-text">{pm.content?.substring(0, 40)}{pm.content?.length > 40 ? '...' : ''}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="pinned-count">{selectedChat.pinnedMessages.length} pinned</div>
+                            </div>
+                        )}
+
                         <div className="chat-messages">
                             {hasMore && (
                                 <div style={{ textAlign: 'center', padding: '10px' }}>
@@ -574,6 +626,7 @@ const ChatPage = () => {
                                     return (
                                         <div 
                                             key={m._id} 
+                                            id={`msg-${m._id}`}
                                             className={`message-bubble ${m.sender._id === currentUser._id ? 'message-sent' : 'message-received'}`}
                                         >
                                             {selectedChat.isGroupChat && m.sender._id !== currentUser._id && (
@@ -640,13 +693,20 @@ const ChatPage = () => {
                                                 )
                                             )}
 
-                                            {m.sender._id === currentUser._id && !editMessageId && (
+                                            {!editMessageId && (
                                                 <div className="message-actions">
-                                                    <button className="action-btn" onClick={() => {
-                                                        setEditMessageId(m._id);
-                                                        setEditContent(m.content);
-                                                    }}>✎ Edit</button>
-                                                    <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
+                                                    <button className="action-btn" onClick={() => handleTogglePin(m._id)}>
+                                                        {selectedChat.pinnedMessages?.some(p => p._id === m._id) ? '📍 Unpin' : '📌 Pin'}
+                                                    </button>
+                                                    {m.sender._id === currentUser._id && (
+                                                        <>
+                                                            <button className="action-btn" onClick={() => {
+                                                                setEditMessageId(m._id);
+                                                                setEditContent(m.content);
+                                                            }}>✎ Edit</button>
+                                                            <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
+                                                        </>
+                                                    )}
                                                 </div>
                                             )}
 

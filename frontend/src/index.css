@@ -357,6 +357,84 @@ h1, h2, h3 {
     color: white;
 }
 
+.cancel-reply:hover {
+    color: #ef4444;
+}
+
+/* Pinned Messages Style */
+.pinned-messages-bar {
+    background: rgba(99, 102, 241, 0.1);
+    backdrop-filter: blur(10px);
+    border-bottom: 1px solid rgba(255,255,255,0.05);
+    padding: 8px 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    z-index: 5;
+    animation: slideDown 0.3s ease-out;
+}
+
+@keyframes slideDown {
+    from { transform: translateY(-100%); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.pinned-icon {
+    font-size: 1.2rem;
+    filter: drop-shadow(0 0 5px rgba(99, 102, 241, 0.5));
+}
+
+.pinned-carousel {
+    flex: 1;
+    display: flex;
+    overflow-x: auto;
+    gap: 20px;
+    scrollbar-width: none;
+}
+
+.pinned-carousel::-webkit-scrollbar {
+    display: none;
+}
+
+.pinned-item {
+    cursor: pointer;
+    white-space: nowrap;
+    font-size: 0.85rem;
+    padding: 2px 0;
+    transition: transform 0.2s;
+}
+
+.pinned-item:hover {
+    transform: translateY(-1px);
+}
+
+.pinned-sender {
+    color: #818cf8;
+    font-weight: 600;
+    margin-right: 5px;
+}
+
+.pinned-text {
+    color: var(--text-muted);
+}
+
+.pinned-count {
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    opacity: 0.6;
+}
+
+.highlight-pulse {
+    animation: highlightPulse 2s ease-out;
+}
+
+@keyframes highlightPulse {
+    0% { box-shadow: 0 0 0 0 rgba(99, 102, 241, 0.8); background: rgba(99, 102, 241, 0.3); }
+    100% { box-shadow: 0 0 0 15px rgba(99, 102, 241, 0); background: transparent; }
+}
+
 .edited-tag {
     font-size: 0.65rem;
     font-style: italic;

@@ -9,19 +9,23 @@ const {
     editMessage,
     deleteMessage,
     toggleReaction,
+    togglePinMessage,
 } = require('../controllers/chatController');
 const { protect } = require('../middleware/authMiddleware');
 const chatUpload = require('../middleware/chatUploadMiddleware');
 
 const router = express.Router();
 
-router.route('/').post(protect, accessChat).get(protect, fetchChats);
+router.route('/').post(protect, accessChat);
+router.route('/').get(protect, fetchChats);
 router.route('/global').get(protect, accessGlobalChat);
 router.route('/users').get(protect, searchUsers);
 router.route('/message').post(protect, sendMessage);
 router.route('/message/:chatId').get(protect, allMessages);
-router.route('/message/:messageId').put(protect, editMessage).delete(protect, deleteMessage);
+router.route('/message/:messageId').put(protect, editMessage);
+router.route('/message/:messageId').delete(protect, deleteMessage);
 router.route('/message/:messageId/react').post(protect, toggleReaction);
+router.route('/:chatId/pin/:messageId').post(protect, togglePinMessage);
 
 router.post('/upload', protect, chatUpload.single('file'), (req, res) => {
     if (req.file) {

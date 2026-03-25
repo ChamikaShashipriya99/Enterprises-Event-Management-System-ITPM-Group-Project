@@ -24,6 +24,12 @@ const chatSchema = mongoose.Schema(
             type: mongoose.Schema.Types.ObjectId,
             ref: 'User',
         },
+        pinnedMessages: [
+            {
+                type: mongoose.Schema.Types.ObjectId,
+                ref: 'Message',
+            },
+        ],
     },
     {
         timestamps: true,

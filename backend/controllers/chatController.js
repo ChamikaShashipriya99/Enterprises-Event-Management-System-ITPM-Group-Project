@@ -57,6 +57,10 @@ const fetchChats = async (req, res) => {
             .populate('participants', '-password')
             .populate('groupAdmin', '-password')
             .populate('lastMessage')
+            .populate({
+                path: 'pinnedMessages',
+                populate: { path: 'sender', select: 'name profilePicture' }
+            })
             .sort({ updatedAt: -1 });
 
         chats = await User.populate(chats, {
@@ -240,7 +244,11 @@ const accessGlobalChat = async (req, res) => {
             chatName: 'Global Students',
         })
             .populate('participants', '-password')
-            .populate('lastMessage');
+            .populate('lastMessage')
+            .populate({
+                path: 'pinnedMessages',
+                populate: { path: 'sender', select: 'name profilePicture' }
+            });
 
         if (globalChat) {
             // Check if current user is in participants, if not add them
@@ -315,6 +323,52 @@ const toggleReaction = async (req, res) => {
     }
 };
 
+// @desc    Toggle pinning a message in a chat
+// @route   POST /api/chat/:chatId/pin/:messageId
+// @access  Private
+const togglePinMessage = async (req, res) => {
+    const { chatId, messageId } = req.params;
+
+    try {
+        const chat = await Chat.findById(chatId);
+        if (!chat) {
+            res.status(404);
+            throw new Error('Chat not found');
+        }
+
+        const isPinned = chat.pinnedMessages.includes(messageId);
+
+        if (isPinned) {
+            // Unpin
+            chat.pinnedMessages = chat.pinnedMessages.filter(
+                (id) => id.toString() !== messageId.toString()
+            );
+        } else {
+            // Pin (Limit to 5 for premium feel)
+            if (chat.pinnedMessages.length >= 5) {
+                chat.pinnedMessages.shift(); // Remove oldest pin
+            }
+            chat.pinnedMessages.push(messageId);
+        }
+
+        await chat.save();
+
+        const updatedChat = await Chat.findById(chatId)
+            .populate('participants', '-password')
+            .populate('groupAdmin', '-password')
+            .populate('lastMessage')
+            .populate({
+                path: 'pinnedMessages',
+                populate: { path: 'sender', select: 'name profilePicture' }
+            });
+
+        res.status(200).json(updatedChat);
+    } catch (error) {
+        res.status(400);
+        throw new Error(error.message);
+    }
+};
+
 module.exports = {
     accessChat,
     fetchChats,
@@ -325,4 +379,5 @@ module.exports = {
     editMessage,
     deleteMessage,
     toggleReaction,
+    togglePinMessage,
 };

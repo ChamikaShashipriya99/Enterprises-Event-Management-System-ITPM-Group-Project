@@ -91,6 +91,17 @@ const toggleReaction = async (messageId, emoji, token) => {
     return response.data;
 };
 
+const togglePinMessage = async (chatId, messageId, token) => {
+    const response = await axios.post(
+        `${API_URL}${chatId}/pin/${messageId}`,
+        {},
+        {
+            headers: { Authorization: `Bearer ${token}` },
+        }
+    );
+    return response.data;
+};
+
 const chatService = {
     fetchChats,
     accessChat,
@@ -102,6 +113,7 @@ const chatService = {
     updateMessage,
     deleteMessage,
     toggleReaction,
+    togglePinMessage,
 };
 
 export default chatService;
