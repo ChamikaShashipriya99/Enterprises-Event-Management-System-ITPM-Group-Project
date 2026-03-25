@@ -1,8 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import eventService from '../services/eventService';
 import chatService from '../services/chatService';
 import Skeleton from '../components/Skeleton';
+import { 
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+    PieChart, Pie, Cell, Legend, AreaChart, Area 
+} from 'recharts';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({
@@ -15,7 +20,10 @@ const AdminDashboard = () => {
         activeNow: 0,
         todayMsgs: 0,
         mediaShared: 0,
-        moderationActions: 0
+        moderationActions: 0,
+        hourlyActivity: [],
+        topContributors: [],
+        fileBreakdown: []
     });
     const [loading, setLoading] = useState(true);
 
@@ -141,6 +149,83 @@ const AdminDashboard = () => {
                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{card.desc}</div>
                     </div>
                 ))}
+            </div>
+
+            {/* Visual Insights Section */}
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem' }}>
+                Visual <span style={{ color: '#6366f1' }}>Insights</span> 📉
+            </h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
+                {/* 1. Peak Activity Chart */}
+                <div className="glass-card" style={{ padding: '2rem', minHeight: '400px' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Peak Activity (Last 24h)</h3>
+                    <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                            <AreaChart data={chatStats.hourlyActivity}>
+                                <defs>
+                                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="hour" stroke="#64748b" fontSize={12} />
+                                <YAxis stroke="#64748b" fontSize={12} />
+                                <Tooltip 
+                                    contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: 'white' }}
+                                    itemStyle={{ color: '#6366f1' }}
+                                />
+                                <Area type="monotone" dataKey="count" stroke="#6366f1" fillOpacity={1} fill="url(#colorCount)" strokeWidth={3} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 2. Top Contributors Leaderboard */}
+                <div className="glass-card" style={{ padding: '2rem', minHeight: '400px' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Top Contributors</h3>
+                    <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                            <BarChart data={chatStats.topContributors} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                <XAxis type="number" hide />
+                                <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={12} width={100} />
+                                <Tooltip 
+                                    contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: 'white' }}
+                                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                                />
+                                <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 3. Content Breakdown Pie Chart */}
+                <div className="glass-card" style={{ padding: '2rem', minHeight: '400px', gridColumn: 'span 1' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Content Distribution</h3>
+                    <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                            <PieChart>
+                                <Pie
+                                    data={chatStats.fileBreakdown}
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {chatStats.fileBreakdown.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={['#6366f1', '#10b981', '#f59e0b', '#ec4899'][index % 4]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip 
+                                    contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: 'white' }}
+                                />
+                                <Legend verticalAlign="bottom" height={36}/>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
             </div>
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>

@@ -506,23 +506,72 @@ const getChatStats = async (req, res) => {
         const todayStart = new Date();
         todayStart.setHours(0, 0, 0, 0);
 
-        // 1. Active Now (Students)
+        // 1. Core Summary Stats
         const activeNow = await User.countDocuments({ isOnline: true, role: 'student' });
-
-        // 2. Today's Volume (Total messages in last 24h)
         const todayMsgs = await Message.countDocuments({ createdAt: { $gte: last24h } });
-
-        // 3. Media Shared (Messages with fileUrl)
         const mediaShared = await Message.countDocuments({ fileUrl: { $ne: null } });
-
-        // 4. Moderation Status (Actions logged today)
         const moderationActions = await AuditLog.countDocuments({ createdAt: { $gte: todayStart } });
+
+        // 2. Hourly Activity (Last 24 Hours)
+        const hourlyActivity = await Message.aggregate([
+            { $match: { createdAt: { $gte: last24h } } },
+            { 
+                $group: { 
+                    _id: { $hour: "$createdAt" }, 
+                    count: { $sum: 1 } 
+                } 
+            },
+            { $sort: { "_id": 1 } }
+        ]);
+
+        // 3. Top Contributors (Total Messages)
+        const topContributors = await Message.aggregate([
+            { 
+                $group: { 
+                    _id: "$sender", 
+                    count: { $sum: 1 } 
+                } 
+            },
+            { $sort: { count: -1 } },
+            { $limit: 5 },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'user'
+                }
+            },
+            { $unwind: "$user" },
+            {
+                $project: {
+                    name: "$user.name",
+                    count: 1
+                }
+            }
+        ]);
+
+        // 4. File Breakdown
+        const fileBreakdown = await Message.aggregate([
+            {
+                $group: {
+                    _id: { $ifNull: ["$fileType", "text"] },
+                    count: { $sum: 1 }
+                }
+            }
+        ]);
 
         res.status(200).json({
             activeNow,
             todayMsgs,
             mediaShared,
-            moderationActions
+            moderationActions,
+            hourlyActivity: hourlyActivity.map(h => ({ hour: `${h._id}:00`, count: h.count })),
+            topContributors,
+            fileBreakdown: fileBreakdown.map(f => ({ 
+                name: f._id.charAt(0) === 't' ? 'Text' : f._id.charAt(0).toUpperCase() + f._id.slice(1), 
+                value: f.count 
+            }))
         });
     } catch (error) {
         console.error('Error fetching chat stats:', error);
