@@ -19,6 +19,9 @@ const ChatPage = () => {
     const [loading, setLoading] = useState(false);
     const [editMessageId, setEditMessageId] = useState(null);
     const [editContent, setEditContent] = useState("");
+    const [previewImage, setPreviewImage] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [showMediaOnly, setShowMediaOnly] = useState(false);
 
     const { currentUser, socket } = useContext(AuthContext);
     const messagesEndRef = useRef(null);
@@ -108,7 +111,16 @@ const ChatPage = () => {
         };
         fetchMessages();
         selectedChatCompare = selectedChat;
+        setSearchTerm("");
+        setShowMediaOnly(false);
     }, [selectedChat]);
+
+    const filteredMessages = messages.filter(m => {
+        const matchesSearch = m.content?.toLowerCase().includes(searchTerm.toLowerCase());
+        const isMedia = m.fileUrl;
+        if (showMediaOnly) return isMedia && matchesSearch;
+        return matchesSearch;
+    });
 
     useEffect(() => {
         if (!socket) return;
@@ -337,79 +349,108 @@ const ChatPage = () => {
                                     )}
                                 </div>
                             </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                <input 
+                                    type="text" 
+                                    placeholder="Search messages..." 
+                                    className="input-field" 
+                                    style={{ marginBottom: 0, width: '200px', fontSize: '0.85rem', padding: '5px 10px' }}
+                                    value={searchTerm}
+                                    onChange={(e) => setSearchTerm(e.target.value)}
+                                />
+                                <button 
+                                    className={`btn-primary ${showMediaOnly ? 'active' : ''}`} 
+                                    style={{ padding: '6px 12px', fontSize: '0.8rem', background: showMediaOnly ? '#6366f1' : 'rgba(255,255,255,0.1)' }}
+                                    onClick={() => setShowMediaOnly(!showMediaOnly)}
+                                >
+                                    {showMediaOnly ? 'Show All' : 'Gallery'}
+                                </button>
+                            </div>
                         </div>
                         <div className="chat-messages">
                             {loading && messages.length === 0 ? (
                                 <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading...</div>
                             ) : (
-                                messages.map((m, i) => (
-                                    <div 
-                                        key={m._id} 
-                                        className={`message-bubble ${m.sender._id === currentUser._id ? 'message-sent' : 'message-received'}`}
-                                    >
-                                        {selectedChat.isGroupChat && m.sender._id !== currentUser._id && (
-                                            <div style={{ fontSize: '0.7rem', fontWeight: 'bold', marginBottom: '4px', opacity: 0.8 }}>
-                                                {m.sender.name}
+                                filteredMessages.map((m, i) => {
+                                    // Custom rendering for media gallery mode
+                                    if (showMediaOnly && m.fileType === 'image') {
+                                        return (
+                                            <div key={m._id} className="gallery-item" onClick={() => setPreviewImage(`${ENDPOINT}${m.fileUrl}`)}>
+                                                <img src={`${ENDPOINT}${m.fileUrl}`} alt="gallery" />
                                             </div>
-                                        )}
-                                        
-                                        {editMessageId === m._id ? (
-                                            <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
-                                                <input 
-                                                    className="input-field" 
-                                                    style={{ marginBottom: 0, padding: '5px' }}
-                                                    value={editContent}
-                                                    onChange={(e) => setEditContent(e.target.value)}
-                                                />
-                                                <div style={{ display: 'flex', gap: '5px' }}>
-                                                    <button className="btn-primary" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={handleEditMessage}>Save</button>
-                                                    <button className="btn-primary" style={{ padding: '2px 8px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.1)' }} onClick={() => setEditMessageId(null)}>Cancel</button>
-                                                </div>
-                                            </div>
-                                        ) : (
-                                            <>
-                                                <div>
-                                                    {m.content}
-                                                    {m.isEdited && <span className="edited-tag">(edited)</span>}
-                                                </div>
-                                                <div style={{ fontSize: '0.65rem', opacity: 0.6, marginTop: '4px', textAlign: 'right' }}>
-                                                    {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                                                </div>
-                                            </>
-                                        )}
+                                        );
+                                    }
 
-                                        {m.fileUrl && (
-                                            m.fileType === 'image' ? (
-                                                <img 
-                                                    src={`${ENDPOINT}${m.fileUrl}`} 
-                                                    alt="uploaded" 
-                                                    className="message-image" 
-                                                    onClick={() => window.open(`${ENDPOINT}${m.fileUrl}`, '_blank')}
-                                                />
+                                    return (
+                                        <div 
+                                            key={m._id} 
+                                            className={`message-bubble ${m.sender._id === currentUser._id ? 'message-sent' : 'message-received'}`}
+                                        >
+                                            {selectedChat.isGroupChat && m.sender._id !== currentUser._id && (
+                                                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', marginBottom: '4px', opacity: 0.8 }}>
+                                                    {m.sender.name}
+                                                </div>
+                                            )}
+                                            
+                                            {editMessageId === m._id ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                                    <input 
+                                                        className="input-field" 
+                                                        style={{ marginBottom: 0, padding: '5px' }}
+                                                        value={editContent}
+                                                        onChange={(e) => setEditContent(e.target.value)}
+                                                    />
+                                                    <div style={{ display: 'flex', gap: '5px' }}>
+                                                        <button className="btn-primary" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={handleEditMessage}>Save</button>
+                                                        <button className="btn-primary" style={{ padding: '2px 8px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.1)' }} onClick={() => setEditMessageId(null)}>Cancel</button>
+                                                    </div>
+                                                </div>
                                             ) : (
-                                                <a 
-                                                    href={`${ENDPOINT}${m.fileUrl}`} 
-                                                    target="_blank" 
-                                                    rel="noopener noreferrer"
-                                                    className="message-file"
-                                                >
-                                                    <span className="file-icon">📄</span>
-                                                    <span>Download Attachment</span>
-                                                </a>
-                                            )
-                                        )}
+                                                <>
+                                                    <div>
+                                                        {m.content}
+                                                        {m.isEdited && <span className="edited-tag">(edited)</span>}
+                                                    </div>
+                                                    <div style={{ fontSize: '0.65rem', opacity: 0.6, marginTop: '4px', textAlign: 'right' }}>
+                                                        {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
+                                                </>
+                                            )}
 
-                                        {m.sender._id === currentUser._id && !editMessageId && (
-                                            <div className="message-actions">
-                                                <button className="action-btn" onClick={() => {
-                                                    setEditMessageId(m._id);
-                                                    setEditContent(m.content);
-                                                }}>✎ Edit</button>
-                                                <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
-                                            </div>
-                                        )}
-                                    </div>
-                                ))
+                                            {m.fileUrl && (
+                                                m.fileType === 'image' ? (
+                                                    <img 
+                                                        src={`${ENDPOINT}${m.fileUrl}`} 
+                                                        alt="uploaded" 
+                                                        className="message-image" 
+                                                        style={{ cursor: 'zoom-in' }}
+                                                        onClick={() => setPreviewImage(`${ENDPOINT}${m.fileUrl}`)}
+                                                    />
+                                                ) : (
+                                                    <a 
+                                                        href={`${ENDPOINT}${m.fileUrl}`} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="message-file"
+                                                    >
+                                                        <span className="file-icon">📄</span>
+                                                        <span>Download Attachment</span>
+                                                    </a>
+                                                )
+                                            )}
+
+                                            {m.sender._id === currentUser._id && !editMessageId && (
+                                                <div className="message-actions">
+                                                    <button className="action-btn" onClick={() => {
+                                                        setEditMessageId(m._id);
+                                                        setEditContent(m.content);
+                                                    }}>✎ Edit</button>
+                                                    <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
+                                                </div>
+                                            )}
+                                        </div>
+                                    );
+                                })
                             )}
                             {isTyping && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Typing...</div>}
                             <div ref={messagesEndRef} />
@@ -452,6 +493,16 @@ const ChatPage = () => {
                     </div>
                 )}
             </div>
+
+            {/* Lightbox Modal */}
+            {previewImage && (
+                <div className="lightbox-overlay" onClick={() => setPreviewImage(null)}>
+                    <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+                        <img src={previewImage} alt="preview" />
+                        <button className="lightbox-close" onClick={() => setPreviewImage(null)}>&times;</button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
