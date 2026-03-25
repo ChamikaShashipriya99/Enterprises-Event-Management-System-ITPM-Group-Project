@@ -24,6 +24,7 @@ import VerifyEmail from './pages/VerifyEmail';
 import LostAndFoundFeed from './pages/LostAndFoundFeed';
 import ReportItem from './pages/ReportItem';
 import ChatPage from './pages/ChatPage';
+import AuditLogs from './pages/AuditLogs';
 
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
@@ -151,6 +152,12 @@ function App() {
           <Route path="/admin/lost-found" element={
             <ProtectedRoute role="admin">
               <AdminLostFound />
+            </ProtectedRoute>
+          } />
+          
+          <Route path="/admin/audit-logs" element={
+            <ProtectedRoute role="admin">
+              <AuditLogs />
             </ProtectedRoute>
           } />
 

@@ -1,6 +1,7 @@
 const Chat = require('../models/Chat');
 const Message = require('../models/Message');
 const User = require('../models/User');
+const AuditLog = require('../models/AuditLog');
 
 // @desc    Create or fetch a 1-to-1 chat
 // @route   POST /api/chat
@@ -122,6 +123,7 @@ const sendMessage = async (req, res) => {
                 $addToSet: { pinnedMessages: message._id },
                 lastMessage: message 
             });
+            await logAdminAction(req.user._id, 'ANNOUNCEMENT', message._id, null, req.body.chatId, `Content: ${message.content.substring(0, 50)}`);
         } else {
             await Chat.findByIdAndUpdate(req.body.chatId, { lastMessage: message });
         }
@@ -228,12 +230,17 @@ const deleteMessage = async (req, res) => {
                 .populate('sender', 'name profilePicture email')
                 .populate('chat');
 
+            await logAdminAction(req.user._id, 'DELETE', message._id, message.sender, message.chat, `Old Content: ${message.content.substring(0, 50)}`);
+
             res.json({ 
                 message: 'Message soft-deleted by admin', 
                 type: 'soft', 
                 updatedMessage 
             });
         } else {
+            // Log before deleting
+            await logAdminAction(req.user._id, 'USER_DELETE', message._id, null, message.chat, `Self-Delete content: ${message.content.substring(0, 50)}`);
+            
             // Hard delete for owner
             await Message.deleteOne({ _id: req.params.messageId });
             res.json({ 
@@ -388,6 +395,10 @@ const togglePinMessage = async (req, res) => {
         }
 
         await chat.save();
+        
+        // Log action
+        const action = isPinned ? 'UNPIN' : 'PIN';
+        await logAdminAction(req.user._id, action, messageId, null, chatId);
 
         const updatedChat = await Chat.findById(chatId)
             .populate('participants', '-password')
@@ -425,7 +436,47 @@ const clearChatMessages = async (req, res) => {
             pinnedMessages: []
         });
 
+        await logAdminAction(req.user._id, 'CLEAR_CHAT', null, null, chatId, 'Admin cleared the entire chat history');
+
         res.status(200).json({ message: 'Chat history cleared' });
+    } catch (error) {
+        res.status(400);
+        throw new Error(error.message);
+    }
+};
+
+const logAdminAction = async (adminId, action, targetMessage, targetUserId, chatId, details) => {
+    try {
+        await AuditLog.create({
+            admin: adminId,
+            action,
+            targetMessage,
+            targetUser: targetUserId,
+            chat: chatId,
+            details,
+        });
+    } catch (error) {
+        console.error('Failed to log admin action:', error);
+    }
+};
+
+// @desc    Get all audit logs (Admin only)
+// @route   GET /api/chat/audit-logs
+// @access  Private/Admin
+const getAuditLogs = async (req, res) => {
+    if (req.user.role !== 'admin') {
+        res.status(401);
+        throw new Error('Not authorized as an admin');
+    }
+
+    try {
+        const logs = await AuditLog.find({})
+            .populate('admin', 'name email role')
+            .populate('targetUser', 'name email')
+            .populate('chat', 'chatName isGroupChat')
+            .sort({ createdAt: -1 });
+
+        res.status(200).json(logs);
     } catch (error) {
         res.status(400);
         throw new Error(error.message);
@@ -444,4 +495,5 @@ module.exports = {
     toggleReaction,
     togglePinMessage,
     clearChatMessages,
+    getAuditLogs,
 };
