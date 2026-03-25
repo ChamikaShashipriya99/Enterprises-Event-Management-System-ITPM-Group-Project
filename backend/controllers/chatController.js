@@ -91,7 +91,7 @@ const fetchChats = async (req, res) => {
 // @route   POST /api/message
 // @access  Private
 const sendMessage = async (req, res) => {
-    const { content, chatId, fileUrl, fileType } = req.body;
+    const { content, chatId, fileUrl, fileType, isAnnouncement } = req.body;
 
     if ((!content && !fileUrl) || !chatId) {
         console.log('Invalid data passed into request');
@@ -104,6 +104,7 @@ const sendMessage = async (req, res) => {
         chat: chatId,
         fileUrl: fileUrl,
         fileType: fileType || 'text',
+        isAnnouncement: isAnnouncement && req.user.role === 'admin' ? true : false,
     };
 
     try {
@@ -116,7 +117,14 @@ const sendMessage = async (req, res) => {
             select: 'name profilePicture email',
         });
 
-        await Chat.findByIdAndUpdate(req.body.chatId, { lastMessage: message });
+        if (message.isAnnouncement) {
+            await Chat.findByIdAndUpdate(req.body.chatId, { 
+                $addToSet: { pinnedMessages: message._id },
+                lastMessage: message 
+            });
+        } else {
+            await Chat.findByIdAndUpdate(req.body.chatId, { lastMessage: message });
+        }
 
         res.json(message);
     } catch (error) {

@@ -27,10 +27,10 @@ const searchUsers = async (query, token) => {
     return response.data;
 };
 
-const sendMessage = async (content, chatId, token, fileUrl, fileType) => {
+const sendMessage = async (content, chatId, token, fileUrl, fileType, isAnnouncement) => {
     const response = await axios.post(
         `${API_URL}message`,
-        { content, chatId, fileUrl, fileType },
+        { content, chatId, fileUrl, fileType, isAnnouncement },
         {
             headers: { Authorization: `Bearer ${token}` },
         }

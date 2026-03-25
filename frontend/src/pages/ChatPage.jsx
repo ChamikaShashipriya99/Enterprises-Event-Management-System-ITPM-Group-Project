@@ -21,6 +21,7 @@ const ChatPage = () => {
     const [loading, setLoading] = useState(false);
     const [editMessageId, setEditMessageId] = useState(null);
     const [editContent, setEditContent] = useState("");
+    const [isAnnouncementMode, setIsAnnouncementMode] = useState(false);
     const [previewImage, setPreviewImage] = useState(null);
     const [searchTerm, setSearchTerm] = useState("");
     const [showMediaOnly, setShowMediaOnly] = useState(false);
@@ -247,6 +248,12 @@ const ChatPage = () => {
                 ));
             } else {
                 setMessages(prev => [...prev, newMessageReceived]);
+                if (newMessageReceived.isAnnouncement) {
+                    setSelectedChat(prev => ({ 
+                        ...prev, 
+                        pinnedMessages: [...(prev.pinnedMessages || []), newMessageReceived] 
+                    }));
+                }
                 socket.emit("mark-as-read", { chatId: selectedChatCompare._id, userId: currentUser._id });
             }
         };
@@ -375,9 +382,17 @@ const ChatPage = () => {
             socket.emit("stop-typing", selectedChat._id);
             try {
                 const content = newMessage;
+                const isAnnouncement = isAnnouncementMode;
                 setNewMessage("");
-                const data = await chatService.sendMessage(content, selectedChat._id, currentUser.token);
+                setIsAnnouncementMode(false);
+                const data = await chatService.sendMessage(content, selectedChat._id, currentUser.token, null, null, isAnnouncement);
                 socket.emit("new-message", data);
+                if (data.isAnnouncement) {
+                    setSelectedChat(prev => ({ 
+                        ...prev, 
+                        pinnedMessages: [...(prev.pinnedMessages || []), data] 
+                    }));
+                }
                 setMessages(prev => [...prev, data]);
             } catch (error) {
                 console.error("Error sending message", error);
@@ -657,8 +672,13 @@ const ChatPage = () => {
                                         <div 
                                             key={m._id} 
                                             id={`msg-${m._id}`}
-                                            className={`message-bubble ${m.sender._id === currentUser._id ? 'message-sent' : 'message-received'} ${m.sender.role === 'admin' ? 'message-admin' : ''}`}
+                                            className={`message-bubble ${m.isAnnouncement ? 'message-announcement' : (m.sender._id === currentUser._id ? 'message-sent' : 'message-received')} ${m.sender.role === 'admin' && !m.isAnnouncement ? 'message-admin' : ''}`}
                                         >
+                                            {m.isAnnouncement && (
+                                                <div className="announcement-header">
+                                                    📢 OFFICIAL ANNOUNCEMENT
+                                                </div>
+                                            )}
                                             {selectedChat.isGroupChat && (m.sender._id !== currentUser._id || m.sender.role === 'admin') && (
                                                 <div style={{ fontSize: '0.7rem', fontWeight: 'bold', marginBottom: '4px', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '5px' }}>
                                                     {m.sender._id !== currentUser._id ? m.sender.name : 'You (Admin)'}
@@ -822,6 +842,16 @@ const ChatPage = () => {
                                 </button>
                             )}
 
+                             {currentUser.role === 'admin' && (
+                                <button 
+                                    className={`btn-primary ${isAnnouncementMode ? 'active' : ''}`} 
+                                    style={{ padding: '8px 12px', background: isAnnouncementMode ? '#22c55e' : 'rgba(255,255,255,0.1)', border: isAnnouncementMode ? 'none' : '' }}
+                                    onClick={() => setIsAnnouncementMode(!isAnnouncementMode)}
+                                    title="Toggle Announcement Mode"
+                                >
+                                    📢
+                                </button>
+                            )}
                             <input
                                 type="text"
                                 placeholder={isRecording ? "Recording..." : "Type a message..."}
