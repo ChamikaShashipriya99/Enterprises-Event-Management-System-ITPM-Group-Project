@@ -242,6 +242,10 @@ const deleteMessage = async (req, res) => {
 
             await logAdminAction(req.user._id, 'DELETE', message._id, message.sender, message.chat, `Old Content: ${message.content.substring(0, 50)}`);
 
+            const io = req.app.get('io');
+            const newLog = await AuditLog.findOne({ admin: req.user._id }).sort({ createdAt: -1 }).populate('admin', 'name email role').populate('chat', 'chatName');
+            if (io) io.emit('audit-log-created', newLog);
+
             res.json({ 
                 message: 'Message soft-deleted by admin', 
                 type: 'soft', 
@@ -250,6 +254,10 @@ const deleteMessage = async (req, res) => {
         } else {
             // Log before deleting
             await logAdminAction(req.user._id, 'USER_DELETE', message._id, null, message.chat, `Self-Delete content: ${message.content.substring(0, 50)}`);
+            
+            const io = req.app.get('io');
+            const newLog = await AuditLog.findOne({ admin: req.user._id }).sort({ createdAt: -1 }).populate('admin', 'name email role').populate('chat', 'chatName');
+            if (io) io.emit('audit-log-created', newLog);
             
             // Hard delete for owner
             await Message.deleteOne({ _id: req.params.messageId });
@@ -419,6 +427,10 @@ const togglePinMessage = async (req, res) => {
         const action = isPinned ? 'UNPIN' : 'PIN';
         await logAdminAction(req.user._id, action, messageId, null, chatId);
 
+        const io = req.app.get('io');
+        const newLog = await AuditLog.findOne({ admin: req.user._id }).sort({ createdAt: -1 }).populate('admin', 'name email role').populate('chat', 'chatName');
+        if (io) io.emit('audit-log-created', newLog);
+
         const updatedChat = await Chat.findById(chatId)
             .populate('participants', '-password')
             .populate('groupAdmin', '-password')
@@ -456,6 +468,10 @@ const clearChatMessages = async (req, res) => {
         });
 
         await logAdminAction(req.user._id, 'CLEAR_CHAT', null, null, chatId, 'Admin cleared the entire chat history');
+
+        const io = req.app.get('io');
+        const newLog = await AuditLog.findOne({ admin: req.user._id }).sort({ createdAt: -1 }).populate('admin', 'name email role').populate('chat', 'chatName');
+        if (io) io.emit('audit-log-created', newLog);
 
         res.status(200).json({ message: 'Chat history cleared' });
     } catch (error) {

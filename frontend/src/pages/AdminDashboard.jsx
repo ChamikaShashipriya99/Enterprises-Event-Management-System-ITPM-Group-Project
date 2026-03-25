@@ -57,14 +57,19 @@ const AdminDashboard = () => {
 
         if (socket) {
             const handleUpdate = () => fetchStats(false);
+            
             socket.on("message-received", handleUpdate);
-            socket.on("message-deleted", handleUpdate);
-            socket.on("message-pinned", handleUpdate);
+            socket.on("message-removed", handleUpdate);
+            socket.on("message-updated", handleUpdate);
+            socket.on("chat-pinned-updated", handleUpdate);
+            socket.on("chat-cleared", handleUpdate);
 
             return () => {
                 socket.off("message-received", handleUpdate);
-                socket.off("message-deleted", handleUpdate);
-                socket.off("message-pinned", handleUpdate);
+                socket.off("message-removed", handleUpdate);
+                socket.off("message-updated", handleUpdate);
+                socket.off("chat-pinned-updated", handleUpdate);
+                socket.off("chat-cleared", handleUpdate);
             };
         }
     }, [socket]);

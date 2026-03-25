@@ -27,6 +27,22 @@ const AuditLogs = () => {
         fetchLogs();
     }, [currentUser.token]);
 
+    const { socket } = useContext(AuthContext);
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const logListener = (newLog) => {
+            setLogs(prev => [newLog, ...prev]);
+        };
+
+        socket.on('audit-log-created', logListener);
+
+        return () => {
+            socket.off('audit-log-created', logListener);
+        };
+    }, [socket]);
+
     const filteredLogs = filter === 'ALL' 
         ? logs 
         : logs.filter(log => log.action === filter);

@@ -66,46 +66,7 @@ const ChatPage = () => {
 
     useEffect(() => {
         if (!socket) return;
-
         setSocketConnected(true);
-        socket.on("typing", () => setIsTyping(true));
-        socket.on("stop-typing", () => setIsTyping(false));
-
-        socket.on("user-status-changed", (data) => {
-            setChats(prevChats => 
-                prevChats.map(chat => {
-                    const updatedParticipants = chat.participants.map(p => 
-                        p._id === data.userId ? { ...p, isOnline: data.isOnline, lastSeen: data.lastSeen } : p
-                    );
-                    return { ...chat, participants: updatedParticipants };
-                })
-            );
-        });
-
-        socket.on("message-updated", (updatedMessage) => {
-            setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
-        });
-
-        socket.on("message-removed", (messageId) => {
-            setMessages(prev => prev.filter(m => m._id !== messageId));
-            toast("A message was deleted", {
-                icon: '🗑️',
-                style: {
-                    background: '#1e293b',
-                    color: '#f8fafc',
-                    border: '1px solid rgba(239, 68, 68, 0.2)',
-                    borderRadius: '12px',
-                }
-            });
-        });
-
-        return () => {
-            socket.off("typing");
-            socket.off("stop-typing");
-            socket.off("user-status-changed");
-            socket.off("message-updated");
-            socket.off("message-removed");
-        };
     }, [socket]);
 
     useEffect(() => {
@@ -245,12 +206,25 @@ const ChatPage = () => {
 
     useEffect(() => {
         if (!socket) return;
+
         const messageListener = (newMessageReceived) => {
             if (!selectedChatCompare || selectedChatCompare._id !== newMessageReceived.chat._id) {
-                // ... logic for unread count already exists
-                setChats(prev => prev.map(c => 
-                    c._id === newMessageReceived.chat._id ? { ...c, unreadCount: (c.unreadCount || 0) + 1, lastMessage: newMessageReceived } : c
-                ));
+                setChats(prev => {
+                    const chatFound = prev.find(c => c._id === newMessageReceived.chat._id);
+                    if (chatFound) {
+                        return prev.map(c => 
+                            c._id === newMessageReceived.chat._id ? { ...c, unreadCount: (c.unreadCount || 0) + 1, lastMessage: newMessageReceived } : c
+                        );
+                    } else {
+                        // New chat discovery!
+                        const newChat = { 
+                            ...newMessageReceived.chat, 
+                            unreadCount: 1, 
+                            lastMessage: newMessageReceived 
+                        };
+                        return [newChat, ...prev];
+                    }
+                });
             } else {
                 setMessages(prev => [...prev, newMessageReceived]);
                 if (newMessageReceived.isAnnouncement) {
@@ -261,6 +235,34 @@ const ChatPage = () => {
                 }
                 socket.emit("mark-as-read", { chatId: selectedChatCompare._id, userId: currentUser._id });
             }
+        };
+
+        const updateListener = (updatedMessage) => {
+            setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
+            // Update sidebar lastMessage if matches
+            setChats(prev => prev.map(c => 
+                c.lastMessage?._id === updatedMessage._id ? { ...c, lastMessage: updatedMessage } : c
+            ));
+        };
+
+        const removeListener = (messageId) => {
+            setMessages(prev => prev.filter(m => m._id !== messageId));
+            // Update sidebar lastMessage if matches (clear it for now, as we don't know the previous one easily)
+            setChats(prev => prev.map(c => 
+                c.lastMessage?._id === messageId ? { ...c, lastMessage: { ...c.lastMessage, content: "Message deleted" } } : c
+            ));
+            toast("A message was deleted", { icon: '🗑️' });
+        };
+
+        const statusListener = (data) => {
+            setChats(prevChats => 
+                prevChats.map(chat => {
+                    const updatedParticipants = chat.participants.map(p => 
+                        p._id === data.userId ? { ...p, isOnline: data.isOnline, lastSeen: data.lastSeen } : p
+                    );
+                    return { ...chat, participants: updatedParticipants };
+                })
+            );
         };
 
         const readListener = (data) => {
@@ -276,7 +278,6 @@ const ChatPage = () => {
         const pinnedUpdateListener = (updatedChat) => {
             if (selectedChatCompare && selectedChatCompare._id === updatedChat._id) {
                 setSelectedChat(updatedChat);
-                // Update in chats list too
                 setChats(prev => prev.map(c => c._id === updatedChat._id ? { ...c, pinnedMessages: updatedChat.pinnedMessages } : c));
             }
         };
@@ -290,17 +291,27 @@ const ChatPage = () => {
         };
 
         socket.on("message-received", messageListener);
+        socket.on("message-updated", updateListener);
+        socket.on("message-removed", removeListener);
+        socket.on("user-status-changed", statusListener);
         socket.on("messages-read", readListener);
         socket.on("reaction-updated", reactionListener);
         socket.on("chat-pinned-updated", pinnedUpdateListener);
         socket.on("chat-cleared", chatClearedListener);
+        socket.on("typing", () => setIsTyping(true));
+        socket.on("stop-typing", () => setIsTyping(false));
 
         return () => {
             socket.off("message-received", messageListener);
+            socket.off("message-updated", updateListener);
+            socket.off("message-removed", removeListener);
+            socket.off("user-status-changed", statusListener);
             socket.off("messages-read", readListener);
             socket.off("reaction-updated", reactionListener);
             socket.off("chat-pinned-updated", pinnedUpdateListener);
             socket.off("chat-cleared", chatClearedListener);
+            socket.off("typing");
+            socket.off("stop-typing");
         };
     }, [socket, currentUser]);
 
