@@ -20,6 +20,14 @@ const messageSchema = mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        fileUrl: {
+            type: String,
+        },
+        fileType: {
+            type: String,
+            enum: ['text', 'image', 'file'],
+            default: 'text',
+        },
     },
     {
         timestamps: true,

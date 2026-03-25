@@ -20,11 +20,8 @@ const socketHandler = (io) => {
 
             if (!chat.participants) return console.log('Chat participants not defined');
 
-            chat.participants.forEach((user) => {
-                if (user._id === newMessageReceived.sender._id) return;
-
-                socket.in(user._id).emit('message-received', newMessageReceived);
-            });
+            // Emit to the chat room directly
+            socket.in(chat._id).emit('message-received', newMessageReceived);
         });
 
         socket.on('typing', (room) => socket.in(room).emit('typing', room));

@@ -20,6 +20,7 @@ const ChatPage = () => {
 
     const { currentUser } = useContext(AuthContext);
     const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -30,7 +31,10 @@ const ChatPage = () => {
     }, [messages]);
 
     useEffect(() => {
-        socket = io(ENDPOINT);
+        socket = io(ENDPOINT, {
+            transports: ['websocket'],
+            upgrade: false
+        });
         socket.emit("setup", currentUser);
         socket.on("connected", () => setSocketConnected(true));
         socket.on("typing", () => setIsTyping(true));
@@ -42,16 +46,25 @@ const ChatPage = () => {
     }, []);
 
     useEffect(() => {
-        const fetchChats = async () => {
+        const fetchInitialData = async () => {
             try {
-                const data = await chatService.fetchChats(currentUser.token);
-                setChats(data);
+                const fetchedChats = await chatService.fetchChats(currentUser.token);
+                setChats(fetchedChats);
+
+                // Auto-access global chat if no chat is selected
+                if (!selectedChat) {
+                    const global = await chatService.accessGlobalChat(currentUser.token);
+                    if (!fetchedChats.find(c => c._id === global._id)) {
+                        setChats([global, ...fetchedChats]);
+                    }
+                    setSelectedChat(global);
+                }
             } catch (error) {
-                console.error("Error fetching chats", error);
+                console.error("Error fetching initial data", error);
             }
         };
-        fetchChats();
-    }, [currentUser, selectedChat]);
+        fetchInitialData();
+    }, [currentUser]);
 
     useEffect(() => {
         const fetchMessages = async () => {
@@ -73,13 +86,15 @@ const ChatPage = () => {
     }, [selectedChat]);
 
     useEffect(() => {
-        socket.on("message-received", (newMessageReceived) => {
+        const messageListener = (newMessageReceived) => {
             if (!selectedChatCompare || selectedChatCompare._id !== newMessageReceived.chat._id) {
-                // Give notification (future enhancement)
+                // Future: notify user
             } else {
                 setMessages([...messages, newMessageReceived]);
             }
-        });
+        };
+        socket.on("message-received", messageListener);
+        return () => socket.off("message-received", messageListener);
     });
 
     const handleSearch = async (e) => {
@@ -112,13 +127,40 @@ const ChatPage = () => {
         if ((e.key === "Enter" || e.type === "click") && newMessage) {
             socket.emit("stop-typing", selectedChat._id);
             try {
+                const content = newMessage;
                 setNewMessage("");
-                const data = await chatService.sendMessage(newMessage, selectedChat._id, currentUser.token);
+                const data = await chatService.sendMessage(content, selectedChat._id, currentUser.token);
                 socket.emit("new-message", data);
                 setMessages([...messages, data]);
             } catch (error) {
                 console.error("Error sending message", error);
             }
+        }
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            setLoading(true);
+            const uploadRes = await chatService.uploadFile(formData, currentUser.token);
+            const data = await chatService.sendMessage(
+                "", 
+                selectedChat._id, 
+                currentUser.token, 
+                uploadRes.fileUrl, 
+                uploadRes.fileType
+            );
+            socket.emit("new-message", data);
+            setMessages([...messages, data]);
+            setLoading(false);
+        } catch (error) {
+            console.error("Error uploading file", error);
+            setLoading(false);
         }
     };
 
@@ -144,6 +186,7 @@ const ChatPage = () => {
     };
 
     const getSender = (participants) => {
+        if (!participants || participants.length === 0) return { name: "Unknown" };
         return participants[0]._id === currentUser._id ? participants[1] : participants[0];
     };
 
@@ -185,16 +228,22 @@ const ChatPage = () => {
                 </div>
                 <div style={{ flex: 1, overflowY: 'auto' }}>
                     {chats.map(chat => {
-                        const sender = getSender(chat.participants);
+                        const isGroup = chat.isGroupChat;
+                        const sender = isGroup ? { name: chat.chatName } : getSender(chat.participants);
                         return (
                             <div 
                                 key={chat._id} 
                                 className={`sidebar-item ${selectedChat?._id === chat._id ? 'active' : ''}`}
                                 onClick={() => setSelectedChat(chat)}
                             >
-                                <div className="user-avatar">{sender.name.charAt(0)}</div>
+                                <div className="user-avatar" style={isGroup ? { background: '#10b981' } : {}}>
+                                    {isGroup ? 'G' : sender.name.charAt(0)}
+                                </div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 600 }}>{sender.name}</div>
+                                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                                        {sender.name}
+                                        {isGroup && <span className="group-badge">Group</span>}
+                                    </div>
                                     {chat.lastMessage && (
                                         <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
                                             {chat.lastMessage.content}
@@ -212,13 +261,15 @@ const ChatPage = () => {
                 {selectedChat ? (
                     <>
                         <div className="chat-header">
-                            <div className="user-avatar">{getSender(selectedChat.participants).name.charAt(0)}</div>
+                            <div className="user-avatar" style={selectedChat.isGroupChat ? { background: '#10b981' } : {}}>
+                                {selectedChat.isGroupChat ? 'G' : getSender(selectedChat.participants).name.charAt(0)}
+                            </div>
                             <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>
-                                {getSender(selectedChat.participants).name}
+                                {selectedChat.isGroupChat ? selectedChat.chatName : getSender(selectedChat.participants).name}
                             </h2>
                         </div>
                         <div className="chat-messages">
-                            {loading ? (
+                            {loading && messages.length === 0 ? (
                                 <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading...</div>
                             ) : (
                                 messages.map((m, i) => (
@@ -226,7 +277,32 @@ const ChatPage = () => {
                                         key={m._id} 
                                         className={`message-bubble ${m.sender._id === currentUser._id ? 'message-sent' : 'message-received'}`}
                                     >
-                                        {m.content}
+                                        {selectedChat.isGroupChat && m.sender._id !== currentUser._id && (
+                                            <div style={{ fontSize: '0.7rem', fontWeight: 'bold', marginBottom: '4px', opacity: 0.8 }}>
+                                                {m.sender.name}
+                                            </div>
+                                        )}
+                                        <div>{m.content}</div>
+                                        {m.fileUrl && (
+                                            m.fileType === 'image' ? (
+                                                <img 
+                                                    src={`${ENDPOINT}${m.fileUrl}`} 
+                                                    alt="uploaded" 
+                                                    className="message-image" 
+                                                    onClick={() => window.open(`${ENDPOINT}${m.fileUrl}`, '_blank')}
+                                                />
+                                            ) : (
+                                                <a 
+                                                    href={`${ENDPOINT}${m.fileUrl}`} 
+                                                    target="_blank" 
+                                                    rel="noopener noreferrer"
+                                                    className="message-file"
+                                                >
+                                                    <span className="file-icon">📄</span>
+                                                    <span>Download Attachment</span>
+                                                </a>
+                                            )
+                                        )}
                                     </div>
                                 ))
                             )}
@@ -234,6 +310,19 @@ const ChatPage = () => {
                             <div ref={messagesEndRef} />
                         </div>
                         <div className="chat-input-area">
+                            <input
+                                type="file"
+                                style={{ display: 'none' }}
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                            />
+                            <button 
+                                className="btn-primary" 
+                                style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.1)' }}
+                                onClick={() => fileInputRef.current.click()}
+                            >
+                                📎
+                            </button>
                             <input
                                 type="text"
                                 placeholder="Type a message..."

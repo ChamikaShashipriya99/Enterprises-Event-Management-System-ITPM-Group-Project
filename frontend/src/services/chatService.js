@@ -27,10 +27,10 @@ const searchUsers = async (query, token) => {
     return response.data;
 };
 
-const sendMessage = async (content, chatId, token) => {
+const sendMessage = async (content, chatId, token, fileUrl, fileType) => {
     const response = await axios.post(
         `${API_URL}message`,
-        { content, chatId },
+        { content, chatId, fileUrl, fileType },
         {
             headers: { Authorization: `Bearer ${token}` },
         }
@@ -45,12 +45,31 @@ const fetchMessages = async (chatId, token) => {
     return response.data;
 };
 
+const accessGlobalChat = async (token) => {
+    const response = await axios.get(`${API_URL}global`, {
+        headers: { Authorization: `Bearer ${token}` },
+    });
+    return response.data;
+};
+
+const uploadFile = async (formData, token) => {
+    const response = await axios.post(`${API_URL}upload`, formData, {
+        headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'multipart/form-data',
+        },
+    });
+    return response.data;
+};
+
 const chatService = {
     fetchChats,
     accessChat,
     searchUsers,
     sendMessage,
     fetchMessages,
+    accessGlobalChat,
+    uploadFile,
 };
 
 export default chatService;

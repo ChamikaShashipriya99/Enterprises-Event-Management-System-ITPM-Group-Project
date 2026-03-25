@@ -5,14 +5,29 @@ const {
     sendMessage,
     allMessages,
     searchUsers,
+    accessGlobalChat,
 } = require('../controllers/chatController');
 const { protect } = require('../middleware/authMiddleware');
+const chatUpload = require('../middleware/chatUploadMiddleware');
 
 const router = express.Router();
 
 router.route('/').post(protect, accessChat).get(protect, fetchChats);
+router.route('/global').get(protect, accessGlobalChat);
 router.route('/users').get(protect, searchUsers);
 router.route('/message').post(protect, sendMessage);
 router.route('/message/:chatId').get(protect, allMessages);
+
+router.post('/upload', protect, chatUpload.single('file'), (req, res) => {
+    if (req.file) {
+        const fileUrl = `/uploads/chat/${req.file.filename}`;
+        res.status(200).json({ 
+            fileUrl,
+            fileType: req.file.mimetype.startsWith('image') ? 'image' : 'file'
+        });
+    } else {
+        res.status(400).json({ message: 'File upload failed' });
+    }
+});
 
 module.exports = router;

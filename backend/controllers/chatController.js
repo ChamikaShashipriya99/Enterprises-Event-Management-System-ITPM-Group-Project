@@ -72,17 +72,19 @@ const fetchChats = async (req, res) => {
 // @route   POST /api/message
 // @access  Private
 const sendMessage = async (req, res) => {
-    const { content, chatId } = req.body;
+    const { content, chatId, fileUrl, fileType } = req.body;
 
-    if (!content || !chatId) {
+    if ((!content && !fileUrl) || !chatId) {
         console.log('Invalid data passed into request');
         return res.sendStatus(400);
     }
 
     var newMessage = {
         sender: req.user._id,
-        content: content,
+        content: content || (fileType === 'image' ? 'Sent an image' : 'Sent a file'),
         chat: chatId,
+        fileUrl: fileUrl,
+        fileType: fileType || 'text',
     };
 
     try {
@@ -138,10 +140,55 @@ const searchUsers = async (req, res) => {
     res.send(users);
 };
 
+// @desc    Access or create global students group chat
+// @route   GET /api/chat/global
+// @access  Private
+const accessGlobalChat = async (req, res) => {
+    try {
+        let globalChat = await Chat.findOne({
+            isGroupChat: true,
+            chatName: 'Global Students',
+        })
+            .populate('participants', '-password')
+            .populate('lastMessage');
+
+        if (globalChat) {
+            // Check if current user is in participants, if not add them
+            if (!globalChat.participants.find(p => p._id.toString() === req.user._id.toString())) {
+                globalChat.participants.push(req.user._id);
+                await globalChat.save();
+                globalChat = await Chat.findById(globalChat._id).populate('participants', '-password');
+            }
+            return res.status(200).send(globalChat);
+        }
+
+        // Create if not exists
+        const allStudents = await User.find({ role: 'student' }).select('_id');
+        const participantIds = allStudents.map(u => u._id);
+
+        const chatData = {
+            chatName: 'Global Students',
+            isGroupChat: true,
+            participants: participantIds,
+        };
+
+        const createdChat = await Chat.create(chatData);
+        const fullChat = await Chat.findOne({ _id: createdChat._id }).populate(
+            'participants',
+            '-password'
+        );
+        res.status(200).json(fullChat);
+    } catch (error) {
+        res.status(400);
+        throw new Error(error.message);
+    }
+};
+
 module.exports = {
     accessChat,
     fetchChats,
     sendMessage,
     allMessages,
     searchUsers,
+    accessGlobalChat,
 };
