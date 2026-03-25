@@ -29,6 +29,10 @@ const socketHandler = (io) => {
         });
 
         socket.on('new-message', (newMessageReceived) => {
+            if (!newMessageReceived || !newMessageReceived.chat) {
+                console.log('Received null or malformed message:', newMessageReceived);
+                return;
+            }
             const chat = newMessageReceived.chat;
             if (!chat.participants) return console.log('Chat participants not defined');
             socket.in(chat._id).emit('message-received', newMessageReceived);

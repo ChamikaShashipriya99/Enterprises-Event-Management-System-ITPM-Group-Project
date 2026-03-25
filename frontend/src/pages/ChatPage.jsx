@@ -2,6 +2,8 @@ import React, { useState, useEffect, useContext, useRef } from 'react';
 import io from 'socket.io-client';
 import { AuthContext } from '../context/AuthContext';
 import chatService from "../services/chatService";
+import toast from 'react-hot-toast';
+import axios from 'axios';
 
 const ENDPOINT = "http://localhost:5000";
 var selectedChatCompare;
@@ -26,10 +28,27 @@ const ChatPage = () => {
     const [hasMore, setHasMore] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingTime, setRecordingTime] = useState(0);
 
     const { currentUser, socket } = useContext(AuthContext);
     const messagesEndRef = useRef(null);
     const fileInputRef = useRef(null);
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
+    const timerRef = useRef(null);
+
+    useEffect(() => {
+        if (isRecording) {
+            timerRef.current = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+        } else {
+            clearInterval(timerRef.current);
+            setRecordingTime(0);
+        }
+        return () => clearInterval(timerRef.current);
+    }, [isRecording]);
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
@@ -146,6 +165,71 @@ const ChatPage = () => {
         }
     };
 
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const audioFile = new File([audioBlob], "voice-message.webm", { type: 'audio/webm' });
+                handleVoiceUpload(audioFile);
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+        } catch (error) {
+            console.error("Error starting recording:", error);
+            toast.error("Microphone access denied");
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
+
+    const handleVoiceUpload = async (file) => {
+        try {
+            setLoading(true);
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("chatId", selectedChat._id);
+
+            const uploadRes = await chatService.uploadFile(formData, currentUser.token);
+
+            const { data } = await chatService.sendMessage(
+                "Voice Message",
+                selectedChat._id,
+                currentUser.token,
+                uploadRes.fileUrl,
+                'audio'
+            );
+
+            if (data) {
+                console.log("Voice message sent successfully:", data);
+                socket.emit("new-message", data);
+                setMessages(prev => [...prev, data]);
+            }
+            setLoading(false);
+        } catch (error) {
+            console.error("Error uploading voice message", error);
+            setLoading(false);
+            toast.error("Failed to send voice message");
+        }
+    };
+
     const filteredMessages = messages.filter(m => {
         const matchesSearch = m.content?.toLowerCase().includes(searchTerm.toLowerCase());
         const isMedia = m.fileUrl;
@@ -216,7 +300,7 @@ const ChatPage = () => {
                 setNewMessage("");
                 const data = await chatService.sendMessage(content, selectedChat._id, currentUser.token);
                 socket.emit("new-message", data);
-                setMessages([...messages, data]);
+                setMessages(prev => [...prev, data]);
             } catch (error) {
                 console.error("Error sending message", error);
             }
@@ -285,7 +369,7 @@ const ChatPage = () => {
                 uploadRes.fileType
             );
             socket.emit("new-message", data);
-            setMessages([...messages, data]);
+            setMessages(prev => [...prev, data]);
             setLoading(false);
         } catch (error) {
             console.error("Error uploading file", error);
@@ -460,6 +544,7 @@ const ChatPage = () => {
                                 <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading...</div>
                             ) : (
                                 filteredMessages.map((m, i) => {
+                                    if (!m || !m._id) return null;
                                     // Custom rendering for media gallery mode
                                     if (showMediaOnly && m.fileType === 'image') {
                                         return (
@@ -521,6 +606,10 @@ const ChatPage = () => {
                                                         style={{ cursor: 'zoom-in' }}
                                                         onClick={() => setPreviewImage(`${ENDPOINT}${m.fileUrl}`)}
                                                     />
+                                                ) : m.fileType === 'audio' ? (
+                                                    <div className="audio-message">
+                                                        <audio src={`${ENDPOINT}${m.fileUrl}`} controls className="custom-audio-player" />
+                                                    </div>
                                                 ) : (
                                                     <a 
                                                         href={`${ENDPOINT}${m.fileUrl}`} 
@@ -564,19 +653,40 @@ const ChatPage = () => {
                             >
                                 📎
                             </button>
+                            
+                            {isRecording ? (
+                                <div className="recording-status">
+                                    <span className="recording-dot"></span>
+                                    <span style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: 600 }}>
+                                        {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+                                    </span>
+                                    <button className="stop-btn" onClick={stopRecording}>⏹</button>
+                                </div>
+                            ) : (
+                                <button 
+                                    className="btn-primary" 
+                                    style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.1)' }}
+                                    onClick={startRecording}
+                                >
+                                    🎙️
+                                </button>
+                            )}
+
                             <input
                                 type="text"
-                                placeholder="Type a message..."
+                                placeholder={isRecording ? "Recording..." : "Type a message..."}
                                 className="input-field"
                                 style={{ marginBottom: 0 }}
                                 value={newMessage}
                                 onChange={typingHandler}
                                 onKeyDown={sendMessage}
+                                disabled={isRecording}
                             />
                             <button 
                                 className="btn-primary" 
                                 style={{ padding: '8px 20px' }}
                                 onClick={sendMessage}
+                                disabled={isRecording}
                             >
                                 Send
                             </button>

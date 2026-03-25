@@ -23,9 +23,9 @@ const storage = multer.diskStorage({
 
 // Check file type
 function checkFileType(file, cb) {
-    const filetypes = /jpg|jpeg|png|pdf|docx|doc|txt/;
+    const filetypes = /jpg|jpeg|png|pdf|docx|doc|txt|webm/;
     const extname = filetypes.test(path.extname(file.originalname).toLowerCase());
-    const mimetype = filetypes.test(file.mimetype);
+    const mimetype = filetypes.test(file.mimetype) || file.mimetype.startsWith('audio/');
 
     if (extname) {
         return cb(null, true);

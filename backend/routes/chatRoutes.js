@@ -26,7 +26,8 @@ router.post('/upload', protect, chatUpload.single('file'), (req, res) => {
         const fileUrl = `/uploads/chat/${req.file.filename}`;
         res.status(200).json({ 
             fileUrl,
-            fileType: req.file.mimetype.startsWith('image') ? 'image' : 'file'
+            fileType: req.file.mimetype.startsWith('image') ? 'image' : 
+                      req.file.mimetype.startsWith('audio') ? 'audio' : 'file'
         });
     } else {
         res.status(400).json({ message: 'File upload failed' });
