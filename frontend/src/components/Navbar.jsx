@@ -1,13 +1,15 @@
-import { useContext, useState } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useContext, useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import ConfirmModal from './ConfirmModal';
 import NotificationDropdown from './NotificationDropdown';
+import chatService from '../services/chatService';
 
 const Navbar = () => {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-    const { currentUser, logout } = useContext(AuthContext);
+    const { currentUser, logout, socket, unreadCount } = useContext(AuthContext);
     const navigate = useNavigate();
+    const location = useLocation();
 
     const handleLogoutTrigger = () => {
         setIsLogoutModalOpen(true);
@@ -50,6 +52,19 @@ const Navbar = () => {
                             <>
                                 <Link to="/student-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Explore Events</Link>
+                                <Link to="/chat" style={{ color: '#f8fafc', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    Messages
+                                    {unreadCount > 0 && (
+                                        <span style={{ 
+                                            background: '#ef4444', 
+                                            color: 'white', 
+                                            fontSize: '0.65rem', 
+                                            padding: '2px 6px', 
+                                            borderRadius: '10px',
+                                            fontWeight: 'bold'
+                                        }}>{unreadCount}</span>
+                                    )}
+                                </Link>
                             </>
                         )}
                         {currentUser.role === 'organizer' && (
@@ -57,6 +72,19 @@ const Navbar = () => {
                                 <Link to="/organizer-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/organizer-events" style={{ color: '#f8fafc', textDecoration: 'none' }}>My Events</Link>
                                 <Link to="/create-event" style={{ color: '#f8fafc', textDecoration: 'none' }}>Create Event</Link>
+                                <Link to="/chat" style={{ color: '#f8fafc', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    Messages
+                                    {unreadCount > 0 && (
+                                        <span style={{ 
+                                            background: '#ef4444', 
+                                            color: 'white', 
+                                            fontSize: '0.65rem', 
+                                            padding: '2px 6px', 
+                                            borderRadius: '10px',
+                                            fontWeight: 'bold'
+                                        }}>{unreadCount}</span>
+                                    )}
+                                </Link>
                             </>
                         )}
                         {currentUser.role === 'admin' && (
@@ -65,6 +93,20 @@ const Navbar = () => {
                                 <Link to="/admin/users" style={{ color: '#f8fafc', textDecoration: 'none' }}>Users</Link>
                                 <Link to="/admin/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Events</Link>
                                 <Link to="/admin/lost-found" style={{ color: '#f8fafc', textDecoration: 'none' }}>Recovery Hub</Link>
+                                <Link to="/admin/audit-logs" style={{ color: '#f8fafc', textDecoration: 'none' }}>Audit Logs</Link>
+                                <Link to="/chat" style={{ color: '#f8fafc', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    Messages
+                                    {unreadCount > 0 && (
+                                        <span style={{ 
+                                            background: '#ef4444', 
+                                            color: 'white', 
+                                            fontSize: '0.65rem', 
+                                            padding: '2px 6px', 
+                                            borderRadius: '10px',
+                                            fontWeight: 'bold'
+                                        }}>{unreadCount}</span>
+                                    )}
+                                </Link>
                             </>
                         )}
                         

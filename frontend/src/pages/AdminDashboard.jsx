@@ -1,7 +1,13 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
 import eventService from '../services/eventService';
+import chatService from '../services/chatService';
 import Skeleton from '../components/Skeleton';
+import { 
+    BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
+    PieChart, Pie, Cell, Legend, AreaChart, Area 
+} from 'recharts';
 
 const AdminDashboard = () => {
     const [stats, setStats] = useState({
@@ -10,21 +16,63 @@ const AdminDashboard = () => {
         totalOrganizers: 0,
         totalStudents: 0
     });
+    const [chatStats, setChatStats] = useState({
+        activeNow: 0,
+        todayMsgs: 0,
+        mediaShared: 0,
+        moderationActions: 0,
+        hourlyActivity: [],
+        topContributors: [],
+        fileBreakdown: [],
+        insights: {
+            selfDeletionRate: 0,
+            announcementReach: 0
+        }
+    });
     const [loading, setLoading] = useState(true);
+    const { socket, unreadCount } = useContext(AuthContext);
+
+    const fetchStats = async (showLoading = false) => {
+        try {
+            if (showLoading) setLoading(true);
+            const user = JSON.parse(localStorage.getItem('user'));
+            const token = user?.token;
+            
+            const [eventRes, chatRes] = await Promise.all([
+                eventService.getAdminStats(),
+                chatService.getChatStats(token)
+            ]);
+            
+            setStats(eventRes.data);
+            setChatStats(chatRes);
+            setLoading(false);
+        } catch (error) {
+            console.error('Error fetching admin stats:', error);
+            setLoading(false);
+        }
+    };
 
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const response = await eventService.getAdminStats();
-                setStats(response.data);
-                setLoading(false);
-            } catch (error) {
-                console.error('Error fetching admin stats:', error);
-                setLoading(false);
-            }
-        };
-        fetchStats();
-    }, []);
+        fetchStats(true);
+
+        if (socket) {
+            const handleUpdate = () => fetchStats(false);
+            
+            socket.on("message-received", handleUpdate);
+            socket.on("message-removed", handleUpdate);
+            socket.on("message-updated", handleUpdate);
+            socket.on("chat-pinned-updated", handleUpdate);
+            socket.on("chat-cleared", handleUpdate);
+
+            return () => {
+                socket.off("message-received", handleUpdate);
+                socket.off("message-removed", handleUpdate);
+                socket.off("message-updated", handleUpdate);
+                socket.off("chat-pinned-updated", handleUpdate);
+                socket.off("chat-cleared", handleUpdate);
+            };
+        }
+    }, [socket]);
 
     if (loading) return (
         <div style={{ padding: '2rem 5%' }}>
@@ -91,6 +139,150 @@ const AdminDashboard = () => {
                 ))}
             </div>
 
+            {/* Community Pulse Section */}
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700' }}>
+                Student <span style={{ color: '#10b981' }}>Community Pulse</span> 📊
+            </h2>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '3rem'
+            }}>
+                {[
+                    { title: 'Active Now', value: chatStats.activeNow, icon: '⚡', color: '#f59e0b', desc: 'Online Students' },
+                    { title: "Today's Volume", value: chatStats.todayMsgs, icon: '💬', color: '#0ea5e9', desc: 'Last 24 hours' },
+                    { title: 'Media Shared', value: chatStats.mediaShared, icon: '🖼️', color: '#10b981', desc: 'Attachments' },
+                    { title: 'Moderation Status', value: chatStats.moderationActions, icon: '🛡️', color: '#ef4444', desc: 'Actions Today' }
+                ].map((card, index) => (
+                    <div key={index} className="glass-card" style={{
+                        padding: '1.5rem',
+                        display: 'flex',
+                        flexDirection: 'column',
+                        gap: '0.3rem',
+                        borderLeft: `4px solid ${card.color}`,
+                        transition: 'transform 0.3s ease'
+                    }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <span style={{ fontSize: '1.5rem' }}>{card.icon}</span>
+                            <span style={{ fontSize: '0.7rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>Real-time</span>
+                        </div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500', marginTop: '0.5rem' }}>{card.title}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{card.value}</div>
+                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{card.desc}</div>
+                    </div>
+                ))}
+            </div>
+
+            {/* Visual Insights Section */}
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem' }}>
+                Visual <span style={{ color: '#6366f1' }}>Insights</span> 📉
+            </h2>
+            
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
+                {/* 1. Peak Activity Chart */}
+                <div className="glass-card" style={{ padding: '2rem', minHeight: '400px' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Peak Activity (Last 24h)</h3>
+                    <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                            <AreaChart data={chatStats.hourlyActivity}>
+                                <defs>
+                                    <linearGradient id="colorCount" x1="0" y1="0" x2="0" y2="1">
+                                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                                    </linearGradient>
+                                </defs>
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" />
+                                <XAxis dataKey="hour" stroke="#64748b" fontSize={12} />
+                                <YAxis stroke="#64748b" fontSize={12} />
+                                <Tooltip 
+                                    contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: 'white' }}
+                                    itemStyle={{ color: '#6366f1' }}
+                                />
+                                <Area type="monotone" dataKey="count" stroke="#6366f1" fillOpacity={1} fill="url(#colorCount)" strokeWidth={3} />
+                            </AreaChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 2. Top Contributors Leaderboard */}
+                <div className="glass-card" style={{ padding: '2rem', minHeight: '400px' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Top Contributors</h3>
+                    <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                            <BarChart data={chatStats.topContributors} layout="vertical">
+                                <CartesianGrid strokeDasharray="3 3" stroke="rgba(255,255,255,0.05)" horizontal={false} />
+                                <XAxis type="number" hide />
+                                <YAxis dataKey="name" type="category" stroke="#64748b" fontSize={12} width={100} />
+                                <Tooltip 
+                                    contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: 'white' }}
+                                    cursor={{ fill: 'rgba(255,255,255,0.02)' }}
+                                />
+                                <Bar dataKey="count" fill="#10b981" radius={[0, 4, 4, 0]} barSize={20} />
+                            </BarChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+
+                {/* 3. Content Breakdown Pie Chart */}
+                <div className="glass-card" style={{ padding: '2rem', minHeight: '400px', gridColumn: 'span 1' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Content Distribution</h3>
+                    <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                            <PieChart>
+                                <Pie
+                                    data={chatStats.fileBreakdown}
+                                    innerRadius={60}
+                                    outerRadius={80}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {chatStats.fileBreakdown.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={['#6366f1', '#10b981', '#f59e0b', '#ec4899'][index % 4]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip 
+                                    contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: 'white' }}
+                                />
+                                <Legend verticalAlign="bottom" height={36}/>
+                            </PieChart>
+                        </ResponsiveContainer>
+                    </div>
+                </div>
+            </div>
+
+            {/* Moderation Insights Section */}
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem' }}>
+                Moderation <span style={{ color: '#ec4899' }}>Insights</span> 🧠
+            </h2>
+            <div style={{
+                display: 'grid',
+                gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                gap: '1.5rem',
+                marginBottom: '3rem'
+            }}>
+                <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #ef4444' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#94a3b8' }}>Self-Deletion Rate</span>
+                        <span style={{ fontSize: '1.2rem' }}>🗑️</span>
+                    </div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{chatStats.insights?.selfDeletionRate}%</div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                        Frequency of student-initiated message removals.
+                    </div>
+                </div>
+                <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #a855f7' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                        <span style={{ color: '#94a3b8' }}>Announcement Reach</span>
+                        <span style={{ fontSize: '1.2rem' }}>📢</span>
+                    </div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{chatStats.insights?.announcementReach}%</div>
+                    <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
+                        Percentage of students who read the latest admin update.
+                    </div>
+                </div>
+            </div>
+
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                 <div className="glass-card" style={{ padding: '2rem' }}>
                     <h3 style={{ marginBottom: '1rem' }}>User Management</h3>
@@ -107,6 +299,14 @@ const AdminDashboard = () => {
                     </Link>
                 </div>
             </div>
+
+            {/* Floating Chat Button */}
+            <Link to="/chat" className="floating-chat-btn" title="Open Chat">
+                💬
+                {(unreadCount || 0) > 0 && (
+                    <span className="floating-badge">{unreadCount}</span>
+                )}
+            </Link>
         </div>
     );
 };

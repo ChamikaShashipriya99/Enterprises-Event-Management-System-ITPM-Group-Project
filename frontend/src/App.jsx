@@ -23,6 +23,8 @@ import EditEvent from './pages/EditEvent';
 import VerifyEmail from './pages/VerifyEmail';
 import LostAndFoundFeed from './pages/LostAndFoundFeed';
 import ReportItem from './pages/ReportItem';
+import ChatPage from './pages/ChatPage';
+import AuditLogs from './pages/AuditLogs';
 
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
@@ -69,12 +71,16 @@ const LandingPage = () => {
   );
 };
 
+import { Toaster } from 'react-hot-toast';
+
 function App() {
   return (
-    <AuthProvider>
-      <Router>
+    <Router>
+      <AuthProvider>
+        <Toaster position="top-right" reverseOrder={false} />
         <Navbar />
         <Routes>
+          {/* ... existing routes ... */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
           <Route path="/verify-email/:token" element={<VerifyEmail />} />
@@ -148,6 +154,12 @@ function App() {
               <AdminLostFound />
             </ProtectedRoute>
           } />
+          
+          <Route path="/admin/audit-logs" element={
+            <ProtectedRoute role="admin">
+              <AuditLogs />
+            </ProtectedRoute>
+          } />
 
           <Route path="/events" element={<AllEvents />} />
           <Route path="/events/:id" element={<EventDetail />} />
@@ -165,10 +177,16 @@ function App() {
             </ProtectedRoute>
           } />
 
+          <Route path="/chat" element={
+            <ProtectedRoute role={['student', 'admin', 'organizer']}>
+              <ChatPage />
+            </ProtectedRoute>
+          } />
+
           <Route path="/" element={<LandingPage />} />
         </Routes>
-      </Router>
-    </AuthProvider>
+      </AuthProvider>
+    </Router>
   );
 }
 

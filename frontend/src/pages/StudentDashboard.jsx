@@ -5,7 +5,7 @@ import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
 
 const StudentDashboard = () => {
-    const { currentUser, refreshProfile } = useContext(AuthContext);
+    const { currentUser, refreshProfile, unreadCount } = useContext(AuthContext);
     const [registeredEvents, setRegisteredEvents] = useState([]);
     const [loading, setLoading] = useState(true);
 
@@ -147,7 +147,25 @@ const StudentDashboard = () => {
                         Feature Coming Soon
                     </div>
                 </section>
+
+                <section className="glass-card" style={{ padding: '30px' }}>
+                    <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
+                        <span style={{ color: '#a855f7' }}>💬</span> Community Chat
+                    </h2>
+                    <p style={{ color: '#64748b', marginBottom: '25px' }}>Connect with fellow students, share resources, and discuss events.</p>
+                    <Link to="/chat" className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none', textAlign: 'center' }}>
+                        Join Discussion
+                    </Link>
+                </section>
             </div>
+
+            {/* Floating Chat Button */}
+            <Link to="/chat" className="floating-chat-btn" title="Open Chat">
+                💬
+                {unreadCount > 0 && (
+                    <span className="floating-badge">{unreadCount}</span>
+                )}
+            </Link>
         </div>
     );
 };
