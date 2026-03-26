@@ -56,36 +56,46 @@ export const AuthProvider = ({ children }) => {
             newSocket.emit("setup", user);
             setSocket(newSocket);
 
-            newSocket.on("message-received", (newMessage) => {
-                // Determine if we should show a notification
-                const isOnChatPage = location.pathname === '/chat';
-                
-                if (!isOnChatPage) {
-                    setUnreadCount(prev => prev + 1);
-                    // Show Toast
-                    toast(`New message from ${newMessage.sender.name}`, {
-                        icon: '💬',
-                        duration: 4000,
-                        onClick: () => window.location.href = '/chat'
-                    });
-
-                    // Show Browser Notification
-                    if (Notification.permission === 'granted') {
-                        new Notification(`EventBuddy - ${newMessage.sender.name}`, {
-                            body: newMessage.content || 'Sent an attachment',
-                            icon: '/favicon.ico'
-                        });
-                    }
-                }
-            });
-
             return () => {
                 newSocket.disconnect();
             };
         } else {
             setSocket(null);
         }
-    }, [user, location.pathname]);
+    }, [user]);
+
+    // Notification listener - depends on socket and location
+    useEffect(() => {
+        if (!socket) return;
+
+        const messageReceivedHandler = (newMessage) => {
+            const isOnChatPage = window.location.pathname === '/chat';
+            
+            if (!isOnChatPage) {
+                setUnreadCount(prev => prev + 1);
+                // Show Toast
+                toast(`New message from ${newMessage.sender.name}`, {
+                    icon: '💬',
+                    duration: 4000,
+                    onClick: () => window.location.href = '/chat'
+                });
+
+                // Show Browser Notification
+                if (Notification.permission === 'granted') {
+                    new Notification(`EventBuddy - ${newMessage.sender.name}`, {
+                        body: newMessage.content || 'Sent an attachment',
+                        icon: '/favicon.ico'
+                    });
+                }
+            }
+        };
+
+        socket.on("message-received", messageReceivedHandler);
+
+        return () => {
+            socket.off("message-received", messageReceivedHandler);
+        };
+    }, [socket, location.pathname]);
 
     const login = async (userData) => {
         const data = await authService.login(userData);

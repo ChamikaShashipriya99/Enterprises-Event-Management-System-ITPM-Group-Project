@@ -105,7 +105,7 @@ const sendMessage = async (req, res) => {
         chat: chatId,
         fileUrl: fileUrl,
         fileType: fileType || 'text',
-        isAnnouncement: isAnnouncement && req.user.role === 'admin' ? true : false,
+        isAnnouncement: isAnnouncement && (req.user.role === 'admin' || req.user.role === 'organizer') ? true : false,
     };
 
     try {
@@ -222,14 +222,14 @@ const deleteMessage = async (req, res) => {
             res.status(404);
             throw new Error('Message not found');
         }
-        if (message.sender.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+        if (message.sender.toString() !== req.user._id.toString() && !['admin', 'organizer'].includes(req.user.role)) {
             res.status(401);
             throw new Error('Not authorized to delete this message. Administrative messages are protected.');
         }
 
-        if (req.user.role === 'admin' && message.sender.toString() !== req.user._id.toString()) {
-            // Soft delete for Admins
-            message.content = 'Message removed by administrator';
+        if (['admin', 'organizer'].includes(req.user.role) && message.sender.toString() !== req.user._id.toString()) {
+            // Soft delete for Admins/Organizers
+            message.content = `Message removed by ${req.user.role}`;
             message.fileUrl = null;
             message.fileType = 'text';
             message.isDeletedByAdmin = true;
@@ -398,10 +398,10 @@ const togglePinMessage = async (req, res) => {
         const isPinned = chat.pinnedMessages.includes(messageId);
 
         if (isPinned) {
-            // Protection: Students cannot unpin messages sent by admins
+            // Protection: Students cannot unpin messages sent by admins or organizers
             if (req.user.role === 'student') {
                 const messageToUnpin = await Message.findById(messageId).populate('sender', 'role');
-                if (messageToUnpin && messageToUnpin.sender.role === 'admin') {
+                if (messageToUnpin && ['admin', 'organizer'].includes(messageToUnpin.sender.role)) {
                     res.status(401);
                     throw new Error('Administrative messages cannot be unpinned by students');
                 }
@@ -495,13 +495,11 @@ const logAdminAction = async (adminId, action, targetMessage, targetUserId, chat
     }
 };
 
-// @desc    Get all audit logs (Admin only)
-// @route   GET /api/chat/audit-logs
-// @access  Private/Admin
+// @access  Private/Admin/Organizer
 const getAuditLogs = async (req, res) => {
-    if (req.user.role !== 'admin') {
+    if (!['admin', 'organizer'].includes(req.user.role)) {
         res.status(401);
-        throw new Error('Not authorized as an admin');
+        throw new Error('Not authorized');
     }
 
     try {
@@ -522,9 +520,9 @@ const getAuditLogs = async (req, res) => {
 // @route   GET /api/chat/stats
 // @access  Private/Admin
 const getChatStats = async (req, res) => {
-    if (req.user.role !== 'admin') {
+    if (!['admin', 'organizer'].includes(req.user.role)) {
         res.status(401);
-        throw new Error('Not authorized as an admin');
+        throw new Error('Not authorized');
     }
 
     try {

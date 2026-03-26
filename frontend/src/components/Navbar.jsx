@@ -72,6 +72,19 @@ const Navbar = () => {
                                 <Link to="/organizer-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/organizer-events" style={{ color: '#f8fafc', textDecoration: 'none' }}>My Events</Link>
                                 <Link to="/create-event" style={{ color: '#f8fafc', textDecoration: 'none' }}>Create Event</Link>
+                                <Link to="/chat" style={{ color: '#f8fafc', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                    Messages
+                                    {unreadCount > 0 && (
+                                        <span style={{ 
+                                            background: '#ef4444', 
+                                            color: 'white', 
+                                            fontSize: '0.65rem', 
+                                            padding: '2px 6px', 
+                                            borderRadius: '10px',
+                                            fontWeight: 'bold'
+                                        }}>{unreadCount}</span>
+                                    )}
+                                </Link>
                             </>
                         )}
                         {currentUser.role === 'admin' && (

@@ -118,7 +118,7 @@ const ChatPage = () => {
         setShowMediaOnly(false);
         // On mobile, close sidebar when a chat is selected
         if (window.innerWidth <= 768) setIsSidebarOpen(false);
-    }, [selectedChat]);
+    }, [selectedChat, socket]);
 
     const fetchMoreMessages = async () => {
         if (!hasMore || loading) return;
@@ -740,7 +740,7 @@ const ChatPage = () => {
                                         >
                                             {showMediaOnly ? 'Show All' : 'Gallery'}
                                         </button>
-                                        {currentUser.role === 'admin' && selectedChat.chatName === 'Global Students' && (
+                                        {(currentUser.role === 'admin' || currentUser.role === 'organizer') && selectedChat.chatName === 'Global Students' && (
                                             <button 
                                                 className="btn-primary" 
                                                 style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ef4444' }}
@@ -797,23 +797,24 @@ const ChatPage = () => {
                                         <div 
                                             key={m._id} 
                                             id={`msg-${m._id}`}
-                                            className={`message-bubble ${m.isAnnouncement ? 'message-announcement' : (m.sender._id === currentUser._id ? 'message-sent' : 'message-received')} ${m.sender.role === 'admin' && !m.isAnnouncement ? 'message-admin' : ''}`}
+                                            className={`message-bubble ${m.isAnnouncement ? 'message-announcement' : (m.sender._id === currentUser._id ? 'message-sent' : 'message-received')} ${['admin', 'organizer'].includes(m.sender.role) && !m.isAnnouncement ? 'message-admin' : ''}`}
                                         >
                                             {m.isAnnouncement && (
                                                 <div className="announcement-header">
                                                     📢 OFFICIAL ANNOUNCEMENT
                                                 </div>
                                             )}
-                                            {selectedChat.isGroupChat && (m.sender._id !== currentUser._id || m.sender.role === 'admin') && (
+                                            {selectedChat.isGroupChat && (m.sender._id !== currentUser._id || ['admin', 'organizer'].includes(m.sender.role)) && (
                                                 <div style={{ fontSize: '0.7rem', fontWeight: 'bold', marginBottom: '4px', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                                    {m.sender._id !== currentUser._id ? m.sender.name : 'You (Admin)'}
+                                                    {m.sender._id !== currentUser._id ? m.sender.name : `You (${m.sender.role})`}
                                                     {m.sender.role === 'admin' && <span className="admin-badge">ADMIN</span>}
+                                                    {m.sender.role === 'organizer' && <span className="admin-badge" style={{ background: '#a855f7' }}>ORGANIZER</span>}
                                                 </div>
                                             )}
                                             
                                             {m.isDeletedByAdmin ? (
                                                 <div className="admin-deleted-placeholder">
-                                                    <i>⚠️ This message was removed by an administrator</i>
+                                                    <i>⚠️ {m.content}</i>
                                                 </div>
                                             ) : editMessageId === m._id ? (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -887,13 +888,13 @@ const ChatPage = () => {
 
                                             {!editMessageId && !m.isDeletedByAdmin && (
                                                 <div className="message-actions">
-                                                    {/* Students cannot unpin admin messages */}
-                                                    {!(currentUser.role === 'student' && m.sender?.role === 'admin' && selectedChat.pinnedMessages?.some(p => p?._id === m._id)) && (
+                                                    {/* Students cannot unpin admin/organizer messages */}
+                                                    {!(currentUser.role === 'student' && ['admin', 'organizer'].includes(m.sender?.role) && selectedChat.pinnedMessages?.some(p => p?._id === m._id)) && (
                                                         <button className="action-btn" onClick={() => handleTogglePin(m._id)}>
                                                             {selectedChat.pinnedMessages?.some(p => p?._id === m._id) ? '📍 Unpin' : '📌 Pin'}
                                                         </button>
                                                     )}
-                                                    {(m.sender._id === currentUser._id || currentUser.role === 'admin') && (
+                                                    {(m.sender._id === currentUser._id || ['admin', 'organizer'].includes(currentUser.role)) && (
                                                         <>
                                                             {m.sender._id === currentUser._id && (
                                                                 <button className="action-btn" onClick={() => {
@@ -901,8 +902,8 @@ const ChatPage = () => {
                                                                     setEditContent(m.content);
                                                                 }}>✎ Edit</button>
                                                             )}
-                                                            {/* Students cannot delete admin messages */}
-                                                            {!(currentUser.role === 'student' && m.sender?.role === 'admin') && (
+                                                            {/* Students cannot delete admin/organizer messages */}
+                                                            {!(currentUser.role === 'student' && ['admin', 'organizer'].includes(m.sender?.role)) && (
                                                                 <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
                                                             )}
                                                         </>
@@ -1002,7 +1003,7 @@ const ChatPage = () => {
                                 </button>
                             )}
 
-                             {currentUser.role === 'admin' && (
+                             {(currentUser.role === 'admin' || currentUser.role === 'organizer') && (
                                 <button 
                                     className={`btn-primary ${isAnnouncementMode ? 'active' : ''}`} 
                                     style={{ padding: '8px 12px', background: isAnnouncementMode ? '#22c55e' : 'rgba(255,255,255,0.1)', border: isAnnouncementMode ? 'none' : '' }}

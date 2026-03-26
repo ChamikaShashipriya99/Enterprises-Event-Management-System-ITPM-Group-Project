@@ -178,7 +178,7 @@ function App() {
           } />
 
           <Route path="/chat" element={
-            <ProtectedRoute role={['student', 'admin']}>
+            <ProtectedRoute role={['student', 'admin', 'organizer']}>
               <ChatPage />
             </ProtectedRoute>
           } />

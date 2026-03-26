@@ -12,6 +12,16 @@ const socketHandler = (io) => {
                 socket.join(userData._id);
                 console.log(userData._id);
                 
+                // If staff, join them to the global chat room too so they get notifications/stats everywhere
+                if (userData.role === 'admin' || userData.role === 'organizer') {
+                    const Chat = require('../models/Chat');
+                    const globalChat = await Chat.findOne({ isGlobal: true });
+                    if (globalChat) {
+                        socket.join(globalChat._id.toString());
+                        console.log(`Staff ${userData.name} auto-joined Global Chat room: ${globalChat._id}`);
+                    }
+                }
+                
                 // Mark user as online
                 const onlineUser = await User.findByIdAndUpdate(userData._id, { isOnline: true }, { new: true });
                 socket.broadcast.emit('user-status-changed', {
@@ -34,8 +44,9 @@ const socketHandler = (io) => {
                 return;
             }
             const chat = newMessageReceived.chat;
-            if (!chat.participants) return console.log('Chat participants not defined');
-            socket.in(chat._id).emit('message-received', newMessageReceived);
+            const chatId = chat._id || chat;
+            if (!chatId) return console.log('Chat ID not defined');
+            socket.in(chatId).emit('message-received', newMessageReceived);
         });
 
         socket.on('message-edited', (updatedMessage) => {

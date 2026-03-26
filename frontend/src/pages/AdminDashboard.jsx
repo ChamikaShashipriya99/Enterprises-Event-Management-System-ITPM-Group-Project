@@ -30,7 +30,7 @@ const AdminDashboard = () => {
         }
     });
     const [loading, setLoading] = useState(true);
-    const { socket } = useContext(AuthContext);
+    const { socket, unreadCount } = useContext(AuthContext);
 
     const fetchStats = async (showLoading = false) => {
         try {
@@ -299,6 +299,14 @@ const AdminDashboard = () => {
                     </Link>
                 </div>
             </div>
+
+            {/* Floating Chat Button */}
+            <Link to="/chat" className="floating-chat-btn" title="Open Chat">
+                💬
+                {(unreadCount || 0) > 0 && (
+                    <span className="floating-badge">{unreadCount}</span>
+                )}
+            </Link>
         </div>
     );
 };
