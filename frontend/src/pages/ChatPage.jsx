@@ -36,6 +36,7 @@ const ChatPage = () => {
     const [showMentions, setShowMentions] = useState(false);
     const [mentionSuggestions, setMentionSuggestions] = useState([]);
     const [mentionIndex, setMentionIndex] = useState(-1);
+    const [isRefreshing, setIsRefreshing] = useState(false);
 
     const { currentUser, socket } = useContext(AuthContext);
     const messagesEndRef = useRef(null);
@@ -170,24 +171,36 @@ const ChatPage = () => {
     const handleVoiceUpload = async (file) => {
         try {
             setLoading(true);
+            const isAnnouncement = isAnnouncementMode;
+            setIsAnnouncementMode(false);
+
             const formData = new FormData();
             formData.append("file", file);
             formData.append("chatId", selectedChat._id);
 
             const uploadRes = await chatService.uploadFile(formData, currentUser.token);
 
-            const { data } = await chatService.sendMessage(
+            const data = await chatService.sendMessage(
                 "Voice Message",
                 selectedChat._id,
                 currentUser.token,
                 uploadRes.fileUrl,
-                'audio'
+                'audio',
+                isAnnouncement
             );
 
             if (data) {
-                console.log("Voice message sent successfully:", data);
                 socket.emit("new-message", data);
                 setMessages(prev => [...prev, data]);
+                
+                if (data.isAnnouncement) {
+                    setSelectedChat(prev => ({ 
+                        ...prev, 
+                        pinnedMessages: [...(prev.pinnedMessages || []), data] 
+                    }));
+                }
+                
+                toast.success(isAnnouncement ? "Voice Announcement posted!" : "Voice message sent");
             }
             setLoading(false);
         } catch (error) {
@@ -443,6 +456,28 @@ const ChatPage = () => {
         setDeleteConfirmId(messageId);
     };
 
+    const handleManualRefresh = async () => {
+        try {
+            setIsRefreshing(true);
+            const fetchedChats = await chatService.fetchChats(currentUser.token);
+            setChats(fetchedChats);
+            
+            if (selectedChat) {
+                const data = await chatService.fetchMessages(selectedChat._id, currentUser.token, 1);
+                setMessages(data.messages);
+                setHasMore(data.hasMore);
+                setPage(1);
+            }
+            
+            toast.success("Chat synchronized");
+            setTimeout(() => setIsRefreshing(false), 500);
+        } catch (error) {
+            console.error("Refresh failed", error);
+            toast.error("Sync failed");
+            setIsRefreshing(false);
+        }
+    };
+
     const handleConfirmDelete = async () => {
         if (!deleteConfirmId) return;
         try {
@@ -475,20 +510,35 @@ const ChatPage = () => {
 
         try {
             setLoading(true);
+            const isAnnouncement = isAnnouncementMode;
+            setIsAnnouncementMode(false);
+            
             const uploadRes = await chatService.uploadFile(formData, currentUser.token);
             const data = await chatService.sendMessage(
                 "", 
                 selectedChat._id, 
                 currentUser.token, 
                 uploadRes.fileUrl, 
-                uploadRes.fileType
+                uploadRes.fileType,
+                isAnnouncement
             );
+            
             socket.emit("new-message", data);
             setMessages(prev => [...prev, data]);
+            
+            if (data.isAnnouncement) {
+                setSelectedChat(prev => ({ 
+                    ...prev, 
+                    pinnedMessages: [...(prev.pinnedMessages || []), data] 
+                }));
+            }
+            
             setLoading(false);
+            toast.success(isAnnouncement ? "Announcement posted!" : "File sent");
         } catch (error) {
             console.error("Error uploading file", error);
             setLoading(false);
+            toast.error("Failed to upload file");
         }
     };
 
@@ -567,15 +617,24 @@ const ChatPage = () => {
 
             {/* Sidebar */}
             <div className={`chat-sidebar ${isSidebarOpen ? 'active' : ''}`}>
-                <div className="chat-search">
-                    <input
-                        type="text"
-                        placeholder="Search students..."
-                        className="input-field"
-                        style={{ marginBottom: 0 }}
-                        value={search}
-                        onChange={handleSearch}
-                    />
+                <div className="chat-search" style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                        <input
+                            type="text"
+                            placeholder="Find chat..."
+                            className="input-field"
+                            style={{ marginBottom: 0, flex: 1 }}
+                            value={search}
+                            onChange={handleSearch}
+                        />
+                        <button 
+                            className={`refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+                            onClick={handleManualRefresh}
+                            title="Refresh Chats"
+                        >
+                            🔄
+                        </button>
+                    </div>
                     {searchResult.length > 0 && (
                         <div style={{ 
                             position: 'absolute', 
@@ -657,33 +716,41 @@ const ChatPage = () => {
                                     )}
                                 </div>
                             </div>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                                <input 
-                                    type="text" 
-                                    placeholder="Search messages..." 
-                                    className="input-field" 
-                                    style={{ marginBottom: 0, width: '200px', fontSize: '0.85rem', padding: '5px 10px' }}
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                />
-                                <button 
-                                    className={`btn-primary ${showMediaOnly ? 'active' : ''}`} 
-                                    style={{ padding: '6px 12px', fontSize: '0.8rem', background: showMediaOnly ? '#6366f1' : 'rgba(255,255,255,0.1)' }}
-                                    onClick={() => setShowMediaOnly(!showMediaOnly)}
-                                >
-                                    {showMediaOnly ? 'Show All' : 'Gallery'}
-                                </button>
-                                {currentUser.role === 'admin' && selectedChat.chatName === 'Global Students' && (
-                                    <button 
-                                        className="btn-primary" 
-                                        style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ef4444' }}
-                                        onClick={handleClearChat}
-                                    >
-                                        🧹 Clear Chat
-                                    </button>
-                                )}
-                            </div>
-                        </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <button 
+                                            className={`refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+                                            onClick={handleManualRefresh}
+                                            title="Refresh Messages"
+                                            style={{ marginRight: '5px' }}
+                                        >
+                                            🔄
+                                        </button>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search messages..." 
+                                            className="input-field" 
+                                            style={{ marginBottom: 0, width: '200px', fontSize: '0.85rem', padding: '5px 10px' }}
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                        <button 
+                                            className={`btn-primary ${showMediaOnly ? 'active' : ''}`} 
+                                            style={{ padding: '6px 12px', fontSize: '0.8rem', background: showMediaOnly ? '#6366f1' : 'rgba(255,255,255,0.1)' }}
+                                            onClick={() => setShowMediaOnly(!showMediaOnly)}
+                                        >
+                                            {showMediaOnly ? 'Show All' : 'Gallery'}
+                                        </button>
+                                        {currentUser.role === 'admin' && selectedChat.chatName === 'Global Students' && (
+                                            <button 
+                                                className="btn-primary" 
+                                                style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ef4444' }}
+                                                onClick={handleClearChat}
+                                            >
+                                                🧹 Clear Chat
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
 
                         {selectedChat.pinnedMessages && selectedChat.pinnedMessages.length > 0 && (
                             <div className="pinned-messages-bar">
