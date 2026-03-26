@@ -813,8 +813,12 @@ const ChatPage = () => {
                                             )}
                                             
                                             {m.isDeletedByAdmin ? (
-                                                <div className="admin-deleted-placeholder">
-                                                    <i>⚠️ {m.content}</i>
+                                                <div className="admin-deleted-placeholder" style={{ 
+                                                    borderLeft: `3px solid ${m.deletedByRole === 'organizer' ? '#a855f7' : '#ef4444'}`,
+                                                    padding: '5px 10px',
+                                                    margin: '5px 0'
+                                                }}>
+                                                    <i style={{ color: '#94a3b8' }}>⚠️ {m.content}</i>
                                                 </div>
                                             ) : editMessageId === m._id ? (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>

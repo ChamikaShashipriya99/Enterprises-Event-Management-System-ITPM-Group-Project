@@ -45,6 +45,11 @@ const messageSchema = mongoose.Schema(
             type: Boolean,
             default: false,
         },
+        deletedByRole: {
+            type: String,
+            enum: ['admin', 'organizer', null],
+            default: null,
+        },
         isAnnouncement: {
             type: Boolean,
             default: false,

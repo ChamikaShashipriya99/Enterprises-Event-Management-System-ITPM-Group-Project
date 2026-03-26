@@ -229,10 +229,12 @@ const deleteMessage = async (req, res) => {
 
         if (['admin', 'organizer'].includes(req.user.role) && message.sender.toString() !== req.user._id.toString()) {
             // Soft delete for Admins/Organizers
-            message.content = `Message removed by ${req.user.role}`;
+            const roleName = req.user.role === 'admin' ? 'Admin' : 'Organizer';
+            message.content = `Message removed by ${roleName}`;
             message.fileUrl = null;
             message.fileType = 'text';
             message.isDeletedByAdmin = true;
+            message.deletedByRole = req.user.role;
             message.reactions = [];
             await message.save();
 
