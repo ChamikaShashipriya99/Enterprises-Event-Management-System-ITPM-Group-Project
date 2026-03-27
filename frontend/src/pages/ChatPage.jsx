@@ -632,6 +632,29 @@ const ChatPage = () => {
         return participants[0]._id === currentUser._id ? participants[1] : participants[0];
     };
 
+    const isNewDay = (currentMsg, prevMsg) => {
+        if (!prevMsg) return true;
+        const currentData = new Date(currentMsg.createdAt).toDateString();
+        const prevData = new Date(prevMsg.createdAt).toDateString();
+        return currentData !== prevData;
+    };
+
+    const formatDateLabel = (dateString) => {
+        const date = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) return "Today";
+        if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+        
+        return date.toLocaleDateString([], { 
+            day: 'numeric', 
+            month: 'long', 
+            year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined 
+        });
+    };
+
     return (
         <div className={`chat-container ${isSidebarOpen ? 'sidebar-open' : ''}`}>
             {/* Sidebar Toggle (Mobile Only) */}
@@ -825,12 +848,21 @@ const ChatPage = () => {
                                         );
                                     }
 
+                                    const showDateSeparator = isNewDay(m, filteredMessages[i - 1]);
+
                                     return (
-                                        <div 
-                                            key={m._id} 
-                                            id={`msg-${m._id}`}
-                                            className={`message-bubble ${m.isAnnouncement ? 'message-announcement' : (m.sender._id === currentUser._id ? 'message-sent' : 'message-received')} ${['admin', 'organizer'].includes(m.sender.role) && !m.isAnnouncement ? 'message-admin' : ''}`}
-                                        >
+                                        <React.Fragment key={m._id}>
+                                            {showDateSeparator && (
+                                                <div className="chat-date-separator">
+                                                    <span className="chat-date-label">
+                                                        {formatDateLabel(m.createdAt)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div 
+                                                id={`msg-${m._id}`}
+                                                className={`message-bubble ${m.isAnnouncement ? 'message-announcement' : (m.sender._id === currentUser._id ? 'message-sent' : 'message-received')} ${['admin', 'organizer'].includes(m.sender.role) && !m.isAnnouncement ? 'message-admin' : ''}`}
+                                            >
                                             {m.isAnnouncement && (
                                                 <div className="announcement-header">
                                                     <Megaphone size={14} /> OFFICIAL ANNOUNCEMENT
@@ -982,7 +1014,8 @@ const ChatPage = () => {
                                                     })}
                                                 </div>
                                             )}
-                                        </div>
+                                            </div>
+                                        </React.Fragment>
                                     );
                                 })
                             )}

@@ -607,6 +607,41 @@ h1, h2, h3 {
     margin-left: 5px;
 }
 
+/* Date Separator Styles */
+.chat-date-separator {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 25px 0;
+    position: relative;
+    width: 100%;
+}
+
+.chat-date-separator::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    right: 0;
+    height: 1px;
+    background: linear-gradient(90deg, transparent 0%, rgba(255, 255, 255, 0.05) 50%, transparent 100%);
+    z-index: 1;
+}
+
+.chat-date-label {
+    background: rgba(30, 41, 59, 0.8);
+    backdrop-filter: blur(8px);
+    padding: 6px 18px;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    border: 1px solid var(--glass-border);
+    z-index: 2;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
 .floating-badge {
     position: absolute;
     top: -5px;
