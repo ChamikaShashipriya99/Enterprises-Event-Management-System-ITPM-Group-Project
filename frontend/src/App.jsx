@@ -1,7 +1,8 @@
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import Navbar from './components/Navbar';
+import Sidebar from './components/Sidebar';
 import ProtectedRoute from './components/ProtectedRoute';
 import Profile from './pages/Profile';
 import EditProfile from './pages/EditProfile';
@@ -25,122 +26,141 @@ import LostAndFoundFeed from './pages/LostAndFoundFeed';
 import ReportItem from './pages/ReportItem';
 import ChatPage from './pages/ChatPage';
 import AuditLogs from './pages/AuditLogs';
-
 import LandingPage from './pages/LandingPage';
-
 import { Toaster } from 'react-hot-toast';
+
+// Layout Wrappers
+const MainLayout = () => (
+  <>
+    <Navbar />
+    <div className="main-content-wrapper">
+      <Outlet />
+    </div>
+  </>
+);
+
+const DashboardLayout = () => {
+  const { currentUser } = useContext(AuthContext);
+  return (
+    <div className="dashboard-layout">
+      <Sidebar />
+      <main className="dashboard-main-content">
+        <Outlet />
+      </main>
+    </div>
+  );
+};
+
+// A smart wrapper to decide the layout for common pages like Profile/Chat
+const CommonLayoutWrapper = () => {
+  const { currentUser } = useContext(AuthContext);
+  if (!currentUser) return <Navigate to="/login" replace />;
+  
+  if (currentUser.role === 'admin' || currentUser.role === 'organizer') {
+    return <DashboardLayout />;
+  }
+  return <MainLayout />;
+};
 
 function App() {
   return (
     <Router>
       <AuthProvider>
         <Toaster position="top-right" reverseOrder={false} />
-        <Navbar />
         <Routes>
-          {/* ... existing routes ... */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/verify-email/:token" element={<VerifyEmail />} />
-          <Route path="/forgot-password" element={<ForgotPassword />} />
-          <Route path="/reset-password/:token" element={<ResetPassword />} />
+          {/* Public Routes (No Navbar/Layout or custom for Landing) */}
+          <Route element={<MainLayout />}>
+            <Route path="/" element={<LandingPage />} />
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/verify-email/:token" element={<VerifyEmail />} />
+            <Route path="/forgot-password" element={<ForgotPassword />} />
+            <Route path="/reset-password/:token" element={<ResetPassword />} />
+            <Route path="/events" element={<AllEvents />} />
+            <Route path="/events/:id" element={<EventDetail />} />
+          </Route>
 
-          {/* Protected Routes */}
-          <Route path="/student-dashboard" element={
-            <ProtectedRoute role="student">
-              <StudentDashboard />
-            </ProtectedRoute>
-          } />
+          {/* Student Dedicated Routes */}
+          <Route element={<MainLayout />}>
+            <Route path="/student-dashboard" element={
+              <ProtectedRoute role="student">
+                <StudentDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/lost-and-found" element={
+              <ProtectedRoute>
+                <LostAndFoundFeed />
+              </ProtectedRoute>
+            } />
+            <Route path="/report-item" element={
+              <ProtectedRoute>
+                <ReportItem />
+              </ProtectedRoute>
+            } />
+          </Route>
 
-          {/* Organizer Routes */}
-          <Route path="/organizer-dashboard" element={
-            <ProtectedRoute role="organizer">
-              <OrganizerDashboard />
-            </ProtectedRoute>
-          } />
+          {/* Organizer Dedicated Routes */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/organizer-dashboard" element={
+              <ProtectedRoute role="organizer">
+                <OrganizerDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/create-event" element={
+              <ProtectedRoute role="organizer">
+                <CreateEvent />
+              </ProtectedRoute>
+            } />
+            <Route path="/organizer-events" element={
+              <ProtectedRoute role="organizer">
+                <OrganizerEvents />
+              </ProtectedRoute>
+            } />
+            <Route path="/edit-event/:id" element={
+              <ProtectedRoute role="organizer">
+                <EditEvent />
+              </ProtectedRoute>
+            } />
+          </Route>
 
-          <Route path="/create-event" element={
-            <ProtectedRoute role="organizer">
-              <CreateEvent />
-            </ProtectedRoute>
-          } />
+          {/* Admin Dedicated Routes */}
+          <Route element={<DashboardLayout />}>
+            <Route path="/admin-dashboard" element={
+              <ProtectedRoute role="admin">
+                <AdminDashboard />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/users" element={
+              <ProtectedRoute role="admin">
+                <AdminUsers />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/events" element={
+              <ProtectedRoute role="admin">
+                <AdminEvents />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/lost-found" element={
+              <ProtectedRoute role="admin">
+                <AdminLostFound />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/audit-logs" element={
+              <ProtectedRoute role="admin">
+                <AuditLogs />
+              </ProtectedRoute>
+            } />
+          </Route>
 
-          <Route path="/organizer-events" element={
-            <ProtectedRoute role="organizer">
-              <OrganizerEvents />
-            </ProtectedRoute>
-          } />
+          {/* Common Protected Routes (Dynamic Layout) */}
+          <Route element={<CommonLayoutWrapper />}>
+            <Route path="/profile" element={<Profile />} />
+            <Route path="/edit-profile" element={<EditProfile />} />
+            <Route path="/chat" element={<ChatPage />} />
+            {/* Standard Lost and Found for Organizer/Admin too if needed */}
+            <Route path="/lost-and-found" element={<LostAndFoundFeed />} />
+          </Route>
 
-          <Route path="/edit-event/:id" element={
-            <ProtectedRoute role="organizer">
-              <EditEvent />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/edit-profile" element={
-            <ProtectedRoute>
-              <EditProfile />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/admin-dashboard" element={
-            <ProtectedRoute role="admin">
-              <AdminDashboard />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/admin/users" element={
-            <ProtectedRoute role="admin">
-              <AdminUsers />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/admin/events" element={
-            <ProtectedRoute role="admin">
-              <AdminEvents />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/admin/lost-found" element={
-            <ProtectedRoute role="admin">
-              <AdminLostFound />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/admin/audit-logs" element={
-            <ProtectedRoute role="admin">
-              <AuditLogs />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/events" element={<AllEvents />} />
-          <Route path="/events/:id" element={<EventDetail />} />
-
-          {/* Smart Lost & Found Recovery Hub */}
-          <Route path="/lost-and-found" element={
-            <ProtectedRoute>
-              <LostAndFoundFeed />
-            </ProtectedRoute>
-          } />
-          
-          <Route path="/report-item" element={
-            <ProtectedRoute>
-              <ReportItem />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/chat" element={
-            <ProtectedRoute role={['student', 'admin', 'organizer']}>
-              <ChatPage />
-            </ProtectedRoute>
-          } />
-
-          <Route path="/" element={<LandingPage />} />
         </Routes>
       </AuthProvider>
     </Router>
