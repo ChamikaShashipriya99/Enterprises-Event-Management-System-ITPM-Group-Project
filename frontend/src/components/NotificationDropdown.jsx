@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import { Bell } from 'lucide-react';
 
 const NotificationDropdown = ({ currentUser }) => {
     const [notifications, setNotifications] = useState([]);
@@ -106,7 +107,7 @@ const NotificationDropdown = ({ currentUser }) => {
                 }}
                 title="Notifications"
             >
-                🔔
+                <Bell size={20} />
                 {unreadCount > 0 && (
                     <span style={{
                         position: 'absolute',

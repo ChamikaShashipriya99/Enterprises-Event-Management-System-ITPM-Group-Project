@@ -2,8 +2,22 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
 import Skeleton from '../components/Skeleton';
+import { 
+    Search, 
+    Plus, 
+    MapPin, 
+    Calendar, 
+    User, 
+    CheckCircle, 
+    SearchX, 
+    HelpCircle,
+    Inbox,
+    Filter,
+    ArrowRight
+} from 'lucide-react';
 
 const LostAndFoundFeed = () => {
+    // ... existing state and functions ...
     const [items, setItems] = useState([]);
     const [loading, setLoading] = useState(true);
     const [tab, setTab] = useState('All'); // 'All', 'Lost', 'Found'
@@ -75,8 +89,8 @@ const LostAndFoundFeed = () => {
                     </h1>
                     <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>Smart Lost & Found Network. Help return missing belongings.</p>
                 </div>
-                <Link to="/report-item" className="btn-primary" style={{ padding: '12px 24px', textDecoration: 'none' }}>
-                    + Report Item
+                <Link to="/report-item" className="btn-primary" style={{ padding: '12px 24px', textDecoration: 'none', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Plus size={20} /> Report Item
                 </Link>
             </div>
 
@@ -106,14 +120,17 @@ const LostAndFoundFeed = () => {
                 </div>
 
                 {/* Search Bar & Category Dropdown */}
-                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', flex: 1, minWidth: '300px', justifyContent: 'flex-end' }}>
-                    <input 
-                        type="text" 
-                        placeholder="Search items by name or description..." 
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        style={{ padding: '10px 15px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', flex: '1', minWidth: '200px', outline: 'none' }}
-                    />
+                <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap', flex: 1, minWidth: '300px', justifyContent: 'flex-end', position: 'relative' }}>
+                    <div style={{ position: 'relative', flex: '1', minWidth: '200px' }}>
+                        <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                        <input 
+                            type="text" 
+                            placeholder="Search items..." 
+                            value={searchTerm}
+                            onChange={(e) => setSearchTerm(e.target.value)}
+                            style={{ padding: '10px 15px 10px 40px', borderRadius: '8px', background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)', color: 'white', width: '100%', outline: 'none' }}
+                        />
+                    </div>
                     <select 
                         value={categoryFilter} 
                         onChange={(e) => setCategoryFilter(e.target.value)}
@@ -137,15 +154,15 @@ const LostAndFoundFeed = () => {
                             <div style={{ padding: '20px' }}>
                                 <Skeleton variant="title" width="80%" />
                                 <Skeleton variant="text" width="100%" />
-                                <Skeleton variant="text" width="60%" />
                             </div>
                         </div>
                     ))}
                 </div>
             ) : displayItems.length === 0 ? (
-                <div className="glass-card" style={{ textAlign: 'center', padding: '4rem 2rem' }}>
-                    <h3 style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>No {tab !== 'All' ? tab.toLowerCase() : ''} items reported</h3>
-                    <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Be a hero. Keep an eye out for people's lost belongings!</p>
+                <div className="glass-card" style={{ textAlign: 'center', padding: '4rem 2rem', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '15px' }}>
+                    <SearchX size={64} style={{ color: '#64748b', marginBottom: '10px' }} />
+                    <h3 style={{ fontSize: '1.5rem' }}>No {tab !== 'All' ? tab.toLowerCase() : ''} items reported</h3>
+                    <p style={{ color: '#94a3b8', maxWidth: '400px' }}>Be a hero. Keep an eye out for people's lost belongings and report them here!</p>
                 </div>
             ) : (
                 <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '2rem' }}>
@@ -162,7 +179,8 @@ const LostAndFoundFeed = () => {
                                 display: 'flex', 
                                 flexDirection: 'column',
                                 opacity: item.status === 'Resolved' ? 0.6 : 1,
-                                filter: item.status === 'Resolved' ? 'grayscale(50%)' : 'none'
+                                filter: item.status === 'Resolved' ? 'grayscale(50%)' : 'none',
+                                transition: 'all 0.3s ease'
                             }}>
                                 {/* Banner Image or Color */}
                                 {item.image ? (
@@ -176,7 +194,7 @@ const LostAndFoundFeed = () => {
                                         alignItems: 'center',
                                         justifyContent: 'center'
                                     }}>
-                                        <span style={{ fontSize: '3rem' }}>{isLost ? '❓' : '🔍'}</span>
+                                        <span style={{ color: 'white' }}>{isLost ? <HelpCircle size={64} /> : <Search size={64} />}</span>
                                     </div>
                                 )}
 
@@ -195,32 +213,32 @@ const LostAndFoundFeed = () => {
                                         </span>
                                     </div>
 
-                                    <p style={{ color: '#cbd5e1', fontSize: '0.9rem', marginBottom: '15px', flex: 1 }}>{item.description}</p>
+                                    <p style={{ color: '#cbd5e1', fontSize: '0.9rem', marginBottom: '15px', flex: 1, lineHeight: '1.5' }}>{item.description}</p>
 
-                                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '10px', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '20px' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                            <span style={{ color: '#6366f1' }}>📍</span> {item.location}
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', fontSize: '0.85rem', color: '#94a3b8', marginBottom: '20px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <MapPin size={14} style={{ color: '#6366f1' }} /> {item.location}
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
-                                            <span style={{ color: '#6366f1' }}>📅</span> {new Date(item.date).toLocaleDateString()}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <Calendar size={14} style={{ color: '#6366f1' }} /> {new Date(item.date).toLocaleDateString()}
                                         </div>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '5px', gridColumn: 'span 2' }}>
-                                            <span style={{ color: '#6366f1' }}>👤</span> Reported by {item.reporter?.name || 'Unknown'}
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <User size={14} style={{ color: '#6366f1' }} /> Reported by {item.reporter?.name || 'Unknown'}
                                         </div>
                                     </div>
 
                                     {item.status === 'Resolved' ? (
-                                        <div style={{ width: '100%', padding: '12px', textAlign: 'center', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '8px', fontWeight: 'bold' }}>
-                                            ✅ Returned successfully
+                                        <div style={{ width: '100%', padding: '12px', textAlign: 'center', background: 'rgba(16, 185, 129, 0.1)', color: '#10b981', borderRadius: '8px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}>
+                                            <CheckCircle size={18} /> Returned successfully
                                         </div>
                                     ) : (
                                         (isOwner || isAdmin) && (
                                             <button 
                                                 onClick={() => handleResolve(item._id)}
                                                 className="btn-primary" 
-                                                style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px solid #10b981', color: '#10b981' }}
+                                                style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px solid #10b981', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
                                             >
-                                                Mark as {isLost ? 'Found' : 'Returned'}
+                                                Mark as {isLost ? 'Found' : 'Returned'} <ArrowRight size={18} />
                                             </button>
                                         )
                                     )}

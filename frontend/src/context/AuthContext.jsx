@@ -4,6 +4,7 @@ import authService from '../services/authService';
 import chatService from '../services/chatService';
 import io from 'socket.io-client';
 import toast from 'react-hot-toast';
+import { MessageSquare } from 'lucide-react';
 
 const ENDPOINT = "http://localhost:5000";
 
@@ -75,7 +76,7 @@ export const AuthProvider = ({ children }) => {
                 setUnreadCount(prev => prev + 1);
                 // Show Toast
                 toast(`New message from ${newMessage.sender.name}`, {
-                    icon: '💬',
+                    icon: <MessageSquare size={18} color="#6366f1" />,
                     duration: 4000,
                     onClick: () => window.location.href = '/chat'
                 });

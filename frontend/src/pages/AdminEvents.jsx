@@ -2,8 +2,21 @@ import { useState, useEffect } from 'react';
 import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import { 
+    Calendar, 
+    Rocket, 
+    History, 
+    Users, 
+    Trash2, 
+    ShieldCheck, 
+    MapPin, 
+    Building2,
+    Mail,
+    User
+} from 'lucide-react';
 
 const AdminEvents = () => {
+    // ... existing state and functions ...
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [modal, setModal] = useState({ isOpen: false, eventId: null });
@@ -92,10 +105,10 @@ const AdminEvents = () => {
     );
 
     const statCards = [
-        { title: 'Total Events', value: stats.totalEvents, icon: '📅', color: '#6366f1' },
-        { title: 'Upcoming', value: stats.upcomingEvents, icon: '🚀', color: '#10b981' },
-        { title: 'Past Events', value: stats.pastEvents, icon: '📜', color: '#64748b' },
-        { title: 'Total Signups', value: stats.totalRegistrations, icon: '👥', color: '#a855f7' }
+        { title: 'Total Events', value: stats.totalEvents, icon: <Calendar size={24} />, color: '#6366f1' },
+        { title: 'Upcoming', value: stats.upcomingEvents, icon: <Rocket size={24} />, color: '#10b981' },
+        { title: 'Past Events', value: stats.pastEvents, icon: <History size={24} />, color: '#64748b' },
+        { title: 'Total Signups', value: stats.totalRegistrations, icon: <Users size={24} />, color: '#a855f7' }
     ];
 
     return (
@@ -109,67 +122,107 @@ const AdminEvents = () => {
                 marginBottom: '3rem'
             }}>
                 {statCards.map((card, index) => (
-                    <div key={index} className="glass-card" style={{ padding: '1.5rem', textAlign: 'center' }}>
-                        <div style={{ fontSize: '2rem', marginBottom: '0.5rem' }}>{card.icon}</div>
-                        <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase' }}>{card.title}</div>
-                        <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: card.color }}>{card.value}</div>
+                    <div key={index} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column', alignItems: 'center', transition: 'transform 0.2s' }}>
+                        <div style={{ 
+                            padding: '12px', 
+                            borderRadius: '12px', 
+                            background: `${card.color}20`, 
+                            color: card.color,
+                            marginBottom: '1rem' 
+                        }}>
+                            {card.icon}
+                        </div>
+                        <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: '600', textTransform: 'uppercase', letterSpacing: '0.05em' }}>{card.title}</div>
+                        <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#f8fafc', marginTop: '0.2rem' }}>{card.value}</div>
                     </div>
                 ))}
             </div>
 
-            <div className="glass-card" style={{ overflowX: 'auto' }}>
+            <div className="glass-card" style={{ overflowX: 'auto', padding: '0' }}>
                 <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left' }}>
                     <thead>
-                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
-                            <th style={{ padding: '1.2rem' }}>Event Title</th>
-                            <th style={{ padding: '1.2rem' }}>Organizer</th>
-                            <th style={{ padding: '1.2rem' }}>Date</th>
-                            <th style={{ padding: '1.2rem' }}>Location</th>
-                            <th style={{ padding: '1.2rem' }}>Capacity</th>
-                            <th style={{ padding: '1.2rem' }}>Actions</th>
+                        <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', background: 'rgba(255,255,255,0.02)' }}>
+                            <th style={{ padding: '1.2rem', color: '#94a3b8', fontWeight: '600', fontSize: '0.85rem', textTransform: 'uppercase' }}>Event Details</th>
+                            <th style={{ padding: '1.2rem', color: '#94a3b8', fontWeight: '600', fontSize: '0.85rem', textTransform: 'uppercase' }}>Organizer</th>
+                            <th style={{ padding: '1.2rem', color: '#94a3b8', fontWeight: '600', fontSize: '0.85rem', textTransform: 'uppercase' }}>Status</th>
+                            <th style={{ padding: '1.2rem', color: '#94a3b8', fontWeight: '600', fontSize: '0.85rem', textTransform: 'uppercase' }}>Engagement</th>
+                            <th style={{ padding: '1.2rem', color: '#94a3b8', fontWeight: '600', fontSize: '0.85rem', textTransform: 'uppercase', textAlign: 'right' }}>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        {events.map((event) => (
-                            <tr key={event._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }} className="table-row-hover">
-                                <td style={{ padding: '1.2rem', fontWeight: '500' }}>{event.title}</td>
-                                <td style={{ padding: '1.2rem' }}>
-                                    <div style={{ fontSize: '0.9rem' }}>{event.organizer?.name}</div>
-                                    <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{event.organizer?.email}</div>
-                                </td>
-                                <td style={{ padding: '1.2rem', fontSize: '0.9rem' }}>{new Date(event.date).toLocaleDateString()}</td>
-                                <td style={{ padding: '1.2rem', fontSize: '0.9rem' }}>{event.location}</td>
-                                <td style={{ padding: '1.2rem' }}>
-                                    <div style={{ fontSize: '0.9rem' }}>{event.registeredUsers?.length || 0} / {event.capacity}</div>
-                                    <div style={{ width: '100px', height: '4px', background: 'rgba(255,255,255,0.1)', borderRadius: '2px', marginTop: '4px' }}>
-                                        <div style={{
-                                            width: `${Math.min(((event.registeredUsers?.length || 0) / event.capacity) * 100, 100)}%`,
-                                            height: '100%',
-                                            background: 'var(--primary)',
-                                            borderRadius: '2px'
-                                        }}></div>
-                                    </div>
-                                </td>
-                                <td style={{ padding: '1.2rem' }}>
-                                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        {events.map((event) => {
+                            const isPast = new Date(event.date) < new Date();
+                            return (
+                                <tr key={event._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)', transition: 'background 0.2s' }} className="table-row-hover">
+                                    <td style={{ padding: '1.2rem' }}>
+                                        <div style={{ fontWeight: '600', color: '#f8fafc', marginBottom: '4px' }}>{event.title}</div>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                                                <Calendar size={12} /> {new Date(event.date).toLocaleDateString()}
+                                            </div>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', fontSize: '0.75rem', color: '#94a3b8' }}>
+                                                <MapPin size={12} /> {event.location}
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '1.2rem' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                            <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'rgba(99, 102, 241, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#6366f1' }}>
+                                                <User size={16} />
+                                            </div>
+                                            <div>
+                                                <div style={{ fontSize: '0.9rem', fontWeight: '500' }}>{event.organizer?.name}</div>
+                                                <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{event.organizer?.email}</div>
+                                            </div>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '1.2rem' }}>
+                                        <span style={{
+                                            padding: '4px 10px',
+                                            borderRadius: '20px',
+                                            fontSize: '0.7rem',
+                                            fontWeight: 'bold',
+                                            background: isPast ? 'rgba(100, 116, 139, 0.1)' : 'rgba(16, 185, 129, 0.1)',
+                                            color: isPast ? '#94a3b8' : '#10b981',
+                                            border: `1px solid ${isPast ? 'rgba(100, 116, 139, 0.2)' : 'rgba(16, 185, 129, 0.2)'}`
+                                        }}>
+                                            {isPast ? 'PAST' : 'ACTIVE'}
+                                        </span>
+                                    </td>
+                                    <td style={{ padding: '1.2rem' }}>
+                                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '4px', fontSize: '0.8rem' }}>
+                                            <span style={{ color: '#94a3b8' }}>Registrations</span>
+                                            <span>{event.registeredUsers?.length || 0} / {event.capacity}</span>
+                                        </div>
+                                        <div style={{ width: '120px', height: '6px', background: 'rgba(255,255,255,0.05)', borderRadius: '3px', overflow: 'hidden' }}>
+                                            <div style={{
+                                                width: `${Math.min(((event.registeredUsers?.length || 0) / event.capacity) * 100, 100)}%`,
+                                                height: '100%',
+                                                background: isPast ? '#64748b' : 'linear-gradient(90deg, #6366f1, #a855f7)',
+                                                borderRadius: '3px'
+                                            }}></div>
+                                        </div>
+                                    </td>
+                                    <td style={{ padding: '1.2rem', textAlign: 'right' }}>
                                         <button
                                             onClick={() => handleDelete(event._id)}
                                             style={{
-                                                padding: '6px 12px',
+                                                padding: '8px',
                                                 background: 'rgba(239, 68, 68, 0.1)',
                                                 color: '#ef4444',
                                                 border: '1px solid rgba(239, 68, 68, 0.2)',
-                                                borderRadius: '6px',
+                                                borderRadius: '8px',
                                                 cursor: 'pointer',
-                                                fontSize: '0.8rem'
+                                                transition: 'all 0.2s'
                                             }}
+                                            title="Delete Event"
                                         >
-                                            Delete
+                                            <Trash2 size={16} />
                                         </button>
-                                    </div>
-                                </td>
-                            </tr>
-                        ))}
+                                    </td>
+                                </tr>
+                            );
+                        })}
                     </tbody>
                 </table>
             </div>

@@ -2,6 +2,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import { useParams, useNavigate } from 'react-router-dom';
 import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
+import { CheckCircle2, AlertCircle } from 'lucide-react';
 
 const ResetPassword = () => {
     const [password, setPassword] = useState('');
@@ -66,8 +67,8 @@ const ResetPassword = () => {
                 <h2 style={{ fontSize: '2rem', marginBottom: '10px' }}>Reset Password</h2>
                 <p style={{ color: '#94a3b8', marginBottom: '30px' }}>Enter your new password below</p>
 
-                {message && <div style={{ color: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '10px', borderRadius: '8px', marginBottom: '20px' }}>{message}</div>}
-                {error && <div style={{ color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '10px', borderRadius: '8px', marginBottom: '20px' }}>{error}</div>}
+                {message && <div style={{ color: '#10b981', backgroundColor: 'rgba(16, 185, 129, 0.1)', padding: '15px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem' }}><CheckCircle2 size={18} /> {message}</div>}
+                {error && <div style={{ color: '#ef4444', backgroundColor: 'rgba(239, 68, 68, 0.1)', padding: '15px', borderRadius: '8px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '10px', fontSize: '0.9rem' }}><AlertCircle size={18} /> {error}</div>}
 
                 <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
                     <div style={{ marginBottom: '5px', fontSize: '0.9rem', color: '#94a3b8' }}>New Password</div>

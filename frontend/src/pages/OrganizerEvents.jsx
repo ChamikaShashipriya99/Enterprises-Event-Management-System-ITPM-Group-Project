@@ -3,6 +3,7 @@ import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import { Calendar } from 'lucide-react';
 
 const OrganizerEvents = () => {
     const [events, setEvents] = useState([]);
@@ -105,7 +106,7 @@ const OrganizerEvents = () => {
                                                         style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
                                                     />
                                                 ) : (
-                                                    <span style={{ fontSize: '1.2rem' }}>📅</span>
+                                                <Calendar size={24} color="#94a3b8" />
                                                 )}
                                             </div>
                                             <span>{event.title}</span>

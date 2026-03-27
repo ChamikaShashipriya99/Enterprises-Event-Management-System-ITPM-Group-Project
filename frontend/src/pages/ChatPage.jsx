@@ -4,6 +4,38 @@ import { AuthContext } from '../context/AuthContext';
 import chatService from "../services/chatService";
 import toast from 'react-hot-toast';
 import axios from 'axios';
+import { 
+    Search, 
+    RefreshCw, 
+    MoreVertical, 
+    Send, 
+    Paperclip, 
+    Mic, 
+    MicOff, 
+    Square, 
+    X, 
+    Pin, 
+    PinOff, 
+    Trash2, 
+    Edit3, 
+    Check, 
+    CheckCheck, 
+    Image as ImageIcon, 
+    FileText, 
+    User, 
+    Users, 
+    Megaphone, 
+    Eraser, 
+    Smile, 
+    Maximize2, 
+    Menu, 
+    Info, 
+    ChevronDown, 
+    Clock,
+    ShieldAlert,
+    AlertTriangle,
+    Ghost
+} from 'lucide-react';
 
 const ENDPOINT = "http://localhost:5000";
 var selectedChatCompare;
@@ -264,7 +296,7 @@ const ChatPage = () => {
             setChats(prev => prev.map(c => 
                 c.lastMessage?._id === messageId ? { ...c, lastMessage: { ...c.lastMessage, content: "Message deleted" } } : c
             ));
-            toast("A message was deleted", { icon: '🗑️' });
+            toast("A message was deleted", { icon: <Trash2 size={16} color="#ef4444" /> });
         };
 
         const statusListener = (data) => {
@@ -299,7 +331,7 @@ const ChatPage = () => {
             if (selectedChatCompare && selectedChatCompare._id === chatId) {
                 setMessages([]);
                 setSelectedChat(prev => ({ ...prev, lastMessage: null, pinnedMessages: [] }));
-                toast("Chat history was cleared by an admin", { icon: '🧹' });
+                toast("Chat history was cleared by an admin", { icon: <Eraser size={16} color="#f59e0b" /> });
             }
         };
 
@@ -363,7 +395,7 @@ const ChatPage = () => {
             element.classList.add("highlight-pulse");
             setTimeout(() => element.classList.remove("highlight-pulse"), 2000);
         } else {
-            toast("Searching for message...", { icon: '🔍' });
+            toast("Searching for message...", { icon: <Search size={16} color="#6366f1" /> });
             // Advanced: If message not in DOM, we'd need to fetch more pages. 
             // For now, prompt to load more.
         }
@@ -607,7 +639,7 @@ const ChatPage = () => {
                 className="mobile-menu-btn"
                 onClick={() => setIsSidebarOpen(!isSidebarOpen)}
             >
-                {isSidebarOpen ? '✕' : '☰'}
+                {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
             </button>
 
             {/* Sidebar Overlay (Mobile Only) */}
@@ -632,7 +664,7 @@ const ChatPage = () => {
                             onClick={handleManualRefresh}
                             title="Refresh Chats"
                         >
-                            🔄
+                            <RefreshCw size={18} />
                         </button>
                     </div>
                     {searchResult.length > 0 && (
@@ -678,9 +710,9 @@ const ChatPage = () => {
                                     )}
                                 </div>
                                 <div style={{ flex: 1 }}>
-                                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center' }}>
+                                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
                                         {sender.name}
-                                        {isGroup && <span className="group-badge">Group</span>}
+                                        {isGroup && <span className="group-badge" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>Group</span>}
                                         {chat.unreadCount > 0 && <span className="unread-badge">{chat.unreadCount}</span>}
                                     </div>
                                     {chat.lastMessage && (
@@ -723,7 +755,7 @@ const ChatPage = () => {
                                             title="Refresh Messages"
                                             style={{ marginRight: '5px' }}
                                         >
-                                            🔄
+                                            <RefreshCw size={18} />
                                         </button>
                                         <input 
                                             type="text" 
@@ -743,10 +775,10 @@ const ChatPage = () => {
                                         {(currentUser.role === 'admin' || currentUser.role === 'organizer') && selectedChat.chatName === 'Global Students' && (
                                             <button 
                                                 className="btn-primary" 
-                                                style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ef4444' }}
+                                                style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}
                                                 onClick={handleClearChat}
                                             >
-                                                🧹 Clear Chat
+                                                <Eraser size={14} /> Clear Chat
                                             </button>
                                         )}
                                     </div>
@@ -754,7 +786,7 @@ const ChatPage = () => {
 
                         {selectedChat.pinnedMessages && selectedChat.pinnedMessages.length > 0 && (
                             <div className="pinned-messages-bar">
-                                <div className="pinned-icon">📌</div>
+                                <div className="pinned-icon"><Pin size={16} fill="currentColor" /></div>
                                 <div className="pinned-carousel">
                                     {selectedChat.pinnedMessages.map((pm, idx) => (
                                         <div key={pm._id} className="pinned-item" onClick={() => jumpToMessage(pm._id)}>
@@ -801,7 +833,7 @@ const ChatPage = () => {
                                         >
                                             {m.isAnnouncement && (
                                                 <div className="announcement-header">
-                                                    📢 OFFICIAL ANNOUNCEMENT
+                                                    <Megaphone size={14} /> OFFICIAL ANNOUNCEMENT
                                                 </div>
                                             )}
                                             {selectedChat.isGroupChat && (m.sender._id !== currentUser._id || ['admin', 'organizer'].includes(m.sender.role)) && (
@@ -818,7 +850,7 @@ const ChatPage = () => {
                                                     padding: '5px 10px',
                                                     margin: '5px 0'
                                                 }}>
-                                                    <i style={{ color: '#94a3b8' }}>⚠️ {m.content}</i>
+                                                    <i style={{ color: '#94a3b8' }}><AlertTriangle size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {m.content}</i>
                                                 </div>
                                             ) : editMessageId === m._id ? (
                                                 <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
@@ -857,7 +889,7 @@ const ChatPage = () => {
                                                                     setSelectedReadBy(m.readBy);
                                                                 }}
                                                             >
-                                                                {m.readBy?.length > 1 ? '✓✓' : '✓'}
+                                                                {m.readBy?.length > 1 ? <CheckCheck size={14} color="#10b981" /> : <Check size={14} />}
                                                             </div>
                                                         )}
                                                     </div>
@@ -884,7 +916,7 @@ const ChatPage = () => {
                                                         rel="noopener noreferrer"
                                                         className="message-file"
                                                     >
-                                                        <span className="file-icon">📄</span>
+                                                        <FileText size={18} />
                                                         <span>Download Attachment</span>
                                                     </a>
                                                 )
@@ -895,7 +927,7 @@ const ChatPage = () => {
                                                     {/* Students cannot unpin admin/organizer messages */}
                                                     {!(currentUser.role === 'student' && ['admin', 'organizer'].includes(m.sender?.role) && selectedChat.pinnedMessages?.some(p => p?._id === m._id)) && (
                                                         <button className="action-btn" onClick={() => handleTogglePin(m._id)}>
-                                                            {selectedChat.pinnedMessages?.some(p => p?._id === m._id) ? '📍 Unpin' : '📌 Pin'}
+                                                            {selectedChat.pinnedMessages?.some(p => p?._id === m._id) ? <><PinOff size={14} /> Unpin</> : <><Pin size={14} /> Pin</>}
                                                         </button>
                                                     )}
                                                     {(m.sender._id === currentUser._id || ['admin', 'organizer'].includes(currentUser.role)) && (
@@ -904,11 +936,11 @@ const ChatPage = () => {
                                                                 <button className="action-btn" onClick={() => {
                                                                     setEditMessageId(m._id);
                                                                     setEditContent(m.content);
-                                                                }}>✎ Edit</button>
+                                                                }}><Edit3 size={14} /> Edit</button>
                                                             )}
                                                             {/* Students cannot delete admin/organizer messages */}
                                                             {!(currentUser.role === 'student' && ['admin', 'organizer'].includes(m.sender?.role)) && (
-                                                                <button className="action-btn" onClick={() => handleDeleteMessage(m._id)}>🗑 Delete</button>
+                                                                <button className="action-btn deletion" onClick={() => handleDeleteMessage(m._id)}><Trash2 size={14} /> Delete</button>
                                                             )}
                                                         </>
                                                     )}
@@ -986,7 +1018,7 @@ const ChatPage = () => {
                                 style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.1)' }}
                                 onClick={() => fileInputRef.current.click()}
                             >
-                                📎
+                                <Paperclip size={20} />
                             </button>
                             
                             {isRecording ? (
@@ -995,7 +1027,7 @@ const ChatPage = () => {
                                     <span style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: 600 }}>
                                         {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
                                     </span>
-                                    <button className="stop-btn" onClick={stopRecording}>⏹</button>
+                                    <button className="stop-btn" onClick={stopRecording}><Square size={14} fill="currentColor" /></button>
                                 </div>
                             ) : (
                                 <button 
@@ -1003,7 +1035,7 @@ const ChatPage = () => {
                                     style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.1)' }}
                                     onClick={startRecording}
                                 >
-                                    🎙️
+                                    <Mic size={20} />
                                 </button>
                             )}
 
@@ -1014,7 +1046,7 @@ const ChatPage = () => {
                                     onClick={() => setIsAnnouncementMode(!isAnnouncementMode)}
                                     title="Toggle Announcement Mode"
                                 >
-                                    📢
+                                    <Megaphone size={20} />
                                 </button>
                             )}
                             <input
@@ -1033,7 +1065,7 @@ const ChatPage = () => {
                                 onClick={sendMessage}
                                 disabled={isRecording}
                             >
-                                Send
+                                <Send size={20} />
                             </button>
                         </div>
                     </>
@@ -1049,7 +1081,7 @@ const ChatPage = () => {
                 <div className="lightbox-overlay" onClick={() => setPreviewImage(null)}>
                     <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
                         <img src={previewImage} alt="preview" />
-                        <button className="lightbox-close" onClick={() => setPreviewImage(null)}>&times;</button>
+                        <button className="lightbox-close" onClick={() => setPreviewImage(null)}><X size={32} /></button>
                     </div>
                 </div>
             )}
@@ -1058,7 +1090,11 @@ const ChatPage = () => {
             {deleteConfirmId && (
                 <div className="lightbox-overlay" onClick={() => setDeleteConfirmId(null)}>
                     <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ padding: '30px', textAlign: 'center', maxWidth: '400px' }}>
-                        <div style={{ fontSize: '3rem', marginBottom: '15px' }}>⚠️</div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                            <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '15px', borderRadius: '50%' }}>
+                                <ShieldAlert size={48} />
+                            </div>
+                        </div>
                         <h3 style={{ marginBottom: '10px' }}>Delete Message?</h3>
                         <p style={{ color: 'var(--text-muted)', marginBottom: '25px', fontSize: '0.9rem' }}>
                             Are you sure you want to remove this message? This action cannot be undone.
@@ -1088,7 +1124,7 @@ const ChatPage = () => {
                     <div className="modal-content read-by-modal" onClick={e => e.stopPropagation()}>
                         <div className="modal-header">
                             <h3>Seen by</h3>
-                            <button className="close-btn" onClick={() => setSelectedReadBy(null)}>×</button>
+                            <button className="close-btn" onClick={() => setSelectedReadBy(null)}><X size={20} /></button>
                         </div>
                         <div className="read-by-list">
                             {selectedReadBy.filter(u => u._id !== currentUser._id).length === 0 ? (
@@ -1103,7 +1139,7 @@ const ChatPage = () => {
                                             <div className="user-name">{user.name}</div>
                                             <div className="user-role">{user.role}</div>
                                         </div>
-                                        <div className="seen-check">✓✓</div>
+                                        <div className="seen-check"><CheckCheck size={16} color="#10b981" /></div>
                                     </div>
                                 ))
                             )}

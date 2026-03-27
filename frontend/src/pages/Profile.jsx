@@ -5,6 +5,7 @@ import userService from '../services/userService';
 import authService from '../services/authService';
 import Skeleton from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
+import { Monitor, Smartphone, Laptop } from 'lucide-react';
 
 const Profile = () => {
     const { currentUser, token, logout } = useContext(AuthContext);
@@ -286,8 +287,10 @@ const Profile = () => {
                                 alignItems: 'center'
                             }}>
                                 <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                    <div style={{ fontSize: '1.5rem' }}>
-                                        {session.os?.toLowerCase().includes('win') ? '💻' : session.os?.toLowerCase().includes('mac') ? '🖥️' : '📱'}
+                                    <div style={{ display: 'flex', color: 'var(--primary)', opacity: 0.8 }}>
+                                        {session.os?.toLowerCase().includes('win') ? <Laptop size={20} /> : 
+                                         session.os?.toLowerCase().includes('mac') ? <Monitor size={20} /> : 
+                                         <Smartphone size={20} />}
                                     </div>
                                     <div>
                                         <div style={{ fontWeight: '600' }}>{session.browser} on {session.os} ({session.device})</div>

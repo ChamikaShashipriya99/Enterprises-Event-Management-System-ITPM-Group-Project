@@ -5,6 +5,23 @@ import eventService from '../services/eventService';
 import chatService from '../services/chatService';
 import Skeleton from '../components/Skeleton';
 import { 
+    Users, 
+    Calendar, 
+    Building2, 
+    GraduationCap, 
+    Zap, 
+    MessageSquare, 
+    FileImage, 
+    ShieldCheck, 
+    Trash2, 
+    Megaphone,
+    TrendingUp,
+    LineChart,
+    PieChart as PieChartIcon,
+    Clock,
+    Sparkles
+} from 'lucide-react';
+import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     PieChart, Pie, Cell, Legend, AreaChart, Area 
 } from 'recharts';
@@ -107,10 +124,17 @@ const AdminDashboard = () => {
     );
 
     const statCards = [
-        { title: 'Total Users', value: stats.totalUsers, icon: '👥', color: '#6366f1' },
-        { title: 'Total Events', value: stats.totalEvents, icon: '📅', color: '#a855f7' },
-        { title: 'System Organizers', value: stats.totalOrganizers, icon: '🏗️', color: '#ec4899' },
-        { title: 'Active Students', value: stats.totalStudents, icon: '🎓', color: '#10b981' }
+        { title: 'Total Users', value: stats.totalUsers, icon: <Users size={28} />, color: '#6366f1' },
+        { title: 'Total Events', value: stats.totalEvents, icon: <Calendar size={28} />, color: '#a855f7' },
+        { title: 'System Organizers', value: stats.totalOrganizers, icon: <Building2 size={28} />, color: '#ec4899' },
+        { title: 'Active Students', value: stats.totalStudents, icon: <GraduationCap size={28} />, color: '#10b981' }
+    ];
+
+    const pulseCards = [
+        { title: 'Active Now', value: chatStats.activeNow, icon: <Zap size={22} />, color: '#f59e0b', desc: 'Online Students' },
+        { title: "Today's Volume", value: chatStats.todayMsgs, icon: <MessageSquare size={22} />, color: '#0ea5e9', desc: 'Last 24 hours' },
+        { title: 'Media Shared', value: chatStats.mediaShared, icon: <FileImage size={22} />, color: '#10b981', desc: 'Attachments' },
+        { title: 'Moderation Status', value: chatStats.moderationActions, icon: <ShieldCheck size={22} />, color: '#ef4444', desc: 'Actions Today' }
     ];
 
     return (
@@ -128,20 +152,20 @@ const AdminDashboard = () => {
                         padding: '1.5rem',
                         display: 'flex',
                         flexDirection: 'column',
-                        gap: '0.5rem',
+                        gap: '0.8rem',
                         transition: 'transform 0.3s ease',
                         cursor: 'default'
                     }}>
-                        <div style={{ fontSize: '2rem' }}>{card.icon}</div>
+                        <div style={{ color: card.color }}>{card.icon}</div>
                         <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500' }}>{card.title}</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: card.color }}>{card.value}</div>
+                        <div style={{ fontSize: '2.2rem', fontWeight: 'bold', color: 'white' }}>{card.value}</div>
                     </div>
                 ))}
             </div>
 
             {/* Community Pulse Section */}
-            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700' }}>
-                Student <span style={{ color: '#10b981' }}>Community Pulse</span> 📊
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                Student <span style={{ color: '#10b981' }}>Community Pulse</span> <TrendingUp size={24} style={{ color: '#10b981' }} />
             </h2>
             <div style={{
                 display: 'grid',
@@ -149,12 +173,7 @@ const AdminDashboard = () => {
                 gap: '1.5rem',
                 marginBottom: '3rem'
             }}>
-                {[
-                    { title: 'Active Now', value: chatStats.activeNow, icon: '⚡', color: '#f59e0b', desc: 'Online Students' },
-                    { title: "Today's Volume", value: chatStats.todayMsgs, icon: '💬', color: '#0ea5e9', desc: 'Last 24 hours' },
-                    { title: 'Media Shared', value: chatStats.mediaShared, icon: '🖼️', color: '#10b981', desc: 'Attachments' },
-                    { title: 'Moderation Status', value: chatStats.moderationActions, icon: '🛡️', color: '#ef4444', desc: 'Actions Today' }
-                ].map((card, index) => (
+                {pulseCards.map((card, index) => (
                     <div key={index} className="glass-card" style={{
                         padding: '1.5rem',
                         display: 'flex',
@@ -164,7 +183,7 @@ const AdminDashboard = () => {
                         transition: 'transform 0.3s ease'
                     }}>
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                            <span style={{ fontSize: '1.5rem' }}>{card.icon}</span>
+                            <span style={{ color: card.color }}>{card.icon}</span>
                             <span style={{ fontSize: '0.7rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>Real-time</span>
                         </div>
                         <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500', marginTop: '0.5rem' }}>{card.title}</div>
@@ -175,14 +194,16 @@ const AdminDashboard = () => {
             </div>
 
             {/* Visual Insights Section */}
-            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem' }}>
-                Visual <span style={{ color: '#6366f1' }}>Insights</span> 📉
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                Visual <span style={{ color: '#6366f1' }}>Insights</span> <LineChart size={24} style={{ color: '#6366f1' }} />
             </h2>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
                 {/* 1. Peak Activity Chart */}
                 <div className="glass-card" style={{ padding: '2rem', minHeight: '400px' }}>
-                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Peak Activity (Last 24h)</h3>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Clock size={18} /> Peak Activity (Last 24h)
+                    </h3>
                     <div style={{ width: '100%', height: '300px' }}>
                         <ResponsiveContainer>
                             <AreaChart data={chatStats.hourlyActivity}>
@@ -207,7 +228,9 @@ const AdminDashboard = () => {
 
                 {/* 2. Top Contributors Leaderboard */}
                 <div className="glass-card" style={{ padding: '2rem', minHeight: '400px' }}>
-                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Top Contributors</h3>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <TrendingUp size={18} /> Top Contributors
+                    </h3>
                     <div style={{ width: '100%', height: '300px' }}>
                         <ResponsiveContainer>
                             <BarChart data={chatStats.topContributors} layout="vertical">
@@ -226,7 +249,9 @@ const AdminDashboard = () => {
 
                 {/* 3. Content Breakdown Pie Chart */}
                 <div className="glass-card" style={{ padding: '2rem', minHeight: '400px', gridColumn: 'span 1' }}>
-                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem' }}>Content Distribution</h3>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <PieChartIcon size={18} /> Content Distribution
+                    </h3>
                     <div style={{ width: '100%', height: '300px' }}>
                         <ResponsiveContainer>
                             <PieChart>
@@ -252,8 +277,8 @@ const AdminDashboard = () => {
             </div>
 
             {/* Moderation Insights Section */}
-            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem' }}>
-                Moderation <span style={{ color: '#ec4899' }}>Insights</span> 🧠
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                Moderation <span style={{ color: '#ec4899' }}>Insights</span> <Sparkles size={24} style={{ color: '#ec4899' }} />
             </h2>
             <div style={{
                 display: 'grid',
@@ -264,7 +289,7 @@ const AdminDashboard = () => {
                 <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #ef4444' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#94a3b8' }}>Self-Deletion Rate</span>
-                        <span style={{ fontSize: '1.2rem' }}>🗑️</span>
+                        <Trash2 size={24} style={{ color: '#ef4444' }} />
                     </div>
                     <div style={{ fontSize: '2.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{chatStats.insights?.selfDeletionRate}%</div>
                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
@@ -274,7 +299,7 @@ const AdminDashboard = () => {
                 <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #a855f7' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between' }}>
                         <span style={{ color: '#94a3b8' }}>Announcement Reach</span>
-                        <span style={{ fontSize: '1.2rem' }}>📢</span>
+                        <Megaphone size={24} style={{ color: '#a855f7' }} />
                     </div>
                     <div style={{ fontSize: '2.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{chatStats.insights?.announcementReach}%</div>
                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
@@ -285,14 +310,18 @@ const AdminDashboard = () => {
 
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
                 <div className="glass-card" style={{ padding: '2rem' }}>
-                    <h3 style={{ marginBottom: '1rem' }}>User Management</h3>
+                    <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Users size={20} /> User Management
+                    </h3>
                     <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>View and manage all registered users in the system.</p>
                     <Link to="/admin/users" className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none' }}>
                         Manage Users
                     </Link>
                 </div>
                 <div className="glass-card" style={{ padding: '2rem' }}>
-                    <h3 style={{ marginBottom: '1rem' }}>Event Oversight</h3>
+                    <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <Calendar size={20} /> Event Oversight
+                    </h3>
                     <p style={{ color: '#94a3b8', marginBottom: '1.5rem' }}>Monitor and oversee all events across the platform.</p>
                     <Link to="/admin/events" className="btn-primary" style={{ display: 'inline-block', textDecoration: 'none', background: 'linear-gradient(135deg, #a855f7 0%, #ec4899 100%)' }}>
                         Manage Events
@@ -302,7 +331,7 @@ const AdminDashboard = () => {
 
             {/* Floating Chat Button */}
             <Link to="/chat" className="floating-chat-btn" title="Open Chat">
-                💬
+                <MessageSquare size={28} />
                 {(unreadCount || 0) > 0 && (
                     <span className="floating-badge">{unreadCount}</span>
                 )}

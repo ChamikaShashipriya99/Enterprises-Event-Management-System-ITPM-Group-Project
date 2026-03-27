@@ -3,6 +3,19 @@ import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
+import { 
+    Calendar, 
+    Award, 
+    Star, 
+    MessageCircle, 
+    MapPin, 
+    Clock, 
+    ChevronRight,
+    Search,
+    Download,
+    CheckCircle2,
+    MessageSquare
+} from 'lucide-react';
 
 const StudentDashboard = () => {
     const { currentUser, refreshProfile, unreadCount } = useContext(AuthContext);
@@ -32,10 +45,10 @@ const StudentDashboard = () => {
     }, []);
 
     const statCards = [
-        { title: 'Registered Events', value: registeredEvents.length, icon: '📅', color: '#6366f1' },
-        { title: 'Certificates Earned', value: currentUser?.certificates?.length || 0, icon: '🎓', color: '#10b981' },
-        { title: 'Upcoming Today', value: registeredEvents.filter(e => new Date(e.date).toDateString() === new Date().toDateString()).length, icon: '🌟', color: '#f59e0b' },
-        { title: 'Community Messages', value: unreadCount, icon: '💬', color: '#a855f7' }
+        { title: 'Registered Events', value: registeredEvents.length, icon: <Calendar size={24} />, color: '#6366f1' },
+        { title: 'Certificates Earned', value: currentUser?.certificates?.length || 0, icon: <Award size={24} />, color: '#10b981' },
+        { title: 'Upcoming Today', value: registeredEvents.filter(e => new Date(e.date).toDateString() === new Date().toDateString()).length, icon: <Star size={24} />, color: '#f59e0b' },
+        { title: 'Community Messages', value: unreadCount, icon: <MessageCircle size={24} />, color: '#a855f7' }
     ];
 
     if (loading) return (
@@ -65,7 +78,10 @@ const StudentDashboard = () => {
                     <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>Welcome back, <span style={{ color: 'white', fontWeight: '600' }}>{currentUser?.name}</span>. Here's your activity overview.</p>
                 </div>
                 <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '0.9rem', color: '#94a3b8' }}>{new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</div>
+                    <div style={{ fontSize: '0.9rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '8px', justifyContent: 'flex-end' }}>
+                        <Calendar size={16} />
+                        {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
+                    </div>
                 </div>
             </header>
 
@@ -96,7 +112,7 @@ const StudentDashboard = () => {
                             display: 'flex', 
                             alignItems: 'center', 
                             justifyContent: 'center',
-                            fontSize: '1.8rem',
+                            color: stat.color,
                             border: `1px solid ${stat.color}30`
                         }}>
                             {stat.icon}
@@ -118,9 +134,11 @@ const StudentDashboard = () => {
                 <section className="glass-card" style={{ padding: '30px', borderTop: '4px solid #6366f1' }}>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
                         <h2 style={{ fontSize: '1.6rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ fontSize: '1.2rem' }}>📅</span> My Schedule
+                            <Calendar size={24} style={{ color: '#6366f1' }} /> My Schedule
                         </h2>
-                        <Link to="/events" style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: '600' }}>Explore More →</Link>
+                        <Link to="/events" style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                            Explore More <ChevronRight size={14} />
+                        </Link>
                     </div>
 
                     {registeredEvents.length > 0 ? (
@@ -154,11 +172,24 @@ const StudentDashboard = () => {
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
                                         <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{event.title}</div>
-                                        <span style={{ fontSize: '0.7rem', padding: '4px 8px', background: '#6366f120', color: '#818cf8', borderRadius: '4px', textTransform: 'uppercase', fontWeight: '700' }}>Active</span>
+                                        <span style={{ 
+                                            fontSize: '0.7rem', 
+                                            padding: '4px 8px', 
+                                            background: '#6366f120', 
+                                            color: '#818cf8', 
+                                            borderRadius: '4px', 
+                                            textTransform: 'uppercase', 
+                                            fontWeight: '700',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '4px'
+                                        }}>
+                                            <CheckCircle2 size={10} /> Active
+                                        </span>
                                     </div>
                                     <div style={{ fontSize: '0.85rem', color: '#94a3b8', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                        <span>📍 {event.location}</span>
-                                        <span>🕒 {new Date(event.date).toLocaleDateString()}</span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} /> {event.location}</span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> {new Date(event.date).toLocaleDateString()}</span>
                                     </div>
                                     <div style={{ height: '4px', width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', marginTop: '4px' }}>
                                         <div style={{ height: '100%', width: '40%', background: '#6366f1', borderRadius: '2px' }}></div>
@@ -168,7 +199,7 @@ const StudentDashboard = () => {
                         </div>
                     ) : (
                         <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)' }}>
-                            <div style={{ fontSize: '3rem', marginBottom: '15px' }}>🔭</div>
+                            <div style={{ fontSize: '3rem', marginBottom: '15px', color: '#64748b' }}><Search size={48} style={{ margin: '0 auto' }} /></div>
                             <h3 style={{ marginBottom: '10px' }}>No events yet</h3>
                             <p style={{ color: '#64748b', marginBottom: '25px', fontSize: '0.9rem' }}>You haven't registered for any events. Discover new opportunities today!</p>
                             <Link to="/events" className="btn-primary">Browse Events</Link>
@@ -180,7 +211,7 @@ const StudentDashboard = () => {
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                     <section className="glass-card" style={{ padding: '30px', borderTop: '4px solid #10b981' }}>
                         <h2 style={{ fontSize: '1.6rem', fontWeight: '800', marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <span style={{ fontSize: '1.2rem' }}>🎓</span> Achievements
+                            <Award size={24} style={{ color: '#10b981' }} /> Achievements
                         </h2>
                         {currentUser?.certificates?.length > 0 ? (
                             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '15px' }}>
@@ -196,7 +227,7 @@ const StudentDashboard = () => {
                                         textAlign: 'center',
                                         gap: '12px'
                                     }}>
-                                        <div style={{ fontSize: '2rem' }}>📜</div>
+                                        <Award size={32} style={{ color: '#10b981' }} />
                                         <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'white' }}>{cert}</div>
                                         <button style={{
                                             padding: '6px 14px',
@@ -206,8 +237,11 @@ const StudentDashboard = () => {
                                             borderRadius: '6px',
                                             fontSize: '0.75rem',
                                             fontWeight: '700',
-                                            cursor: 'pointer'
-                                        }}>Download</button>
+                                            cursor: 'pointer',
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '5px'
+                                        }}><Download size={14} /> Download</button>
                                     </div>
                                 ))}
                             </div>
@@ -219,7 +253,7 @@ const StudentDashboard = () => {
                     </section>
 
                     <section className="glass-card" style={{ padding: '30px', background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)', overflow: 'hidden', position: 'relative' }}>
-                        <div style={{ position: 'absolute', top: '-20px', right: '-20px', fontSize: '100px', opacity: '0.05' }}>💬</div>
+                        <div style={{ position: 'absolute', top: '10px', right: '10px', opacity: '0.05' }}><MessageCircle size={100} /></div>
                         <h2 style={{ fontSize: '1.4rem', fontWeight: '800', marginBottom: '15px', color: 'white' }}>Community Chat</h2>
                         <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '25px', lineHeight: '1.6' }}>
                             Join {unreadCount > 0 ? unreadCount : 'active'} conversations with mentors and peers.
@@ -236,7 +270,7 @@ const StudentDashboard = () => {
                 width: '64px', height: '64px', fontSize: '1.8rem',
                 animation: 'float 3s ease-in-out infinite' 
             }}>
-                💬
+                <MessageSquare size={32} />
                 {unreadCount > 0 && (
                     <span className="floating-badge" style={{ top: '-2px', right: '-2px' }}>{unreadCount}</span>
                 )}
