@@ -1,8 +1,21 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
+import { 
+    Package, 
+    Tag, 
+    Type, 
+    AlignLeft, 
+    MapPin, 
+    Calendar, 
+    Image as ImageIcon, 
+    Upload, 
+    Check, 
+    Sparkles 
+} from 'lucide-react';
 
 const ReportItem = () => {
+    // ... existing state and functions ...
     const [formData, setFormData] = useState({
         type: 'Lost',
         itemName: '',
@@ -67,8 +80,8 @@ const ReportItem = () => {
     return (
         <div style={{ padding: '2rem 5%', display: 'flex', justifyContent: 'center' }}>
             <div className="glass-card" style={{ width: '100%', maxWidth: '600px', padding: '2.5rem' }}>
-                <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', fontWeight: '800' }}>
-                    Report an <span style={{ color: '#6366f1' }}>Item</span>
+                <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    Report an <span style={{ color: '#6366f1' }}>Item</span> <Package size={28} style={{ color: '#6366f1' }} />
                 </h1>
                 <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Lost something valuable or found someone's belongings? Post it here!</p>
 
@@ -77,7 +90,9 @@ const ReportItem = () => {
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.9rem', color: '#f8fafc' }}>Report Type</label>
+                            <label style={{ fontSize: '0.9rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Tag size={14} /> Report Type
+                            </label>
                             <select
                                 name="type"
                                 value={formData.type}
@@ -89,7 +104,9 @@ const ReportItem = () => {
                             </select>
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.9rem', color: '#f8fafc' }}>Category</label>
+                            <label style={{ fontSize: '0.9rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Tag size={14} /> Category
+                            </label>
                             <select
                                 name="category"
                                 value={formData.category}
@@ -106,7 +123,9 @@ const ReportItem = () => {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label style={{ fontSize: '0.9rem', color: '#f8fafc' }}>Item Name</label>
+                        <label style={{ fontSize: '0.9rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Type size={14} /> Item Name
+                        </label>
                         <input
                             type="text"
                             name="itemName"
@@ -119,7 +138,9 @@ const ReportItem = () => {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label style={{ fontSize: '0.9rem', color: '#f8fafc' }}>Description</label>
+                        <label style={{ fontSize: '0.9rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <AlignLeft size={14} /> Description
+                        </label>
                         <textarea
                             name="description"
                             placeholder="Describe the item, color, specific marks..."
@@ -132,7 +153,9 @@ const ReportItem = () => {
 
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.9rem', color: '#f8fafc' }}>Location</label>
+                            <label style={{ fontSize: '0.9rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <MapPin size={14} /> Location
+                            </label>
                             <input
                                 type="text"
                                 name="location"
@@ -144,7 +167,9 @@ const ReportItem = () => {
                             />
                         </div>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                            <label style={{ fontSize: '0.9rem', color: '#f8fafc' }}>Date</label>
+                            <label style={{ fontSize: '0.9rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                <Calendar size={14} /> Date
+                            </label>
                             <input
                                 type="date"
                                 name="date"
@@ -157,27 +182,48 @@ const ReportItem = () => {
                     </div>
 
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
-                        <label style={{ fontSize: '0.9rem', color: '#f8fafc' }}>Photo (Optional)</label>
-                        <input
-                            type="file"
-                            accept="image/*"
-                            onChange={handleImageUpload}
-                            style={{ 
-                                padding: '10px', 
-                                background: 'rgba(255,255,255,0.05)', 
-                                border: '1px solid rgba(255,255,255,0.1)', 
-                                borderRadius: '8px', 
-                                color: 'white' 
-                            }}
-                        />
-                        {uploading && <p style={{ color: '#6366f1', fontSize: '0.85rem' }}>Uploading Image...</p>}
+                        <label style={{ fontSize: '0.9rem', color: '#f8fafc', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <ImageIcon size={14} /> Photo (Optional)
+                        </label>
+                        <div style={{ position: 'relative' }}>
+                            <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleImageUpload}
+                                id="file-upload"
+                                style={{ display: 'none' }}
+                            />
+                            <label htmlFor="file-upload" style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '10px',
+                                padding: '12px',
+                                background: 'rgba(255,255,255,0.05)',
+                                border: '1px dashed rgba(255,255,255,0.2)',
+                                borderRadius: '8px',
+                                color: '#94a3b8',
+                                cursor: 'pointer',
+                                transition: 'all 0.2s'
+                            }}>
+                                <Upload size={18} /> {uploading ? 'Uploading...' : 'Choose an image'}
+                            </label>
+                        </div>
                         {formData.image && (
-                            <img src={`http://localhost:5000${formData.image}`} alt="Preview" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover', borderRadius: '8px', marginTop: '10px' }} />
+                            <div style={{ position: 'relative', marginTop: '10px' }}>
+                                <img src={`http://localhost:5000${formData.image}`} alt="Preview" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover', borderRadius: '8px' }} />
+                                <div style={{ position: 'absolute', top: '10px', right: '10px', background: '#10b981', color: 'white', borderRadius: '50%', padding: '4px' }}>
+                                    <Check size={16} />
+                                </div>
+                            </div>
                         )}
                     </div>
 
-                    <button type="submit" className="btn-primary" disabled={submitting} style={{ marginTop: '1rem', padding: '14px' }}>
-                        {submitting ? 'Submitting...' : `Submit ${formData.type} Report`}
+                    <button type="submit" className="btn-primary" disabled={submitting} style={{ marginTop: '1rem', padding: '14px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+                        {submitting ? 'Submitting...' : (
+                            <>
+                                <Check size={20} /> Submit {formData.type} Report
+                            </>
+                        )}
                     </button>
                     
                     {/* DEMO FILL BUTTON for Presentation */}
@@ -198,9 +244,13 @@ const ReportItem = () => {
                         color: '#94a3b8',
                         borderRadius: '8px',
                         cursor: 'pointer',
-                        fontSize: '0.9rem'
+                        fontSize: '0.9rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        gap: '8px'
                     }}>
-                        Demo Fill (For Presentation)
+                        <Sparkles size={16} /> Demo Fill (For Presentation)
                     </button>
                 </form>
             </div>

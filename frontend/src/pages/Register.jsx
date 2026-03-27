@@ -2,6 +2,7 @@ import { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
+import { CheckCircle2 } from 'lucide-react';
 
 const Register = () => {
     const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'student', roleCode: '' });
@@ -65,7 +66,9 @@ const Register = () => {
 
                 {success ? (
                     <div style={{ textAlign: 'center' }}>
-                        <div style={{ fontSize: '4rem', color: '#10b981', marginBottom: '1rem' }}>✓</div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                            <CheckCircle2 size={80} color="#10b981" weight="bold" />
+                        </div>
                         <h2 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '1rem' }}>Registration Successful!</h2>
                         <p style={{ color: '#94a3b8', marginBottom: '2rem', lineHeight: '1.6' }}>{message}</p>
                         <Link to="/login" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>

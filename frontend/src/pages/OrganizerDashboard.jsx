@@ -5,6 +5,20 @@ import eventService from '../services/eventService';
 import chatService from '../services/chatService';
 import Skeleton from '../components/Skeleton';
 import { 
+    Calendar, 
+    Users, 
+    Zap, 
+    MessageSquare, 
+    Clock, 
+    Trophy, 
+    ShieldCheck, 
+    PieChart as PieChartIcon,
+    Plus,
+    LayoutDashboard,
+    TrendingUp,
+    MapPin
+} from 'lucide-react';
+import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
     PieChart, Pie, Cell, Legend, AreaChart, Area 
 } from 'recharts';
@@ -70,23 +84,11 @@ const OrganizerDashboard = () => {
                 <Skeleton variant="title" width="300px" />
                 <Skeleton width="150px" height="45px" />
             </div>
-
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 {[1, 2, 3, 4].map(i => (
                     <div key={i} className="glass-card" style={{ padding: '1.5rem' }}>
                         <Skeleton variant="circle" width="40px" height="40px" style={{ marginBottom: '1rem' }} />
                         <Skeleton variant="text" width="60%" />
-                        <Skeleton variant="text" width="40%" height="2rem" />
-                    </div>
-                ))}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-                {[1, 2].map(i => (
-                    <div key={i} className="glass-card" style={{ padding: '2rem' }}>
-                        <Skeleton variant="title" width="200px" style={{ marginBottom: '1.5rem' }} />
-                        <Skeleton variant="text" width="100%" />
-                        <Skeleton variant="text" width="70%" />
                     </div>
                 ))}
             </div>
@@ -97,50 +99,50 @@ const OrganizerDashboard = () => {
         <div style={{ padding: '2rem 5%' }}>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem' }}>
                 <h1 style={{ fontSize: '2.5rem', fontWeight: '800' }}>Organizer <span style={{ color: '#a855f7' }}>Dashboard</span></h1>
-                <Link to="/create-event" className="btn-primary" style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)' }}>
-                    + Create New Event
+                <Link to="/create-event" className="btn-primary" style={{ textDecoration: 'none', background: 'linear-gradient(135deg, #a855f7 0%, #6366f1 100%)', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Plus size={20} /> Create New Event
                 </Link>
             </div>
 
             {/* Core Stats Section */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #6366f1' }}>
-                    <div style={{ fontSize: '2rem' }}>📅</div>
+                    <div style={{ color: '#6366f1', marginBottom: '10px' }}><Calendar size={28} /></div>
                     <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500' }}>My Events</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#6366f1' }}>{events.length}</div>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{events.length}</div>
                 </div>
                 <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #a855f7' }}>
-                    <div style={{ fontSize: '2rem' }}>👥</div>
+                    <div style={{ color: '#a855f7', marginBottom: '10px' }}><Users size={28} /></div>
                     <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500' }}>Registrations</div>
-                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: '#a855f7' }}>
+                    <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>
                         {events.reduce((sum, event) => sum + (event.registeredUsers?.length || 0), 0)}
                     </div>
                 </div>
                 <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #f59e0b' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
-                        <div style={{ fontSize: '2rem' }}>⚡</div>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <div style={{ color: '#f59e0b' }}><Zap size={28} /></div>
                         <span style={{ fontSize: '0.7rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>LIVE</span>
                     </div>
                     <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: '500' }}>Active Now</div>
                     <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'white' }}>{chatStats.activeNow}</div>
                 </div>
                 <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #10b981' }}>
-                    <div style={{ fontSize: '2rem' }}>💬</div>
+                    <div style={{ color: '#10b981', marginBottom: '10px' }}><MessageSquare size={28} /></div>
                     <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: '500' }}>Today's Volume</div>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: '#10b981' }}>{chatStats.todayMsgs}</div>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'white' }}>{chatStats.todayMsgs}</div>
                 </div>
             </div>
 
             {/* Visual Insights Section */}
-            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700' }}>
-                Community <span style={{ color: '#a855f7' }}>Insights</span> 📉
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                Community <span style={{ color: '#a855f7' }}>Insights</span> <TrendingUp size={24} style={{ color: '#a855f7' }} />
             </h2>
             
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(400px, 1fr))', gap: '2rem', marginBottom: '4rem' }}>
                 {/* 1. Peak Activity Chart */}
                 <div className="glass-card" style={{ padding: '2rem', minHeight: '400px' }}>
                     <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span>🕒</span> Peak Activity (Last 24h)
+                        <Clock size={18} /> Peak Activity (Last 24h)
                     </h3>
                     <div style={{ width: '100%', height: '300px' }}>
                         <ResponsiveContainer>
@@ -167,7 +169,7 @@ const OrganizerDashboard = () => {
                 {/* 2. Top Participants Bar Chart */}
                 <div className="glass-card" style={{ padding: '2rem', minHeight: '400px' }}>
                     <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                        <span>🏆</span> Top Participants
+                        <Trophy size={18} /> Top Participants
                     </h3>
                     <div style={{ width: '100%', height: '300px' }}>
                         <ResponsiveContainer>
@@ -187,7 +189,9 @@ const OrganizerDashboard = () => {
 
                 {/* 3. Moderation Insights */}
                 <div className="glass-card" style={{ padding: '2rem', borderLeft: '4px solid #ec4899' }}>
-                    <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Moderation Impact</h3>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <ShieldCheck size={18} /> Moderation Impact
+                    </h3>
                     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
                         <div>
                             <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Self-Deletion Rate</div>
@@ -198,16 +202,13 @@ const OrganizerDashboard = () => {
                             <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#a855f7' }}>{chatStats.insights?.announcementReach}%</div>
                         </div>
                     </div>
-                    <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(236, 72, 153, 0.05)', borderRadius: '8px' }}>
-                        <p style={{ fontSize: '0.8rem', color: '#94a3b8', margin: 0 }}>
-                            Track how effectively your moderation actions and announcements are engaging the community.
-                        </p>
-                    </div>
                 </div>
 
                 {/* 4. Content Distribution */}
                 <div className="glass-card" style={{ padding: '2rem', minHeight: '300px' }}>
-                    <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem' }}>Content Distribution</h3>
+                    <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <PieChartIcon size={18} /> Content Distribution
+                    </h3>
                     <div style={{ width: '100%', height: '200px' }}>
                         <ResponsiveContainer>
                             <PieChart>
@@ -230,12 +231,12 @@ const OrganizerDashboard = () => {
                 </div>
             </div>
 
-            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem' }}>
-                Moderation <span style={{ color: '#6366f1' }}>Overview</span> 🛡️
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem', display: 'flex', alignItems: 'center', gap: '12px' }}>
+                Moderation <span style={{ color: '#6366f1' }}>Overview</span> <ShieldCheck size={24} style={{ color: '#6366f1' }} />
             </h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
                 <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <div style={{ fontSize: '2.5rem' }}>📢</div>
+                    <MessageSquare size={32} style={{ color: '#a855f7' }} />
                     <div>
                         <div style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Announcement Mode</div>
                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Ready to broadcast to students</div>
@@ -243,7 +244,7 @@ const OrganizerDashboard = () => {
                     <Link to="/chat" className="btn-primary" style={{ marginLeft: 'auto', padding: '8px 15px', fontSize: '0.8rem', textDecoration: 'none', background: '#a855f7' }}>Open Chat</Link>
                 </div>
                 <div className="glass-card" style={{ padding: '1.5rem', display: 'flex', alignItems: 'center', gap: '1.5rem' }}>
-                    <div style={{ fontSize: '2.5rem' }}>🧹</div>
+                    <ShieldCheck size={32} style={{ color: '#10b981' }} />
                     <div>
                         <div style={{ color: '#94a3b8', fontSize: '0.9rem' }}>Chat Sanitization</div>
                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Moderation tools enabled</div>
@@ -253,7 +254,9 @@ const OrganizerDashboard = () => {
 
             <div className="glass-card" style={{ padding: '2rem' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
-                    <h3 style={{ fontSize: '1.5rem' }}>Recent Events</h3>
+                    <h3 style={{ fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <LayoutDashboard size={22} /> Recent Events
+                    </h3>
                     <Link to="/organizer-events" style={{ color: '#6366f1', textDecoration: 'none', fontSize: '0.9rem' }}>View All</Link>
                 </div>
 
@@ -273,7 +276,9 @@ const OrganizerDashboard = () => {
                             }}>
                                 <div>
                                     <h4 style={{ marginBottom: '0.2rem' }}>{event.title}</h4>
-                                    <p style={{ fontSize: '0.8rem', color: '#94a3b8' }}>{new Date(event.date).toLocaleDateString()} | {event.location}</p>
+                                    <p style={{ fontSize: '0.8rem', color: '#94a3b8', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        <Clock size={12} /> {new Date(event.date).toLocaleDateString()} | <MapPin size={12} /> {event.location}
+                                    </p>
                                 </div>
                                 <div style={{ fontSize: '0.9rem', color: '#a855f7', fontWeight: 'bold' }}>
                                     {event.registeredUsers?.length || 0} Registered
@@ -286,7 +291,7 @@ const OrganizerDashboard = () => {
 
             {/* Floating Chat Button */}
             <Link to="/chat" className="floating-chat-btn" title="Open Chat">
-                💬
+                <MessageSquare size={28} />
                 {(unreadCount || 0) > 0 && (
                     <span className="floating-badge">{unreadCount}</span>
                 )}

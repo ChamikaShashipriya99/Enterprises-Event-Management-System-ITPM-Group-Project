@@ -2,8 +2,23 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
+import { 
+    Search, 
+    Calendar, 
+    Users, 
+    User, 
+    ArrowRight, 
+    Filter, 
+    Sparkles,
+    Trophy,
+    Gamepad2,
+    Music,
+    Terminal,
+    MapPin
+} from 'lucide-react';
 
 const AllEvents = () => {
+    // ... existing state and functions ...
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
@@ -64,41 +79,59 @@ const AllEvents = () => {
 
     return (
         <div style={{ padding: '2rem 5%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: '800' }}>Explore <span style={{ color: '#6366f1' }}>Events</span></h1>
-                <input
-                    type="text"
-                    placeholder="Search events..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                        padding: '12px 20px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '30px',
-                        color: 'white',
-                        width: '300px',
-                        outline: 'none',
-                        transition: 'border-color 0.3s'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#6366f1'}
-                    onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-                />
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', marginBottom: '3rem', flexWrap: 'wrap', gap: '2rem' }}>
+                <div>
+                    <h1 style={{ fontSize: '3.5rem', fontWeight: '800', lineHeight: '1', letterSpacing: '-0.02em', marginBottom: '0.5rem' }}>
+                        Join the <span style={{ color: '#6366f1' }}>Elite</span>
+                    </h1>
+                    <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>Discover and participate in premium university events.</p>
+                </div>
+                
+                <div style={{ position: 'relative' }}>
+                    <input
+                        type="text"
+                        placeholder="Search events..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            padding: '14px 20px 14px 50px',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: '16px',
+                            color: 'white',
+                            width: '350px',
+                            outline: 'none',
+                            fontSize: '1rem',
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                        }}
+                        onFocus={(e) => {
+                            e.target.style.borderColor = '#6366f1';
+                            e.target.style.background = 'rgba(255,255,255,0.05)';
+                        }}
+                        onBlur={(e) => {
+                            e.target.style.borderColor = 'rgba(255,255,255,0.08)';
+                            e.target.style.background = 'rgba(255,255,255,0.03)';
+                        }}
+                    />
+                    <Search size={20} style={{ position: 'absolute', left: '18px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                </div>
             </div>
 
             <div style={{
                 display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '2rem'
+                gridTemplateColumns: 'repeat(auto-fill, minmax(340px, 1fr))',
+                gap: '2.5rem'
             }}>
                 {filteredEvents.map((event) => (
-                    <div key={event._id} className="glass-card" style={{
+                    <div key={event._id} className="glass-card hover-lift" style={{
                         padding: '1.5rem',
                         display: 'flex',
                         flexDirection: 'column',
-                        transition: 'transform 0.3s ease',
                         height: '100%',
-                        position: 'relative'
+                        position: 'relative',
+                        overflow: 'hidden',
+                        border: '1px solid rgba(255,255,255,0.05)'
                     }}>
                         {event.image ? (
                             <img 
@@ -107,49 +140,57 @@ const AllEvents = () => {
                                 style={{
                                     width: 'calc(100% + 3rem)',
                                     margin: '-1.5rem -1.5rem 1.5rem -1.5rem',
-                                    height: '180px',
+                                    height: '200px',
                                     objectFit: 'cover',
-                                    borderTopLeftRadius: 'inherit',
-                                    borderTopRightRadius: 'inherit'
                                 }}
                             />
                         ) : (
                             <div style={{
                                 width: 'calc(100% + 3rem)',
                                 margin: '-1.5rem -1.5rem 1.5rem -1.5rem',
-                                height: '180px',
-                                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
-                                borderTopLeftRadius: 'inherit',
-                                borderTopRightRadius: 'inherit',
+                                height: '200px',
+                                background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)',
                                 display: 'flex',
                                 alignItems: 'center',
                                 justifyContent: 'center',
-                                fontSize: '3rem'
+                                color: 'rgba(99, 102, 241, 0.3)'
                             }}>
-                                📅
+                                <Calendar size={64} strokeWidth={1} />
                             </div>
                         )}
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <span style={{
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.2rem' }}>
+                            <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '6px',
                                 background: 'rgba(99, 102, 241, 0.1)',
                                 color: '#6366f1',
                                 padding: '4px 12px',
                                 borderRadius: '20px',
                                 fontSize: '0.75rem',
-                                fontWeight: '600'
+                                fontWeight: '700'
                             }}>
-                                {new Date(event.date).toLocaleDateString()}
-                            </span>
-                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-                                {event.registeredUsers?.length || 0} / {event.capacity} Joined
-                            </span>
+                                <Calendar size={12} />
+                                {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '4px', color: '#94a3b8', fontSize: '0.75rem', fontWeight: '600' }}>
+                                <Users size={12} />
+                                {event.registeredUsers?.length || 0} / {event.capacity}
+                            </div>
                         </div>
-                        <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', fontWeight: '700' }}>{event.title}</h3>
+                        
+                        <h3 style={{ fontSize: '1.4rem', marginBottom: '0.8rem', fontWeight: '800', color: '#f8fafc', lineHeight: '1.2' }}>{event.title}</h3>
+                        
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '6px', color: '#64748b', fontSize: '0.85rem', marginBottom: '1rem' }}>
+                            <MapPin size={14} />
+                            {event.location}
+                        </div>
+
                         <p style={{
                             color: '#94a3b8',
-                            fontSize: '0.9rem',
+                            fontSize: '0.95rem',
                             lineHeight: '1.6',
-                            marginBottom: '1.5rem',
+                            marginBottom: '2rem',
                             flex: 1,
                             display: '-webkit-box',
                             WebkitLineClamp: 3,
@@ -158,15 +199,27 @@ const AllEvents = () => {
                         }}>
                             {event.description}
                         </p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>
+
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto', paddingTop: '1.5rem', borderTop: '1px solid rgba(255,255,255,0.05)' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+                                <div style={{ width: '36px', height: '36px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.9rem', fontWeight: 'bold' }}>
                                     {event.organizer?.name?.charAt(0)}
                                 </div>
-                                <span style={{ fontSize: '0.85rem', color: '#f8fafc' }}>{event.organizer?.name}</span>
+                                <div>
+                                    <div style={{ fontSize: '0.85rem', fontWeight: '700', color: '#f8fafc' }}>{event.organizer?.name}</div>
+                                    <div style={{ fontSize: '0.7rem', color: '#64748b' }}>Organizer</div>
+                                </div>
                             </div>
-                            <Link to={`/events/${event._id}`} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem', textDecoration: 'none' }}>
-                                View Details
+                            <Link to={`/events/${event._id}`} className="btn-primary" style={{ 
+                                padding: '10px 18px', 
+                                fontSize: '0.85rem', 
+                                textDecoration: 'none', 
+                                borderRadius: '10px',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px'
+                            }}>
+                                Details <ArrowRight size={14} />
                             </Link>
                         </div>
                     </div>
@@ -174,9 +227,12 @@ const AllEvents = () => {
             </div>
 
             {filteredEvents.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-                    <p>No events found matching your search.</p>
+                <div style={{ textAlign: 'center', padding: '6rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '24px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                    <div style={{ width: '80px', height: '80px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 1.5rem' }}>
+                        <Search size={40} style={{ color: '#64748b' }} />
+                    </div>
+                    <h2 style={{ fontSize: '1.8rem', fontWeight: '700', marginBottom: '0.5rem' }}>No results found</h2>
+                    <p style={{ color: '#94a3b8' }}>We couldn't find any events matching "{searchTerm}". Try adjusting your keywords.</p>
                 </div>
             )}
         </div>

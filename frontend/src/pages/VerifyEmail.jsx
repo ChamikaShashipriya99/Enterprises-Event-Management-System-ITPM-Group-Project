@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import { useParams, Link } from 'react-router-dom';
 import axios from 'axios';
+import { CheckCircle2, XCircle } from 'lucide-react';
 
 const VerifyEmail = () => {
     const [status, setStatus] = useState('verifying');
@@ -48,7 +49,9 @@ const VerifyEmail = () => {
 
                 {status === 'success' && (
                     <>
-                        <div style={{ fontSize: '4rem', color: '#10b981', marginBottom: '1rem' }}>✓</div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                            <CheckCircle2 size={80} color="#10b981" weight="bold" />
+                        </div>
                         <h2 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '1rem' }}>Verification Successful!</h2>
                         <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>{message}</p>
                         <Link to="/login" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>
@@ -59,7 +62,9 @@ const VerifyEmail = () => {
 
                 {status === 'error' && (
                     <>
-                        <div style={{ fontSize: '4rem', color: '#ef4444', marginBottom: '1rem' }}>✕</div>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '1.5rem' }}>
+                            <XCircle size={80} color="#ef4444" weight="bold" />
+                        </div>
                         <h2 style={{ fontSize: '1.8rem', fontWeight: '800', marginBottom: '1rem' }}>Verification Failed</h2>
                         <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>{message}</p>
                         <Link to="/register" className="btn-primary" style={{ textDecoration: 'none', display: 'inline-block' }}>
