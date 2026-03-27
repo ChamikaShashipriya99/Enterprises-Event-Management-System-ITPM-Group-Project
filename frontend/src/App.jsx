@@ -26,50 +26,7 @@ import ReportItem from './pages/ReportItem';
 import ChatPage from './pages/ChatPage';
 import AuditLogs from './pages/AuditLogs';
 
-const LandingPage = () => {
-  const { currentUser } = useContext(AuthContext);
-
-  if (currentUser) {
-    if (currentUser.role === 'admin') return <Navigate to="/admin-dashboard" />;
-    if (currentUser.role === 'organizer') return <Navigate to="/organizer-dashboard" />;
-    return <Navigate to="/student-dashboard" />;
-  }
-
-  return (
-    <div style={{
-      height: '80vh',
-      display: 'flex',
-      flexDirection: 'column',
-      justifyContent: 'center',
-      alignItems: 'center',
-      textAlign: 'center',
-      padding: '0 10%'
-    }}>
-      <h1 style={{ fontSize: '4rem', marginBottom: '1.5rem', fontWeight: '800' }}>
-        Next-Gen <span style={{ color: '#6366f1' }}>EventBuddy</span>
-      </h1>
-      <p style={{ fontSize: '1.2rem', color: '#94a3b8', maxWidth: '600px', marginBottom: '2.5rem', lineHeight: '1.6' }}>
-        The complete project orchestration platform for managing events, registrations, and delivering verified certificates with seamless collaboration.
-      </p>
-      <div style={{ display: 'flex', gap: '1rem' }}>
-        <button onClick={() => window.location.href = '/register'} className="btn-primary" style={{ padding: '16px 32px', fontSize: '1.1rem' }}>
-          Get Started
-        </button>
-        <button onClick={() => window.location.href = '/login'} style={{
-          padding: '16px 32px',
-          fontSize: '1.1rem',
-          background: 'transparent',
-          border: '1px solid rgba(255,255,255,0.2)',
-          color: 'white',
-          borderRadius: '8px',
-          cursor: 'pointer'
-        }}>
-          Live Demo
-        </button>
-      </div>
-    </div>
-  );
-};
+import LandingPage from './pages/LandingPage';
 
 import { Toaster } from 'react-hot-toast';
 
