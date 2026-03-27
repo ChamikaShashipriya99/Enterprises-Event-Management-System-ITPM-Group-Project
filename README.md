@@ -36,6 +36,14 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 *   **Account Deletion**: Secure account closure with data persistence cleanup.
 *   **Role-Based Access**: Specialized dashboards for Students, Organizers, and Admins.
 
+### Communication Features
+*   **Enterprise Chat Engine**: Real-time, socket-powered messaging system for instant collaboration.
+*   **Global & Private Channels**: Access to a universal "Global Students" chat or start encrypted 1-on-1 conversations with any user.
+*   **Multimedia Messaging**: Full support for transparent file uploads, image sharing (with gallery preview), and instant Voice Notes.
+*   **Advanced UI Interactions**: Features real-time typing indicators, read receipts, emoji reactions, and message editing/deletion.
+*   **Smart Mentions**: User '@mention' system to alert specific participants within a conversation.
+*   **Pinned Announcements**: Important messages can be pinned to the top of the chat for high visibility.
+
 ### Admin & Organizer Features
 *   **Administrative Dashboard**: High-level system monitoring with real-time statistics on users and events.
 *   **Advanced User Directory**: Dynamic management table with real-time search, role-based filtering, and vivid profile picture rendering.
@@ -44,6 +52,7 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 *   **Event Orchestration (Organizer)**: Create, manage, edit, and monitor events, complete with automated file upload handling for gorgeous Event Posters.
 *   **Recovery Hub Moderation**: A powerful Admin-exclusive Dashboard table featuring real-time searching (by item, category, or reporter), layered filtering, and remote Resolution override buttons.
 *   **System Statistics**: Instant visibility into total users, student counts, organizer activity, and event volume.
+*   **Chat Moderation**: Admins and Organizers can broadcast priority announcements, clear chat histories, and remove inappropriate content with "Deleted by Admin" audit trails.
 
 ### Security Features
 *   **Advanced Protection**: Integrated account lockout mechanism after 5 failed login attempts.
@@ -76,6 +85,7 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 *   **Passport.js**: Integrated for Google OAuth 2.0 strategy.
 *   **Speakeasy & QRCode**: Powering the MFA (Multi-Factor Authentication) system.
 *   **UA-Parser-JS**: For identifying device and browser info in session management.
+*   **Socket.io**: Enabling the low-latency, bi-directional communication engine for real-time chat and notifications.
 
 ### Database & Authentication
 *   **MongoDB**: NoSQL database for flexible and scalable data storage.
@@ -131,8 +141,16 @@ The **User Schema** in MongoDB includes:
 *   `role`: (Enum) `student`, `organizer`, or `admin`.
 *   `sessions`: (Array) List of current active login devices with UA details.
 *   `lastLogin`: (Date) Timestamp of the most recent successful login.
-*   `loginAttempts`: (Number) Counter for security lockout.
-*   `registeredEvents`: (Array) List of event IDs user is attending.
+*   **loginAttempts**: (Number) counter for security lockout.
+*   **registeredEvents**: (Array) List of event IDs user is attending.
+
+**Message Schema**:
+*   `chat`: (ObjectId) Reference to the conversation.
+*   `sender`: (ObjectId) Reference to the message author.
+*   `content`: (String) Text body or voice transcript.
+*   `fileUrl`: (String) Link to hosted media (Images/Audio).
+*   `reactions`: (Array) List of user emojis.
+*   `isAnnouncement`: (Boolean) High-priority broadcast flag.
 
 ---
 
@@ -159,6 +177,16 @@ The **User Schema** in MongoDB includes:
 *   `POST /api/lost-found`: Submit a new item report (automatically triggers the Smart Match Engine and notifies Admins).
 *   `GET /api/lost-found`: Fetch the asynchronous feed of active and resolved items.
 *   `PUT /api/lost-found/:id/resolve`: Mark an item as successfully returned (restricted to the Owner and Admins).
+
+### Enterprise Messaging
+*   `GET /api/chat`: Fetch all user conversations.
+*   `POST /api/chat`: Access or create a new 1-on-1 chat.
+*   `GET /api/chat/global`: Access the "Global Students" community chat.
+*   `GET /api/chat/message/:chatId`: Retrieve paginated message history for a specific chat.
+*   `POST /api/chat/message`: Dispatch a new message with Socket.io broadcasting.
+*   `POST /api/chat/upload`: Secure endpoint for uploading chat media and voice notes.
+*   `POST /api/chat/message/:messageId/react`: Toggle emoji reactions on specific messages.
+*   `DELETE /api/chat/:chatId/clear`: Admin-only command to wipe chat history.
 
 ---
 
