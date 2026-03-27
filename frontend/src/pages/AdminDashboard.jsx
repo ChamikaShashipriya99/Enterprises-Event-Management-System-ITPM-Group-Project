@@ -19,7 +19,8 @@ import {
     LineChart,
     PieChart as PieChartIcon,
     Clock,
-    Sparkles
+    Sparkles,
+    MessageCircleMore
 } from 'lucide-react';
 import { 
     BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, 
@@ -330,8 +331,8 @@ const AdminDashboard = () => {
             </div>
 
             {/* Floating Chat Button */}
-            <Link to="/chat" className="floating-chat-btn" title="Open Chat">
-                <MessageSquare size={28} />
+            <Link to="/chat" className="floating-chat-btn" title="Open Chat" style={{ width: '64px', height: '64px' }}>
+                <MessageCircleMore size={32} strokeWidth={2.5} />
                 {(unreadCount || 0) > 0 && (
                     <span className="floating-badge">{unreadCount}</span>
                 )}

@@ -14,7 +14,7 @@ import {
     Search,
     Download,
     CheckCircle2,
-    MessageSquare
+    MessageCircleMore
 } from 'lucide-react';
 
 const StudentDashboard = () => {
@@ -267,10 +267,10 @@ const StudentDashboard = () => {
 
             {/* Floating Chat Button */}
             <Link to="/chat" className="floating-chat-btn" title="Open Chat" style={{ 
-                width: '64px', height: '64px', fontSize: '1.8rem',
+                width: '64px', height: '64px',
                 animation: 'float 3s ease-in-out infinite' 
             }}>
-                <MessageSquare size={32} />
+                <MessageCircleMore size={32} strokeWidth={2.5} />
                 {unreadCount > 0 && (
                     <span className="floating-badge" style={{ top: '-2px', right: '-2px' }}>{unreadCount}</span>
                 )}
