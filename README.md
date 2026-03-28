@@ -19,6 +19,14 @@ In any enterprise-grade platform, user management is critical for ensuring data 
 | :---: | :---: |
 | ![Admin Dashboard](AdminDash.png) | ![User Dashboard](UserDash.png) |
 
+| Global Chat Interface | Lost & Found Hub |
+| :---: | :---: |
+| ![Global Chat](GlobleChatInterface.png) | ![Lost & Found Hub](Lost&FoundPage.png) |
+
+| User Profile Management |
+| :---: |
+| ![Profile Page](ProfilePage.png) |
+
 ---
 
 ## Features
