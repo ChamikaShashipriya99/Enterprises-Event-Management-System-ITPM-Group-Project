@@ -40,7 +40,10 @@ const MainLayout = () => (
 );
 
 const DashboardLayout = () => {
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser, loading } = useContext(AuthContext);
+  
+  if (loading) return null; // Wait for auth to initialize
+  
   return (
     <div className="dashboard-layout">
       <Sidebar />
@@ -53,7 +56,10 @@ const DashboardLayout = () => {
 
 // A smart wrapper to decide the layout for common pages like Profile/Chat
 const CommonLayoutWrapper = () => {
-  const { currentUser } = useContext(AuthContext);
+  const { currentUser, loading } = useContext(AuthContext);
+  
+  if (loading) return null; // Wait for auth to initialize
+  
   if (!currentUser) return <Navigate to="/login" replace />;
   
   if (currentUser.role === 'admin' || currentUser.role === 'organizer') {
