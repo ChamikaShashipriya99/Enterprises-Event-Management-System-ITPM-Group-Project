@@ -103,10 +103,9 @@ const Navbar = () => {
                 )}
 
                 {!currentUser && (
-                    <div style={{ display: 'flex', gap: '2rem' }}>
-                        <Link to="/events" style={getLinkStyle('/events')}>Events</Link>
-                        <Link to="/login" style={{ color: '#f8fafc', fontWeight: '600' }}>Login</Link>
-                        <Link to="/register" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                        <Link to="/login" style={{ color: '#f8fafc', fontWeight: '600', textDecoration: 'none' }}>Login</Link>
+                        <Link to="/register" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
                             Get Started <ChevronRight size={18} />
                         </Link>
                     </div>
