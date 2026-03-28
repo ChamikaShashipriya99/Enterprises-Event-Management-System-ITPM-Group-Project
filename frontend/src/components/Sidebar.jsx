@@ -17,6 +17,7 @@ import {
     PlusCircle,
     Search
 } from 'lucide-react';
+import EventBuddyLogo from '../assets/EventBuddy.png';
 import './Sidebar.css';
 
 const Sidebar = () => {
@@ -58,9 +59,8 @@ const Sidebar = () => {
             <aside className="sidebar-container">
                 <div className="sidebar-header">
                     <Link to="/" className="sidebar-logo">
-                        <Calendar size={20} color="white" />
+                        <img src={EventBuddyLogo} alt="EventBuddy" style={{ height: '35px', width: 'auto', maxWidth: '100%', objectFit: 'contain' }} />
                     </Link>
-                    <span className="sidebar-brand-name">EventBuddy</span>
                 </div>
 
                 <div className="sidebar-content">

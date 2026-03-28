@@ -15,12 +15,11 @@
 }
 
 .sidebar-header {
-    padding: 24px;
+    padding: 24px 28px;
     display: flex;
     align-items: center;
-    gap: 12px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-    transition: justify-content 0.3s ease;
+    transition: all 0.3s ease;
 }
 
 .collapsed .sidebar-header {
@@ -29,14 +28,12 @@
 }
 
 .sidebar-logo {
-    width: 32px;
-    height: 32px;
-    background: linear-gradient(135deg, #6366f1 0%, #a855f7 100%);
-    border-radius: 8px;
     display: flex;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     flex-shrink: 0;
+    text-decoration: none;
+    max-width: 100%;
 }
 
 .sidebar-brand-name {

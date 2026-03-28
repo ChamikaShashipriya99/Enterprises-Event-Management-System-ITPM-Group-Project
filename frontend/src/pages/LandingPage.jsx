@@ -14,6 +14,7 @@ import {
 } from 'lucide-react';
 import { Link, Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
+import EventBuddyLogo from '../assets/EventBuddy.png';
 
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
@@ -65,14 +66,13 @@ const LandingPage = () => {
           fontWeight: '800',
           lineHeight: '1.1',
           letterSpacing: '-0.04em',
-          animation: 'fadeInUp 1s ease'
+          animation: 'fadeInUp 1s ease',
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center'
         }}>
           Elevate Your Events <br />
-          With <span style={{ 
-            background: 'linear-gradient(to right, #6366f1, #a855f7)',
-            WebkitBackgroundClip: 'text',
-            WebkitTextFillColor: 'transparent'
-          }}>EventBuddy</span>
+          With <img src={EventBuddyLogo} alt="EventBuddy" style={{ height: 'clamp(60px, 12vw, 100px)', marginTop: '0.5rem', objectFit: 'contain' }} />
         </h1>
 
         <p style={{ 
@@ -356,21 +356,11 @@ const LandingPage = () => {
             <div style={{ 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '12px',
-              fontSize: '1.8rem',
-              fontWeight: '800'
+              gap: '12px'
             }}>
-              <div style={{ 
-                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                padding: '8px',
-                borderRadius: '12px',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center'
-              }}>
-                <Calendar size={28} color="white" />
-              </div>
-              <span style={{ color: 'white' }}>EventBuddy</span>
+              <Link to="/">
+                <img src={EventBuddyLogo} alt="EventBuddy" style={{ height: '50px', objectFit: 'contain' }} />
+              </Link>
             </div>
             <p style={{ color: '#94a3b8', lineHeight: '1.8', fontSize: '1.05rem' }}>
               The definitive platform for enterprise-grade event orchestration. 

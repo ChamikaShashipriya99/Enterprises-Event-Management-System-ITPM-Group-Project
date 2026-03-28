@@ -14,6 +14,7 @@ import {
     ChevronRight,
     Menu
 } from 'lucide-react';
+import EventBuddyLogo from '../assets/EventBuddy.png';
 
 const Navbar = () => {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
@@ -62,21 +63,8 @@ const Navbar = () => {
             top: 0,
             zIndex: 1000
         }}>
-            <Link to="/" style={{
-                fontSize: '1.6rem',
-                fontWeight: '900',
-                color: 'white',
-                background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)',
-                WebkitBackgroundClip: 'text',
-                WebkitTextFillColor: 'transparent',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '10px'
-            }}>
-                <div style={{ width: '32px', height: '32px', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', borderRadius: '8px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                    <Calendar size={20} color="white" />
-                </div>
-                EventBuddy
+            <Link to="/" style={{ display: 'flex', alignItems: 'center' }}>
+                <img src={EventBuddyLogo} alt="EventBuddy" style={{ height: '40px', objectFit: 'contain' }} />
             </Link>
 
             <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
