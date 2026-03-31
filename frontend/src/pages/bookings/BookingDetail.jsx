@@ -9,26 +9,88 @@ const statusColors = {
     cancelled: { bg: 'rgba(239,68,68,0.10)',   color: '#f87171', border: 'rgba(239,68,68,0.20)' },
 };
 
+// ── Download QR code helper ───────────────────────────────────────────────────
+const downloadQRCode = async (booking) => {
+    const { qrCode, bookingId, event } = booking;
+    if (!qrCode) return;
+
+    const eventTitle = event?.title || 'Event';
+    const img = new Image();
+    img.crossOrigin = 'anonymous';
+
+    await new Promise((resolve, reject) => {
+        img.onload  = resolve;
+        img.onerror = reject;
+        img.src = qrCode;
+    });
+
+    const padding  = 24;
+    const labelH   = 52;
+    const qrSize   = img.width || 280;
+    const canvasW  = qrSize + padding * 2;
+    const canvasH  = qrSize + padding * 2 + labelH;
+
+    const canvas = document.createElement('canvas');
+    canvas.width  = canvasW;
+    canvas.height = canvasH;
+    const ctx = canvas.getContext('2d');
+
+    // White background
+    ctx.fillStyle = '#ffffff';
+    ctx.fillRect(0, 0, canvasW, canvasH);
+
+    // Thin border
+    ctx.strokeStyle = '#e2e8f0';
+    ctx.lineWidth   = 2;
+    ctx.strokeRect(1, 1, canvasW - 2, canvasH - 2);
+
+    // QR image
+    ctx.drawImage(img, padding, padding, qrSize, qrSize);
+
+    // Booking ID label
+    ctx.fillStyle = '#1e293b';
+    ctx.font      = 'bold 13px monospace';
+    ctx.textAlign = 'center';
+    ctx.fillText(bookingId, canvasW / 2, qrSize + padding + 22);
+
+    // Event title (smaller, grey)
+    ctx.fillStyle = '#64748b';
+    ctx.font      = '11px sans-serif';
+    ctx.fillText(
+        eventTitle.length > 40 ? eventTitle.slice(0, 38) + '…' : eventTitle,
+        canvasW / 2,
+        qrSize + padding + 40
+    );
+
+    const url  = canvas.toDataURL('image/png');
+    const link = document.createElement('a');
+    link.href     = url;
+    link.download = `QR_${bookingId}.png`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+};
+
+// ─────────────────────────────────────────────────────────────────────────────
 const BookingDetail = () => {
     const { bookingId } = useParams();
     const navigate = useNavigate();
-    const [booking, setBooking] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [cancelling, setCancelling] = useState(false);
-    const [showCancel, setShowCancel] = useState(false);
-    const [reason, setReason] = useState('');
-    const [certLoading, setCertLoading] = useState(false);
-    // FIX: store the full certificateId returned from generateCertificate
-    // OR from the booking itself (now returned by updated getBookingById)
+    const [booking, setBooking]           = useState(null);
+    const [loading, setLoading]           = useState(true);
+    const [cancelling, setCancelling]     = useState(false);
+    const [showCancel, setShowCancel]     = useState(false);
+    const [reason, setReason]             = useState('');
+    const [certLoading, setCertLoading]   = useState(false);
     const [certificateId, setCertificateId] = useState(null);
     const [certEmailSent, setCertEmailSent] = useState(false);
+    const [qrDownloading, setQrDownloading] = useState(false);
 
     useEffect(() => {
         const fetchBooking = async () => {
             try {
                 const res = await bookingService.getBookingById(bookingId);
                 setBooking(res.data);
-                // FIX: backend now attaches certificateId directly on booking object
                 if (res.data.certificateId) {
                     setCertificateId(res.data.certificateId);
                 }
@@ -42,8 +104,8 @@ const BookingDetail = () => {
     }, [bookingId]);
 
     const eventDate = booking ? new Date(booking.event?.date) : null;
-    const isPast = eventDate && eventDate < new Date();
-    const isToday = eventDate && new Date().toDateString() === eventDate.toDateString();
+    const isPast    = eventDate && eventDate < new Date();
+    const isToday   = eventDate && new Date().toDateString() === eventDate.toDateString();
     const canCancel = booking?.status === 'confirmed' && !isPast && !isToday;
 
     const handleCancel = async () => {
@@ -68,7 +130,6 @@ const BookingDetail = () => {
         setCertLoading(true);
         try {
             const res = await bookingService.generateCertificate(bookingId, withEmail);
-            // FIX: save the certificateId from the response
             setCertificateId(res.data.certificateId);
             setCertEmailSent(res.data.emailSent || false);
             setBooking(prev => ({ ...prev, certificateGenerated: true }));
@@ -79,17 +140,16 @@ const BookingDetail = () => {
         }
     };
 
-    const handleDownload = async () => {
-        // FIX: use the saved certificateId state — no longer relies on booking.certificateId
+    const handleDownloadCert = async () => {
         if (!certificateId) {
             alert('No certificate found. Please generate your certificate first.');
             return;
         }
         try {
             const blob = await bookingService.downloadCertificate(certificateId);
-            const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
-            const a = document.createElement('a');
-            a.href = url;
+            const url  = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
+            const a    = document.createElement('a');
+            a.href     = url;
             a.download = `certificate_${certificateId}.pdf`;
             document.body.appendChild(a);
             a.click();
@@ -98,6 +158,19 @@ const BookingDetail = () => {
         } catch (err) {
             alert('Download failed. Please try again.');
             console.error('Download error:', err);
+        }
+    };
+
+    const handleDownloadQR = async () => {
+        if (!booking?.qrCode) return;
+        setQrDownloading(true);
+        try {
+            await downloadQRCode(booking);
+        } catch (err) {
+            alert('Could not download QR code. Please try again.');
+            console.error('QR download error:', err);
+        } finally {
+            setQrDownloading(false);
         }
     };
 
@@ -113,8 +186,7 @@ const BookingDetail = () => {
         </div>
     );
 
-    const s = statusColors[booking.status] || statusColors.confirmed;
-    // Cert is available if: certificateGenerated flag is true OR we have a certificateId in state
+    const s       = statusColors[booking.status] || statusColors.confirmed;
     const hasCert = booking.certificateGenerated || !!certificateId;
 
     return (
@@ -163,9 +235,9 @@ const BookingDetail = () => {
                 }}>
                     {[
                         { label: 'Event Date', value: eventDate?.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }), icon: '📅' },
-                        { label: 'Location', value: booking.event?.location, icon: '📍' },
-                        { label: 'Booked On', value: new Date(booking.createdAt).toLocaleDateString(), icon: '🕒' },
-                        { label: 'Capacity', value: `${booking.event?.capacity} seats`, icon: '👥' },
+                        { label: 'Location',   value: booking.event?.location, icon: '📍' },
+                        { label: 'Booked On',  value: new Date(booking.createdAt).toLocaleDateString(), icon: '🕒' },
+                        { label: 'Capacity',   value: `${booking.event?.capacity} seats`, icon: '👥' },
                     ].map(item => (
                         <div key={item.label}>
                             <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px' }}>
@@ -262,10 +334,10 @@ const BookingDetail = () => {
                         </>
                     )}
 
-                    {/* Download button — show once cert exists */}
+                    {/* Download cert button — show once cert exists */}
                     {hasCert && (
                         <button
-                            onClick={handleDownload}
+                            onClick={handleDownloadCert}
                             style={{
                                 padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
                                 background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: 'white',
@@ -303,10 +375,13 @@ const BookingDetail = () => {
                     <p style={{ color: '#94a3b8', fontSize: '0.87rem', marginBottom: '1.5rem' }}>
                         Present this at the event entrance for contactless check-in.
                     </p>
+
+                    {/* QR image */}
                     <div style={{
                         display: 'inline-block', padding: '1rem',
                         background: 'white', borderRadius: '12px',
-                        boxShadow: '0 8px 32px rgba(99,102,241,0.2)'
+                        boxShadow: '0 8px 32px rgba(99,102,241,0.2)',
+                        marginBottom: '1.25rem'
                     }}>
                         <img
                             src={booking.qrCode}
@@ -314,9 +389,12 @@ const BookingDetail = () => {
                             style={{ width: '180px', height: '180px', display: 'block' }}
                         />
                     </div>
+
+                    {/* Already checked-in badge */}
                     {booking.checkedIn && (
                         <div style={{
-                            marginTop: '1rem', padding: '8px 18px', borderRadius: '20px',
+                            marginBottom: '1.25rem',
+                            padding: '8px 18px', borderRadius: '20px',
                             display: 'inline-block',
                             background: 'rgba(16,185,129,0.12)', color: '#34d399',
                             border: '1px solid rgba(16,185,129,0.25)', fontSize: '0.85rem', fontWeight: '600'
@@ -324,6 +402,38 @@ const BookingDetail = () => {
                             ✅ Already checked in
                         </div>
                     )}
+
+                    {/* Download QR button */}
+                    <div>
+                        <button
+                            onClick={handleDownloadQR}
+                            disabled={qrDownloading}
+                            style={{
+                                display: 'inline-flex', alignItems: 'center', gap: '8px',
+                                padding: '10px 24px', borderRadius: '9px',
+                                fontSize: '0.88rem', fontWeight: '700',
+                                background: 'rgba(99,102,241,0.1)', color: '#818cf8',
+                                border: '1px solid rgba(99,102,241,0.25)', cursor: qrDownloading ? 'not-allowed' : 'pointer',
+                                opacity: qrDownloading ? 0.6 : 1,
+                                transition: 'background 0.2s, color 0.2s',
+                            }}
+                            onMouseEnter={e => {
+                                if (!qrDownloading) {
+                                    e.currentTarget.style.background = 'rgba(99,102,241,0.2)';
+                                    e.currentTarget.style.color = '#a5b4fc';
+                                }
+                            }}
+                            onMouseLeave={e => {
+                                e.currentTarget.style.background = 'rgba(99,102,241,0.1)';
+                                e.currentTarget.style.color = '#818cf8';
+                            }}
+                        >
+                            {qrDownloading
+                                ? <><span>⏳</span> Downloading…</>
+                                : <><span>⬇️</span> Download QR Code</>
+                            }
+                        </button>
+                    </div>
                 </div>
             )}
 
