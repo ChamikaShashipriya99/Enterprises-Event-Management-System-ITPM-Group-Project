@@ -39,7 +39,31 @@ const validateCancelBooking = [
     validate,
 ];
 
+/**
+ * Validation rules for QR check-in
+ */
+const validateCheckIn = [
+    body('qrCodeData')
+        .notEmpty().withMessage('QR code data is required')
+        .isString().withMessage('QR code data must be a string'),
+    validate,
+];
+
+/**
+ * Validation rules for certificate generation
+ */
+const validateGenerateCertificate = [
+    param('bookingId')
+        .notEmpty().withMessage('Booking ID is required'),
+    body('sendEmail')
+        .optional()
+        .isBoolean().withMessage('sendEmail must be a boolean'),
+    validate,
+];
+
 module.exports = {
     validateCreateBooking,
     validateCancelBooking,
+    validateCheckIn,
+    validateGenerateCertificate,
 };

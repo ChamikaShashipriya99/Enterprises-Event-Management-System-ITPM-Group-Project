@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import bookingService from "../../services/bookingService";
+import { createPortal } from 'react-dom';
+import bookingService from '../../services/bookingService';
 
 const statusColors = {
     confirmed: { bg: 'rgba(99,102,241,0.12)', color: '#818cf8', border: 'rgba(99,102,241,0.25)' },
@@ -17,20 +18,27 @@ const BookingDetail = () => {
     const [showCancel, setShowCancel] = useState(false);
     const [reason, setReason] = useState('');
     const [certLoading, setCertLoading] = useState(false);
-    const [certData, setCertData] = useState(null);
+    // FIX: store the full certificateId returned from generateCertificate
+    // OR from the booking itself (now returned by updated getBookingById)
+    const [certificateId, setCertificateId] = useState(null);
+    const [certEmailSent, setCertEmailSent] = useState(false);
 
     useEffect(() => {
-        const fetch = async () => {
+        const fetchBooking = async () => {
             try {
                 const res = await bookingService.getBookingById(bookingId);
                 setBooking(res.data);
+                // FIX: backend now attaches certificateId directly on booking object
+                if (res.data.certificateId) {
+                    setCertificateId(res.data.certificateId);
+                }
             } catch (err) {
                 console.error(err);
             } finally {
                 setLoading(false);
             }
         };
-        fetch();
+        fetchBooking();
     }, [bookingId]);
 
     const eventDate = booking ? new Date(booking.event?.date) : null;
@@ -42,7 +50,12 @@ const BookingDetail = () => {
         setCancelling(true);
         try {
             await bookingService.cancelBooking(bookingId, reason);
-            setBooking(prev => ({ ...prev, status: 'cancelled', cancelledAt: new Date(), cancellationReason: reason }));
+            setBooking(prev => ({
+                ...prev,
+                status: 'cancelled',
+                cancelledAt: new Date(),
+                cancellationReason: reason
+            }));
             setShowCancel(false);
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to cancel');
@@ -55,7 +68,9 @@ const BookingDetail = () => {
         setCertLoading(true);
         try {
             const res = await bookingService.generateCertificate(bookingId, withEmail);
-            setCertData(res.data);
+            // FIX: save the certificateId from the response
+            setCertificateId(res.data.certificateId);
+            setCertEmailSent(res.data.emailSent || false);
             setBooking(prev => ({ ...prev, certificateGenerated: true }));
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to generate certificate');
@@ -65,23 +80,31 @@ const BookingDetail = () => {
     };
 
     const handleDownload = async () => {
-        const id = certData?.certificateId || booking?.certificateId;
-        if (!id) return;
+        // FIX: use the saved certificateId state — no longer relies on booking.certificateId
+        if (!certificateId) {
+            alert('No certificate found. Please generate your certificate first.');
+            return;
+        }
         try {
-            const blob = await bookingService.downloadCertificate(id);
-            const url = window.URL.createObjectURL(blob);
+            const blob = await bookingService.downloadCertificate(certificateId);
+            const url = window.URL.createObjectURL(new Blob([blob], { type: 'application/pdf' }));
             const a = document.createElement('a');
             a.href = url;
-            a.download = `certificate_${id}.pdf`;
+            a.download = `certificate_${certificateId}.pdf`;
+            document.body.appendChild(a);
             a.click();
+            document.body.removeChild(a);
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            alert('Download failed');
+            alert('Download failed. Please try again.');
+            console.error('Download error:', err);
         }
     };
 
     if (loading) return (
-        <div style={{ padding: '2rem 5%', textAlign: 'center', color: '#94a3b8' }}>Loading...</div>
+        <div style={{ padding: '2rem 5%', textAlign: 'center', color: '#94a3b8' }}>
+            Loading...
+        </div>
     );
 
     if (!booking) return (
@@ -91,9 +114,12 @@ const BookingDetail = () => {
     );
 
     const s = statusColors[booking.status] || statusColors.confirmed;
+    // Cert is available if: certificateGenerated flag is true OR we have a certificateId in state
+    const hasCert = booking.certificateGenerated || !!certificateId;
 
     return (
         <div style={{ padding: '2rem 5%', maxWidth: '820px', margin: '0 auto' }}>
+
             {/* Back */}
             <button onClick={() => navigate(-1)} style={{
                 background: 'none', border: 'none', color: '#6366f1', cursor: 'pointer',
@@ -104,8 +130,12 @@ const BookingDetail = () => {
             </button>
 
             <div className="glass-card" style={{ padding: '2.5rem', marginBottom: '1.5rem' }}>
+
                 {/* Title row */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem' }}>
+                <div style={{
+                    display: 'flex', justifyContent: 'space-between',
+                    alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem', marginBottom: '2rem'
+                }}>
                     <div>
                         <div style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace', marginBottom: '0.4rem' }}>
                             {booking.bookingId}
@@ -138,13 +168,17 @@ const BookingDetail = () => {
                         { label: 'Capacity', value: `${booking.event?.capacity} seats`, icon: '👥' },
                     ].map(item => (
                         <div key={item.label}>
-                            <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px' }}>{item.label}</div>
-                            <div style={{ fontSize: '0.93rem', color: '#e2e8f0' }}>{item.icon} {item.value}</div>
+                            <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px' }}>
+                                {item.label}
+                            </div>
+                            <div style={{ fontSize: '0.93rem', color: '#e2e8f0' }}>
+                                {item.icon} {item.value}
+                            </div>
                         </div>
                     ))}
                 </div>
 
-                {/* Check-in info if attended */}
+                {/* Attended banner */}
                 {booking.status === 'attended' && booking.checkedInAt && (
                     <div style={{
                         padding: '1rem 1.25rem', borderRadius: '10px', marginBottom: '1.5rem',
@@ -156,7 +190,7 @@ const BookingDetail = () => {
                     </div>
                 )}
 
-                {/* Cancellation info */}
+                {/* Cancelled banner */}
                 {booking.status === 'cancelled' && (
                     <div style={{
                         padding: '1rem 1.25rem', borderRadius: '10px', marginBottom: '1.5rem',
@@ -166,13 +200,28 @@ const BookingDetail = () => {
                             ❌ Cancelled on {new Date(booking.cancelledAt).toLocaleDateString()}
                         </div>
                         {booking.cancellationReason && (
-                            <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>Reason: {booking.cancellationReason}</div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.85rem' }}>
+                                Reason: {booking.cancellationReason}
+                            </div>
                         )}
+                    </div>
+                )}
+
+                {/* Certificate email sent notice */}
+                {certEmailSent && (
+                    <div style={{
+                        padding: '0.75rem 1.25rem', borderRadius: '10px', marginBottom: '1.25rem',
+                        background: 'rgba(99,102,241,0.08)', border: '1px solid rgba(99,102,241,0.2)'
+                    }}>
+                        <div style={{ color: '#818cf8', fontSize: '0.88rem', fontWeight: '600' }}>
+                            📧 Certificate emailed to {booking.student?.email || 'your email'}
+                        </div>
                     </div>
                 )}
 
                 {/* Actions */}
                 <div style={{ display: 'flex', gap: '0.75rem', flexWrap: 'wrap' }}>
+
                     {canCancel && (
                         <button onClick={() => setShowCancel(true)} style={{
                             padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
@@ -183,32 +232,63 @@ const BookingDetail = () => {
                         </button>
                     )}
 
-                    {booking.status === 'attended' && !booking.certificateGenerated && (
+                    {/* Generate cert buttons — only show if attended AND no cert yet */}
+                    {booking.status === 'attended' && !hasCert && (
                         <>
-                            <button onClick={() => handleGenerateCert(false)} disabled={certLoading} style={{
-                                padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
-                                background: 'rgba(16,185,129,0.1)', color: '#34d399',
-                                border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer'
-                            }}>
+                            <button
+                                onClick={() => handleGenerateCert(false)}
+                                disabled={certLoading}
+                                style={{
+                                    padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
+                                    background: 'rgba(16,185,129,0.1)', color: '#34d399',
+                                    border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer',
+                                    opacity: certLoading ? 0.7 : 1
+                                }}
+                            >
                                 {certLoading ? 'Generating...' : '🎓 Generate Certificate'}
                             </button>
-                            <button onClick={() => handleGenerateCert(true)} disabled={certLoading} style={{
-                                padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
-                                background: 'rgba(99,102,241,0.1)', color: '#818cf8',
-                                border: '1px solid rgba(99,102,241,0.25)', cursor: 'pointer'
-                            }}>
+                            <button
+                                onClick={() => handleGenerateCert(true)}
+                                disabled={certLoading}
+                                style={{
+                                    padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
+                                    background: 'rgba(99,102,241,0.1)', color: '#818cf8',
+                                    border: '1px solid rgba(99,102,241,0.25)', cursor: 'pointer',
+                                    opacity: certLoading ? 0.7 : 1
+                                }}
+                            >
                                 {certLoading ? 'Sending...' : '📧 Generate & Email Certificate'}
                             </button>
                         </>
                     )}
 
-                    {(booking.certificateGenerated || certData) && (
-                        <button onClick={handleDownload} style={{
-                            padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
-                            background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: 'white',
-                            border: 'none', cursor: 'pointer'
-                        }}>
+                    {/* Download button — show once cert exists */}
+                    {hasCert && (
+                        <button
+                            onClick={handleDownload}
+                            style={{
+                                padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
+                                background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: 'white',
+                                border: 'none', cursor: 'pointer'
+                            }}
+                        >
                             📄 Download Certificate PDF
+                        </button>
+                    )}
+
+                    {/* Re-email button — show if cert exists but email not sent yet */}
+                    {hasCert && !certEmailSent && (
+                        <button
+                            onClick={() => handleGenerateCert(true)}
+                            disabled={certLoading}
+                            style={{
+                                padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
+                                background: 'rgba(99,102,241,0.08)', color: '#818cf8',
+                                border: '1px solid rgba(99,102,241,0.2)', cursor: 'pointer',
+                                opacity: certLoading ? 0.7 : 1
+                            }}
+                        >
+                            {certLoading ? 'Sending...' : '📧 Email Certificate'}
                         </button>
                     )}
                 </div>
@@ -217,7 +297,9 @@ const BookingDetail = () => {
             {/* QR Code card */}
             {booking.qrCode && booking.status !== 'cancelled' && (
                 <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.4rem' }}>Check-In QR Code</h3>
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.4rem' }}>
+                        Check-In QR Code
+                    </h3>
                     <p style={{ color: '#94a3b8', fontSize: '0.87rem', marginBottom: '1.5rem' }}>
                         Present this at the event entrance for contactless check-in.
                     </p>
@@ -226,11 +308,16 @@ const BookingDetail = () => {
                         background: 'white', borderRadius: '12px',
                         boxShadow: '0 8px 32px rgba(99,102,241,0.2)'
                     }}>
-                        <img src={booking.qrCode} alt="QR Code" style={{ width: '180px', height: '180px', display: 'block' }} />
+                        <img
+                            src={booking.qrCode}
+                            alt="QR Code"
+                            style={{ width: '180px', height: '180px', display: 'block' }}
+                        />
                     </div>
                     {booking.checkedIn && (
                         <div style={{
-                            marginTop: '1rem', padding: '8px 18px', borderRadius: '20px', display: 'inline-block',
+                            marginTop: '1rem', padding: '8px 18px', borderRadius: '20px',
+                            display: 'inline-block',
                             background: 'rgba(16,185,129,0.12)', color: '#34d399',
                             border: '1px solid rgba(16,185,129,0.25)', fontSize: '0.85rem', fontWeight: '600'
                         }}>
@@ -240,19 +327,21 @@ const BookingDetail = () => {
                 </div>
             )}
 
-            {/* Cancel modal */}
-            {showCancel && (
+            {/* Cancel modal — rendered via portal to escape stacking context */}
+            {showCancel && createPortal(
                 <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000,
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
                 }}>
                     <div style={{
                         background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '16px', padding: '2rem', width: '100%', maxWidth: '440px'
+                        borderRadius: '16px', padding: '2rem', width: '100%', maxWidth: '440px',
+                        boxShadow: '0 25px 60px rgba(0,0,0,0.5)'
                     }}>
-                        <h3 style={{ marginBottom: '0.75rem' }}>Cancel this booking?</h3>
+                        <h3 style={{ marginBottom: '0.75rem', color: '#f1f5f9' }}>Cancel this booking?</h3>
                         <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1rem' }}>
-                            This action cannot be undone. Note: cancellations are <strong style={{ color: '#f87171' }}>not allowed on the event day</strong>.
+                            This action cannot be undone. Cancellations are{' '}
+                            <strong style={{ color: '#f87171' }}>not allowed on the event day</strong>.
                         </p>
                         <textarea
                             placeholder="Reason (optional)"
@@ -267,22 +356,31 @@ const BookingDetail = () => {
                             }}
                         />
                         <div style={{ display: 'flex', gap: '0.75rem' }}>
-                            <button onClick={handleCancel} disabled={cancelling} style={{
-                                flex: 1, padding: '11px', borderRadius: '8px', fontWeight: '600',
-                                background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: 'white', border: 'none', cursor: 'pointer'
-                            }}>
+                            <button
+                                onClick={handleCancel}
+                                disabled={cancelling}
+                                style={{
+                                    flex: 1, padding: '11px', borderRadius: '8px', fontWeight: '600',
+                                    background: 'linear-gradient(135deg,#ef4444,#dc2626)',
+                                    color: 'white', border: 'none', cursor: 'pointer'
+                                }}
+                            >
                                 {cancelling ? 'Cancelling...' : 'Confirm Cancel'}
                             </button>
-                            <button onClick={() => setShowCancel(false)} style={{
-                                flex: 1, padding: '11px', borderRadius: '8px', fontWeight: '600',
-                                background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
-                                border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer'
-                            }}>
+                            <button
+                                onClick={() => { setShowCancel(false); setReason(''); }}
+                                style={{
+                                    flex: 1, padding: '11px', borderRadius: '8px', fontWeight: '600',
+                                    background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
+                                    border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer'
+                                }}
+                            >
                                 Go Back
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
         </div>
     );

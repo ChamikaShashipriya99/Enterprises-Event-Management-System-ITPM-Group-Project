@@ -1,13 +1,19 @@
 const Booking = require('../models/Booking');
+const Certificate = require('../models/Certificate');
 const Event = require('../models/Event');
-
+const User = require('../models/User');
+const { generateQRCode, decodeQRCode } = require('../utils/qrCodeUtils');
+const { generateCertificatePDF } = require('../utils/certificateUtils');
 const {
     sendBookingConfirmationEmail,
     sendCancellationEmail,
+    sendCertificateEmail,
 } = require('../services/emailService');
-
-const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
+const path = require('path');
+const fs = require('fs');
+
+// ─── Helpers ──────────────────────────────────────────────────────────────────
 
 const isSameDay = (d1, d2) => {
     const a = new Date(d1);
@@ -19,11 +25,8 @@ const isSameDay = (d1, d2) => {
     );
 };
 
-//Check Seat Availability
+// ─── Check Seat Availability ──────────────────────────────────────────────────
 
-// @desc    Check available seats for an event
-// @route   GET /api/bookings/availability/:eventId
-// @access  Private (student)
 exports.checkAvailability = async (req, res) => {
     try {
         const event = await Event.findById(req.params.eventId);
@@ -31,7 +34,6 @@ exports.checkAvailability = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Event not found' });
         }
 
-        // Check if event is in the past
         if (new Date(event.date) < new Date()) {
             return res.status(400).json({
                 success: false,
@@ -39,9 +41,11 @@ exports.checkAvailability = async (req, res) => {
             });
         }
 
+        // FIX: count both 'confirmed' and 'attended' so checked-in bookings
+        // are not dropped from the tally on the organizer dashboard
         const confirmedBookings = await Booking.countDocuments({
             event: event._id,
-            status: 'confirmed',
+            status: { $in: ['confirmed', 'attended'] },
         });
 
         const availableSeats = event.capacity - confirmedBookings;
@@ -63,24 +67,18 @@ exports.checkAvailability = async (req, res) => {
     }
 };
 
+// ─── Create Booking ────────────────────────────────────────────────────────────
 
-// Create Booking
-
-// @desc    Book a seat for an event
-// @route   POST /api/bookings
-// @access  Private (student)
 exports.createBooking = async (req, res) => {
     try {
         const { eventId } = req.body;
         const studentId = req.user._id;
 
-        // 1. Validate event exists
         const event = await Event.findById(eventId);
         if (!event) {
             return res.status(404).json({ success: false, message: 'Event not found' });
         }
 
-        // 2. Prevent booking for past events
         if (new Date(event.date) < new Date()) {
             return res.status(400).json({
                 success: false,
@@ -88,7 +86,6 @@ exports.createBooking = async (req, res) => {
             });
         }
 
-        // 3. Prevent booking on event day
         if (isSameDay(event.date, new Date())) {
             return res.status(400).json({
                 success: false,
@@ -96,7 +93,6 @@ exports.createBooking = async (req, res) => {
             });
         }
 
-        // 4. Check for duplicate booking (same student + same event)
         const existingBooking = await Booking.findOne({
             event: eventId,
             student: studentId,
@@ -110,10 +106,11 @@ exports.createBooking = async (req, res) => {
             });
         }
 
-        // 5. Check seat availability (prevent overbooking)
+        // FIX: count both 'confirmed' and 'attended' so a fully-attended event
+        // cannot accidentally accept new bookings once everyone checks in
         const confirmedBookings = await Booking.countDocuments({
             event: eventId,
-            status: 'confirmed',
+            status: { $in: ['confirmed', 'attended'] },
         });
         if (confirmedBookings >= event.capacity) {
             return res.status(400).json({
@@ -122,37 +119,35 @@ exports.createBooking = async (req, res) => {
             });
         }
 
-        // 6. Generate unique bookingId
         const bookingId = `BK-${uuidv4().split('-')[0].toUpperCase()}-${Date.now()}`;
 
-        // 7. Generate QR code
+        const { qrCode, qrCodeData } = await generateQRCode({
+            bookingId,
+            eventId: event._id.toString(),
+            studentId: studentId.toString(),
+        });
 
-        // 8. Create booking
         const booking = await Booking.create({
             bookingId,
             event: eventId,
             student: studentId,
-            //qrCode,
-            //qrCodeData,
+            qrCode,
+            qrCodeData,
             status: 'confirmed',
         });
 
-        // 9. Add event to student's registeredEvents
         await User.findByIdAndUpdate(studentId, {
             $addToSet: { registeredEvents: eventId },
         });
 
-        // 10. Populate for email
-         const student = await User.findById(studentId);
+        const student = await User.findById(studentId);
 
-        // 11. Send confirmation email (non-blocking)
         sendBookingConfirmationEmail({
             to: student.email,
             studentName: student.name,
             booking,
             event,
-        }).catch((err) => console.error('Email send error:', err));
-
+        }).catch((err) => console.error('Confirmation email error:', err));
 
         return res.status(201).json({
             success: true,
@@ -171,7 +166,6 @@ exports.createBooking = async (req, res) => {
             },
         });
     } catch (error) {
-        // Handle MongoDB duplicate key error (race condition safety net)
         if (error.code === 11000) {
             return res.status(409).json({
                 success: false,
@@ -182,24 +176,19 @@ exports.createBooking = async (req, res) => {
     }
 };
 
-//Cancel Booking
+// ─── Cancel Booking ────────────────────────────────────────────────────────────
 
-// @desc    Cancel a booking
-// @route   PUT /api/bookings/:bookingId/cancel
-// @access  Private (student)
 exports.cancelBooking = async (req, res) => {
     try {
         const { bookingId } = req.params;
         const { reason } = req.body;
         const studentId = req.user._id;
 
-        // 1. Find booking
         const booking = await Booking.findOne({ bookingId }).populate('event');
         if (!booking) {
             return res.status(404).json({ success: false, message: 'Booking not found' });
         }
 
-        // 2. Ensure ownership
         if (booking.student.toString() !== studentId.toString()) {
             return res.status(403).json({
                 success: false,
@@ -207,12 +196,10 @@ exports.cancelBooking = async (req, res) => {
             });
         }
 
-        // 3. Already cancelled check
         if (booking.status === 'cancelled') {
             return res.status(400).json({ success: false, message: 'Booking is already cancelled' });
         }
 
-        // 4. Attended bookings cannot be cancelled
         if (booking.status === 'attended') {
             return res.status(400).json({
                 success: false,
@@ -220,7 +207,6 @@ exports.cancelBooking = async (req, res) => {
             });
         }
 
-        // 5. Prevent cancellation ON the event day
         if (isSameDay(booking.event.date, new Date())) {
             return res.status(400).json({
                 success: false,
@@ -228,7 +214,6 @@ exports.cancelBooking = async (req, res) => {
             });
         }
 
-        // 6. Prevent cancellation for past events
         if (new Date(booking.event.date) < new Date()) {
             return res.status(400).json({
                 success: false,
@@ -236,18 +221,15 @@ exports.cancelBooking = async (req, res) => {
             });
         }
 
-        // 7. Update booking
         booking.status = 'cancelled';
         booking.cancelledAt = new Date();
         booking.cancellationReason = reason || 'No reason provided';
         await booking.save();
 
-        // 8. Remove from student's registeredEvents
         await User.findByIdAndUpdate(studentId, {
             $pull: { registeredEvents: booking.event._id },
         });
 
-        // 9. Send cancellation email (non-blocking)
         const student = await User.findById(studentId);
         sendCancellationEmail({
             to: student.email,
@@ -271,11 +253,8 @@ exports.cancelBooking = async (req, res) => {
     }
 };
 
-// Get Student's Bookings
+// ─── Get Student's Bookings ────────────────────────────────────────────────────
 
-// @desc    Get all bookings for the logged-in student
-// @route   GET /api/bookings/my-bookings
-// @access  Private (student)
 exports.getMyBookings = async (req, res) => {
     try {
         const bookings = await Booking.find({ student: req.user._id })
@@ -292,11 +271,8 @@ exports.getMyBookings = async (req, res) => {
     }
 };
 
-// Get Single Booking
+// ─── Get Single Booking ────────────────────────────────────────────────────────
 
-// @desc    Get a single booking by bookingId
-// @route   GET /api/bookings/:bookingId
-// @access  Private (student or admin)
 exports.getBookingById = async (req, res) => {
     try {
         const booking = await Booking.findOne({ bookingId: req.params.bookingId })
@@ -307,7 +283,6 @@ exports.getBookingById = async (req, res) => {
             return res.status(404).json({ success: false, message: 'Booking not found' });
         }
 
-        // Students can only view their own bookings
         if (
             req.user.role === 'student' &&
             booking.student._id.toString() !== req.user._id.toString()
@@ -318,10 +293,336 @@ exports.getBookingById = async (req, res) => {
             });
         }
 
-        return res.status(200).json({ success: true, data: booking });
+        let certificateId = null;
+        const cert = await require('../models/Certificate').findOne({ booking: booking._id });
+        if (cert) certificateId = cert.certificateId;
+
+        const bookingData = booking.toObject();
+        bookingData.certificateId = certificateId;
+
+        return res.status(200).json({ success: true, data: bookingData });
     } catch (error) {
         return res.status(500).json({ success: false, message: error.message });
     }
 };
 
+// ─── QR Check-In ──────────────────────────────────────────────────────────────
 
+exports.checkIn = async (req, res) => {
+    try {
+        const { qrCodeData } = req.body;
+
+        if (!qrCodeData) {
+            return res.status(400).json({ success: false, message: 'QR code data is required' });
+        }
+
+        let decoded;
+        try {
+            decoded = decodeQRCode(qrCodeData);
+        } catch {
+            return res.status(400).json({ success: false, message: 'Invalid or malformed QR code' });
+        }
+
+        const { bookingId, eventId, studentId } = decoded;
+
+        const booking = await Booking.findOne({ bookingId })
+            .populate('event', 'title date location')
+            .populate('student', 'name email');
+
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        if (
+            booking.event._id.toString() !== eventId ||
+            booking.student._id.toString() !== studentId
+        ) {
+            return res.status(400).json({ success: false, message: 'QR code data mismatch' });
+        }
+
+        if (booking.status === 'cancelled') {
+            return res.status(400).json({
+                success: false,
+                message: 'This booking has been cancelled',
+            });
+        }
+
+        if (booking.checkedIn) {
+            return res.status(400).json({
+                success: false,
+                message: `Student already checked in at ${booking.checkedInAt}`,
+            });
+        }
+
+        booking.status = 'attended';
+        booking.checkedIn = true;
+        booking.checkedInAt = new Date();
+        await booking.save();
+
+        return res.status(200).json({
+            success: true,
+            message: 'Check-in successful. Attendance recorded.',
+            data: {
+                bookingId: booking.bookingId,
+                student: {
+                    name: booking.student.name,
+                    email: booking.student.email,
+                },
+                event: {
+                    title: booking.event.title,
+                    date: booking.event.date,
+                },
+                checkedInAt: booking.checkedInAt,
+            },
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ─── Admin: Get All Bookings ───────────────────────────────────────────────────
+
+exports.getAllBookings = async (req, res) => {
+    try {
+        const { status, eventId } = req.query;
+        const filter = {};
+        if (status) filter.status = status;
+        if (eventId) filter.event = eventId;
+
+        const bookings = await Booking.find(filter)
+            .populate('event', 'title date location')
+            .populate('student', 'name email')
+            .sort({ createdAt: -1 });
+
+        return res.status(200).json({
+            success: true,
+            count: bookings.length,
+            data: bookings,
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ─── Certificate Generation ────────────────────────────────────────────────────
+
+exports.generateCertificate = async (req, res) => {
+    try {
+        const { bookingId } = req.params;
+        const { sendEmail = false } = req.body;
+
+        const booking = await Booking.findOne({ bookingId })
+            .populate('event', 'title date location')
+            .populate('student', 'name email');
+
+        if (!booking) {
+            return res.status(404).json({ success: false, message: 'Booking not found' });
+        }
+
+        if (booking.student._id.toString() !== req.user._id.toString()) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to access this certificate',
+            });
+        }
+
+        if (booking.status !== 'attended') {
+            return res.status(400).json({
+                success: false,
+                message: 'Certificate is only available after attending the event',
+            });
+        }
+
+        // Idempotent — return existing certificate if already generated
+        const existingCert = await Certificate.findOne({ booking: booking._id });
+        if (existingCert) {
+            if (sendEmail && !existingCert.emailSent) {
+                try {
+                    await sendCertificateEmail({
+                        to: booking.student.email,
+                        studentName: booking.student.name,
+                        event: booking.event,
+                        certificatePath: path.resolve(existingCert.filePath),
+                    });
+                    existingCert.emailSent = true;
+                    existingCert.emailSentAt = new Date();
+                    await existingCert.save();
+                } catch (emailErr) {
+                    console.error('Certificate email error (retry):', emailErr.message);
+                }
+            }
+
+            return res.status(200).json({
+                success: true,
+                message: 'Certificate already generated',
+                data: {
+                    certificateId: existingCert.certificateId,
+                    downloadPath: `/api/bookings/certificate/download/${existingCert.certificateId}`,
+                    emailSent: existingCert.emailSent,
+                },
+            });
+        }
+
+        const certificateId = `CERT-${uuidv4().toUpperCase()}`;
+        const outputDir = path.resolve(__dirname, '..', 'certificates');
+
+        if (!fs.existsSync(outputDir)) {
+            fs.mkdirSync(outputDir, { recursive: true });
+        }
+
+        const filePath = await generateCertificatePDF({
+            studentName: booking.student.name,
+            eventTitle: booking.event.title,
+            eventDate: booking.event.date,
+            eventLocation: booking.event.location,
+            certificateId,
+            outputDir,
+        });
+
+        if (!fs.existsSync(filePath)) {
+            return res.status(500).json({
+                success: false,
+                message: 'Certificate PDF generation failed — file not found after generation',
+            });
+        }
+
+        const certificate = await Certificate.create({
+            certificateId,
+            booking: booking._id,
+            student: booking.student._id,
+            event: booking.event._id,
+            filePath,
+        });
+
+        booking.certificateGenerated = true;
+        booking.certificatePath = filePath;
+        await booking.save();
+
+        if (sendEmail) {
+            try {
+                await sendCertificateEmail({
+                    to: booking.student.email,
+                    studentName: booking.student.name,
+                    event: booking.event,
+                    certificatePath: path.resolve(filePath),
+                });
+                certificate.emailSent = true;
+                certificate.emailSentAt = new Date();
+                await certificate.save();
+            } catch (emailErr) {
+                console.error('Certificate email failed:', emailErr);
+            }
+        }
+
+        return res.status(201).json({
+            success: true,
+            message: 'Certificate generated successfully',
+            data: {
+                certificateId: certificate.certificateId,
+                downloadPath: `/api/bookings/certificate/download/${certificate.certificateId}`,
+                emailSent: certificate.emailSent,
+            },
+        });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ─── Certificate Download ──────────────────────────────────────────────────────
+
+exports.downloadCertificate = async (req, res) => {
+    try {
+        const certificate = await Certificate.findOne({
+            certificateId: req.params.certificateId,
+        });
+
+        if (!certificate) {
+            return res.status(404).json({ success: false, message: 'Certificate not found' });
+        }
+
+        if (
+            req.user.role === 'student' &&
+            certificate.student.toString() !== req.user._id.toString()
+        ) {
+            return res.status(403).json({
+                success: false,
+                message: 'Not authorized to download this certificate',
+            });
+        }
+
+        const absolutePath = path.resolve(certificate.filePath);
+
+        if (!fs.existsSync(absolutePath)) {
+            return res.status(404).json({
+                success: false,
+                message: 'Certificate file not found on server. Please regenerate.',
+            });
+        }
+
+        return res.download(
+            absolutePath,
+            `certificate_${certificate.certificateId}.pdf`,
+            (err) => {
+                if (err) {
+                    console.error('Certificate download error:', err);
+                    if (!res.headersSent) {
+                        res.status(500).json({ success: false, message: 'Download failed' });
+                    }
+                }
+            }
+        );
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
+
+// ─── Admin: Booking Stats ──────────────────────────────────────────────────────
+
+exports.getBookingStats = async (req, res) => {
+    try {
+        const stats = await Booking.aggregate([
+            {
+                $group: {
+                    _id: '$event',
+                    total: { $sum: 1 },
+                    confirmedBookings: {
+                        $sum: { $cond: [{ $eq: ['$status', 'confirmed'] }, 1, 0] },
+                    },
+                    attendedBookings: {
+                        $sum: { $cond: [{ $eq: ['$status', 'attended'] }, 1, 0] },
+                    },
+                    cancelledBookings: {
+                        $sum: { $cond: [{ $eq: ['$status', 'cancelled'] }, 1, 0] },
+                    },
+                },
+            },
+            {
+                $lookup: {
+                    from: 'events',
+                    localField: '_id',
+                    foreignField: '_id',
+                    as: 'event',
+                },
+            },
+            { $unwind: '$event' },
+            {
+                $project: {
+                    _id: 0,
+                    eventId: '$_id',
+                    eventTitle: '$event.title',
+                    eventDate: '$event.date',
+                    capacity: '$event.capacity',
+                    total: 1,
+                    confirmedBookings: 1,
+                    attendedBookings: 1,
+                    cancelledBookings: 1,
+                },
+            },
+            { $sort: { eventDate: -1 } },
+        ]);
+
+        return res.status(200).json({ success: true, data: stats });
+    } catch (error) {
+        return res.status(500).json({ success: false, message: error.message });
+    }
+};
