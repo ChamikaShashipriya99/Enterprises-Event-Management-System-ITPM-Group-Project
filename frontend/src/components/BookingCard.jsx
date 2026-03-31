@@ -1,6 +1,8 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useNavigate } from 'react-router-dom';
 import bookingService from '../services/bookingService';
+import QRCodeModal from './QRCodeModal';
 
 const statusColors = {
     confirmed: { bg: 'rgba(99,102,241,0.12)', color: '#818cf8', border: 'rgba(99,102,241,0.25)' },
@@ -15,6 +17,7 @@ const BookingCard = ({ booking, onCancelled, onCertificate }) => {
     const [showCancel, setShowCancel] = useState(false);
     const [reason, setReason] = useState('');
     const [certLoading, setCertLoading] = useState(false);
+    const [showQRModal, setShowQRModal] = useState(false);
     const navigate = useNavigate();
 
     const s = statusColors[booking.status] || statusColors.confirmed;
@@ -24,6 +27,10 @@ const BookingCard = ({ booking, onCancelled, onCertificate }) => {
     const canCancel = booking.status === 'confirmed' && !isPast && !isToday;
 
     const handleCancel = async () => {
+        if (!reason.trim()) {
+            alert('Cancellation reason is required');
+            return;
+        }
         setCancelling(true);
         try {
             await bookingService.cancelBooking(booking.bookingId, reason);
@@ -119,6 +126,19 @@ const BookingCard = ({ booking, onCancelled, onCertificate }) => {
                         View Details
                     </button>
 
+                    {booking.status === 'confirmed' && booking.qrCodeImage && (
+                        <button
+                            onClick={() => setShowQRModal(true)}
+                            style={{
+                                padding: '7px 16px', borderRadius: '7px', fontSize: '0.82rem', fontWeight: '600',
+                                background: 'rgba(139,92,246,0.12)', color: '#a78bfa',
+                                border: '1px solid rgba(139,92,246,0.25)', cursor: 'pointer'
+                            }}
+                        >
+                            🔲 View QR Code
+                        </button>
+                    )}
+
                     {canCancel && (
                         <button
                             onClick={() => setShowCancel(true)}
@@ -162,9 +182,9 @@ const BookingCard = ({ booking, onCancelled, onCertificate }) => {
             </div>
 
             {/* Cancel modal */}
-            {showCancel && (
+            {showCancel && createPortal(
                 <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000,
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 9999,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
                 }}>
                     <div style={{
@@ -176,7 +196,7 @@ const BookingCard = ({ booking, onCancelled, onCertificate }) => {
                             Are you sure you want to cancel your booking for <strong style={{ color: '#f1f5f9' }}>{booking.event?.title}</strong>?
                         </p>
                         <textarea
-                            placeholder="Reason for cancellation (optional)"
+                            placeholder="Reason for cancellation (required)"
                             value={reason}
                             onChange={e => setReason(e.target.value)}
                             rows={3}
@@ -209,8 +229,16 @@ const BookingCard = ({ booking, onCancelled, onCertificate }) => {
                             </button>
                         </div>
                     </div>
-                </div>
+                </div>,
+                document.body
             )}
+
+            {/* QR Code Modal */}
+            <QRCodeModal
+                booking={booking}
+                isOpen={showQRModal}
+                onClose={() => setShowQRModal(false)}
+            />
         </div>
     );
 };

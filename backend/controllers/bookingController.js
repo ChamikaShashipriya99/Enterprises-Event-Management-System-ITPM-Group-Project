@@ -8,6 +8,7 @@ const {
 
 const User = require('../models/User');
 const { v4: uuidv4 } = require('uuid');
+const { generateQRCode } = require('../utils/qrCodeGenerator');
 
 const isSameDay = (d1, d2) => {
     const a = new Date(d1);
@@ -125,15 +126,26 @@ exports.createBooking = async (req, res) => {
         // 6. Generate unique bookingId
         const bookingId = `BK-${uuidv4().split('-')[0].toUpperCase()}-${Date.now()}`;
 
-        // 7. Generate QR code
+        // 7. Generate QR code for check-in
+        let qrCodeData;
+        let qrCodeImage;
+        try {
+            const qrResult = await generateQRCode(bookingId, studentId, eventId, req.user.email);
+            qrCodeData = qrResult.qrCodeData;
+            qrCodeImage = qrResult.qrCodeImage;
+        } catch (qrError) {
+            console.error('QR code generation error:', qrError);
+            // Continue with booking creation even if QR fails (non-critical)
+            // QR can be regenerated later if needed
+        }
 
         // 8. Create booking
         const booking = await Booking.create({
             bookingId,
             event: eventId,
             student: studentId,
-            //qrCode,
-            //qrCodeData,
+            qrCodeData,
+            qrCodeImage,
             status: 'confirmed',
         });
 
@@ -166,7 +178,7 @@ exports.createBooking = async (req, res) => {
                     date: event.date,
                     location: event.location,
                 },
-                qrCode: booking.qrCode,
+                qrCodeImage: booking.qrCodeImage, // Base64 QR code for display
                 createdAt: booking.createdAt,
             },
         });

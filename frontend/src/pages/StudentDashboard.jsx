@@ -1,31 +1,22 @@
 import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import eventService from '../services/eventService';
+import bookingService from '../services/bookingService';
 import Skeleton from '../components/Skeleton';
+import SummaryCard from '../components/SummaryCard';
+import EmptyState from '../components/EmptyState';
 
 const StudentDashboard = () => {
-    const { currentUser, refreshProfile } = useContext(AuthContext);
-    const [registeredEvents, setRegisteredEvents] = useState([]);
+    const { currentUser } = useContext(AuthContext);
+    const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
         const fetchDashboardData = async () => {
             try {
-                // Refresh profile to get latest registeredEvents IDs
-                await refreshProfile();
-
-                // Fetch all events and filter for ones the user is in
-                const response = await eventService.getAllEvents();
-                const allEvents = response.data;
-
-                // Since user.registeredEvents might be just IDs or full objects depending on population
-                // we filter allEvents based on membership
-                const userEvents = allEvents.filter(event =>
-                    event.registeredUsers?.includes(currentUser?._id)
-                );
-
-                setRegisteredEvents(userEvents);
+                // Fetch actual bookings using the same endpoint as MyBookings
+                const response = await bookingService.getMyBookings();
+                setBookings(response.data || response);
                 setLoading(false);
             } catch (error) {
                 console.error('Error fetching dashboard data:', error);
@@ -33,9 +24,7 @@ const StudentDashboard = () => {
             }
         };
 
-        if (currentUser) {
-            fetchDashboardData();
-        }
+        fetchDashboardData();
     }, []);
 
     if (loading) return (
@@ -63,22 +52,47 @@ const StudentDashboard = () => {
 
     return (
         <div style={{ padding: '40px 5%' }}>
+            {/* Header */}
             <div style={{ marginBottom: '40px' }}>
                 <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', fontWeight: '800' }}>Student <span style={{ color: '#6366f1' }}>Dashboard</span></h1>
                 <p style={{ color: '#94a3b8' }}>Welcome back, {currentUser?.name}. Track your learning and participation.</p>
             </div>
 
+            {/* Summary Stats */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+                <SummaryCard
+                    icon="📅"
+                    label="Events Registered"
+                    value={bookings.filter(b => b.status === 'confirmed').length}
+                    color="#6366f1"
+                />
+                <SummaryCard
+                    icon="🎓"
+                    label="Certificates Earned"
+                    value={currentUser?.certificates?.length || 0}
+                    color="#10b981"
+                />
+                <SummaryCard
+                    icon="✓"
+                    label="Attended Events"
+                    value={bookings.filter(b => b.status === 'attended').length}
+                    color="#f59e0b"
+                />
+            </div>
+
+            {/* Main Content Grid */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
+                {/* Registered Events */}
                 <section className="glass-card" style={{ padding: '30px' }}>
                     <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
-                        <span style={{ color: '#6366f1' }}>📅</span> Registered Events
+                        <span>📅</span> Registered Events
                     </h2>
-                    {registeredEvents.length > 0 ? (
+                    {bookings.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {registeredEvents.map((event) => (
+                            {bookings.slice(0, 5).map((booking) => (
                                 <Link
-                                    key={event._id}
-                                    to={`/events/${event._id}`}
+                                    key={booking._id}
+                                    to={`/events/${booking.event?._id}`}
                                     style={{
                                         padding: '15px',
                                         background: 'rgba(255,255,255,0.05)',
@@ -86,65 +100,124 @@ const StudentDashboard = () => {
                                         borderLeft: '4px solid #6366f1',
                                         textDecoration: 'none',
                                         color: 'white',
-                                        transition: 'transform 0.2s',
+                                        transition: 'transform 0.2s, background 0.2s',
                                         display: 'block'
                                     }}
-                                    onMouseOver={(e) => e.currentTarget.style.transform = 'translateX(5px)'}
-                                    onMouseOut={(e) => e.currentTarget.style.transform = 'translateX(0)'}
+                                    onMouseOver={(e) => {
+                                        e.currentTarget.style.transform = 'translateX(5px)';
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.08)';
+                                    }}
+                                    onMouseOut={(e) => {
+                                        e.currentTarget.style.transform = 'translateX(0)';
+                                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                    }}
                                 >
-                                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>{event.title}</div>
-                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>📍 {event.location} • 📅 {new Date(event.date).toLocaleDateString()}</div>
+                                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>{booking.event?.title}</div>
+                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>📍 {booking.event?.location} • 📅 {new Date(booking.event?.date).toLocaleDateString()}</div>
                                 </Link>
                             ))}
                         </div>
                     ) : (
-                        <div style={{ textAlign: 'center', padding: '20px' }}>
-                            <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>No events registered yet. Start exploring!</p>
-                            <Link to="/events" className="btn-primary" style={{ padding: '10px 20px', textDecoration: 'none', fontSize: '0.9rem' }}>
-                                Browse Events
-                            </Link>
-                        </div>
+                        <EmptyState
+                            icon="📭"
+                            title="No Events Yet"
+                            description="Browse and book upcoming events to get started."
+                            actionLabel="Browse Events"
+                            onAction={() => window.location.href = '/events'}
+                        />
                     )}
                 </section>
 
+                {/* Certificates */}
                 <section className="glass-card" style={{ padding: '30px' }}>
                     <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
-                        <span style={{ color: '#10b981' }}>🎓</span> My Certificates
+                        <span>🎓</span> My Certificates
                     </h2>
                     {currentUser?.certificates?.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {currentUser.certificates.map((cert, index) => (
+                            {currentUser.certificates.slice(0, 3).map((cert, index) => (
                                 <div key={index} style={{
                                     padding: '15px',
-                                    background: 'rgba(255,255,255,0.05)',
+                                    background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(10, 120, 80, 0.05) 100%)',
                                     borderRadius: '8px',
                                     display: 'flex',
                                     justifyContent: 'space-between',
-                                    alignItems: 'center'
+                                    alignItems: 'center',
+                                    borderLeft: '4px solid #10b981'
                                 }}>
-                                    <span>{cert}</span>
-                                    <button className="btn-primary" style={{
-                                        padding: '5px 12px',
-                                        background: 'rgba(16, 185, 129, 0.1)',
-                                        color: '#10b981',
-                                        border: '1px solid #10b981',
-                                        fontSize: '0.8rem'
-                                    }}>Download</button>
+                                    <span style={{ fontWeight: '500' }}>{cert}</span>
+                                    <Link to="/certificates" style={{ fontSize: '0.75rem', color: '#10b981', textDecoration: 'none', fontWeight: '600' }}>
+                                        View →
+                                    </Link>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <p style={{ color: '#64748b' }}>Complete events to earn certificates.</p>
+                        <EmptyState
+                            icon="📜"
+                            title="No Certificates Yet"
+                            description="Attend events and check in to earn certificates."
+                        />
                     )}
                 </section>
 
+                {/* Quick Links */}
                 <section className="glass-card" style={{ padding: '30px' }}>
                     <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
-                        <span style={{ color: '#f59e0b' }}>🕒</span> Event History
+                        <span>⚡</span> Quick Links
                     </h2>
-                    <p style={{ color: '#64748b' }}>Your past event participations will appear here for easy access.</p>
-                    <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
-                        Feature Coming Soon
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                        <Link to="/events" style={{
+                            padding: '12px',
+                            background: 'rgba(99, 102, 241, 0.1)',
+                            border: '1px solid rgba(99, 102, 241, 0.3)',
+                            borderRadius: '6px',
+                            textDecoration: 'none',
+                            color: '#818cf8',
+                            fontWeight: '500',
+                            transition: 'background 0.2s',
+                            display: 'block',
+                            textAlign: 'center'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.2)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)'}
+                        >
+                            🔍 Browse All Events
+                        </Link>
+                        <Link to="/my-bookings" style={{
+                            padding: '12px',
+                            background: 'rgba(16, 185, 129, 0.1)',
+                            border: '1px solid rgba(16, 185, 129, 0.3)',
+                            borderRadius: '6px',
+                            textDecoration: 'none',
+                            color: '#6ee7b7',
+                            fontWeight: '500',
+                            transition: 'background 0.2s',
+                            display: 'block',
+                            textAlign: 'center'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
+                        >
+                            🎫 My Bookings
+                        </Link>
+                        <Link to="/certificates" style={{
+                            padding: '12px',
+                            background: 'rgba(245, 158, 11, 0.1)',
+                            border: '1px solid rgba(245, 158, 11, 0.3)',
+                            borderRadius: '6px',
+                            textDecoration: 'none',
+                            color: '#fbbf24',
+                            fontWeight: '500',
+                            transition: 'background 0.2s',
+                            display: 'block',
+                            textAlign: 'center'
+                        }}
+                        onMouseEnter={(e) => e.currentTarget.style.background = 'rgba(245, 158, 11, 0.2)'}
+                        onMouseLeave={(e) => e.currentTarget.style.background = 'rgba(245, 158, 11, 0.1)'}
+                        >
+                            🏆 My Certificates
+                        </Link>
                     </div>
                 </section>
             </div>

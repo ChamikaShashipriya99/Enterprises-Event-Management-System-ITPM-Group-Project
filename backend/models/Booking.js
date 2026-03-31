@@ -23,14 +23,17 @@ const bookingSchema = new mongoose.Schema(
             enum: ['confirmed', 'cancelled', 'attended'],
             default: 'confirmed',
         },
-        /*qrCode: {
-            type: String, // Base64 QR code image string
-            required: false,
-        },
+        // QR Code fields for check-in
         qrCodeData: {
-            type: String, // Raw data encoded in QR
-            required: false,
-        },*/
+            type: String, // Unique QR data encoding booking info
+            unique: true,
+            required: true,
+        },
+        qrCodeImage: {
+            type: String, // Base64 encoded QR code image
+            required: true,
+        },
+        // Check-in tracking
         checkedIn: {
             type: Boolean,
             default: false,
@@ -39,6 +42,12 @@ const bookingSchema = new mongoose.Schema(
             type: Date,
             required: false,
         },
+        checkedInBy: {
+            type: mongoose.Schema.Types.ObjectId,
+            ref: 'User', // Admin or Organizer who scanned the QR
+            required: false,
+        },
+        // Cancellation details
         cancelledAt: {
             type: Date,
             required: false,
@@ -48,6 +57,7 @@ const bookingSchema = new mongoose.Schema(
             required: false,
             maxlength: [500, 'Cancellation reason cannot exceed 500 characters'],
         },
+        // Certificate tracking
         certificateGenerated: {
             type: Boolean,
             default: false,

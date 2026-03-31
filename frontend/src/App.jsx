@@ -20,6 +20,8 @@ import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import EditEvent from './pages/EditEvent';
 import VerifyEmail from './pages/VerifyEmail';
+import QRCodeScannerEnhanced from './components/QRCodeScannerEnhanced';
+import StudentCertificates from './pages/StudentCertificates';
 
 // ADD — Booking Engine pages
 import MyBookings from './pages/bookings/MyBookings';
@@ -159,6 +161,20 @@ function App() {
           <Route path="/bookings/:bookingId" element={
               <ProtectedRoute>
                   <BookingDetail />
+              </ProtectedRoute>
+          } />
+
+          {/* Check-In Route */}
+          <Route path="/check-in" element={
+              <ProtectedRoute role="organizer">
+                  <QRCodeScannerEnhanced />
+              </ProtectedRoute>
+          } />
+
+          {/* Certificates Route */}
+          <Route path="/certificates" element={
+              <ProtectedRoute role="student">
+                  <StudentCertificates />
               </ProtectedRoute>
           } />
         </Routes>

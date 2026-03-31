@@ -37,6 +37,10 @@ const BookingDetail = () => {
     const canCancel = booking?.status === 'confirmed' && !isPast && !isToday;
 
     const handleCancel = async () => {
+        if (!reason.trim()) {
+            alert('Cancellation reason is required');
+            return;
+        }
         setCancelling(true);
         try {
             await bookingService.cancelBooking(bookingId, reason);
@@ -185,7 +189,7 @@ const BookingDetail = () => {
             {/* Cancel modal */}
             {showCancel && (
                 <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 1000,
+                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.75)', zIndex: 9999,
                     display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
                 }}>
                     <div style={{
@@ -197,7 +201,7 @@ const BookingDetail = () => {
                             This action cannot be undone. Note: cancellations are <strong style={{ color: '#f87171' }}>not allowed on the event day</strong>.
                         </p>
                         <textarea
-                            placeholder="Reason (optional)"
+                            placeholder="Reason (required)"
                             value={reason}
                             onChange={e => setReason(e.target.value)}
                             rows={3}

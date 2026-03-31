@@ -33,7 +33,7 @@ const validateCancelBooking = [
         .notEmpty().withMessage('Booking ID is required')
         .matches(/^BK-[A-Z0-9]+-\d+$/).withMessage('Invalid booking ID format'),
     body('reason')
-        .optional()
+        .notEmpty().withMessage('Cancellation reason is required')
         .isLength({ max: 500 }).withMessage('Cancellation reason cannot exceed 500 characters')
         .trim(),
     validate,

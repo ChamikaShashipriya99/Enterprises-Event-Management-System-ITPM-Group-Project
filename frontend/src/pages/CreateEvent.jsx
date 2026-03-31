@@ -11,6 +11,8 @@ const CreateEvent = () => {
         capacity: ''
     });
     const [loading, setLoading] = useState(false);
+    const [error, setError] = useState('');
+    const [success, setSuccess] = useState('');
     const [errors, setErrors] = useState({});
     const navigate = useNavigate();
 
@@ -45,11 +47,29 @@ const CreateEvent = () => {
 
         setLoading(true);
         setError('');
+        setSuccess('');
 
         try {
-            await eventService.createEvent(formData);
-            navigate('/organizer-dashboard');
+            const response = await eventService.createEvent(formData);
+            console.log('Event created successfully:', response);
+            
+            setSuccess('✅ Event created successfully! Redirecting...');
+            
+            // Reset form
+            setFormData({
+                title: '',
+                description: '',
+                location: '',
+                date: '',
+                capacity: ''
+            });
+            
+            // Navigate after 1.5 seconds to show success message
+            setTimeout(() => {
+                navigate('/organizer-dashboard');
+            }, 1500);
         } catch (err) {
+            console.error('Error creating event:', err);
             setError(err.response?.data?.message || 'Failed to create event');
             setLoading(false);
         }
@@ -61,7 +81,8 @@ const CreateEvent = () => {
                 <h1 style={{ fontSize: '2rem', marginBottom: '0.5rem', fontWeight: '800' }}>Create <span style={{ color: '#a855f7' }}>New Event</span></h1>
                 <p style={{ color: '#94a3b8', marginBottom: '2rem' }}>Fill in the details to orchestrate your next major event.</p>
 
-                {error && <div style={{ color: '#ef4444', marginBottom: '1.5rem', fontSize: '0.9rem' }}>{error}</div>}
+                {error && <div style={{ color: '#ef4444', marginBottom: '1.5rem', fontSize: '0.9rem', padding: '1rem', background: 'rgba(239, 68, 68, 0.1)', borderRadius: '6px', border: '1px solid rgba(239, 68, 68, 0.3)' }}>❌ {error}</div>}
+                {success && <div style={{ color: '#10b981', marginBottom: '1.5rem', fontSize: '0.9rem', padding: '1rem', background: 'rgba(16, 185, 129, 0.1)', borderRadius: '6px', border: '1px solid rgba(16, 185, 129, 0.3)' }}>{success}</div>}
 
                 <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
@@ -128,8 +149,8 @@ const CreateEvent = () => {
                         {errors.capacity && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px' }}>{errors.capacity}</p>}
                     </div>
 
-                    <button type="submit" className="btn-primary" disabled={loading} style={{ marginTop: '1rem' }}>
-                        {loading ? 'Orchestrating...' : 'Initialize Event'}
+                    <button type="submit" className="btn-primary" disabled={loading || success} style={{ marginTop: '1rem', opacity: loading ? 0.7 : 1, cursor: loading ? 'not-allowed' : 'pointer' }}>
+                        {loading ? '⏳ Creating Event...' : success ? '✅ Event Created!' : '🚀 Initialize Event'}
                     </button>
                 </form>
             </div>
