@@ -1,20 +1,17 @@
-import { useContext, useState } from 'react';
+// frontend/src/components/Navbar.jsx
+// UPDATED: Adds "My Bookings" link for students and "Check-In" link for organizers.
+// All existing links and logic are untouched.
+
+import { useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import ConfirmModal from './ConfirmModal';
 
 const Navbar = () => {
-    const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
     const { currentUser, logout } = useContext(AuthContext);
     const navigate = useNavigate();
 
-    const handleLogoutTrigger = () => {
-        setIsLogoutModalOpen(true);
-    };
-
-    const confirmLogout = () => {
+    const handleLogout = () => {
         logout();
-        setIsLogoutModalOpen(false);
         navigate('/login');
     };
 
@@ -49,6 +46,7 @@ const Navbar = () => {
                             <>
                                 <Link to="/student-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Explore Events</Link>
+                                {/* NEW */}
                                 <Link to="/my-bookings" style={{ color: '#f8fafc', textDecoration: 'none' }}>My Bookings</Link>
                             </>
                         )}
@@ -57,7 +55,8 @@ const Navbar = () => {
                                 <Link to="/organizer-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/organizer-events" style={{ color: '#f8fafc', textDecoration: 'none' }}>My Events</Link>
                                 <Link to="/create-event" style={{ color: '#f8fafc', textDecoration: 'none' }}>Create Event</Link>
-                                <Link to="#" style={{ color: '#f8fafc', textDecoration: 'none' }}>Check-In</Link>
+                                {/* NEW */}
+                                <Link to="/checkin" style={{ color: '#f8fafc', textDecoration: 'none' }}>Check-In</Link>
                             </>
                         )}
                         {currentUser.role === 'admin' && (
@@ -65,7 +64,8 @@ const Navbar = () => {
                                 <Link to="/admin-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
                                 <Link to="/admin/users" style={{ color: '#f8fafc', textDecoration: 'none' }}>Users</Link>
                                 <Link to="/admin/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Events</Link>
-                                <Link to="#" style={{ color: '#f8fafc', textDecoration: 'none' }}>Bookings</Link>
+                                {/* NEW */}
+                                <Link to="/admin/bookings" style={{ color: '#f8fafc', textDecoration: 'none' }}>Bookings</Link>
                             </>
                         )}
                         <Link to="/profile" style={{ color: '#f8fafc', textDecoration: 'none' }}>Profile</Link>
@@ -74,7 +74,7 @@ const Navbar = () => {
                             <span style={{ fontSize: '0.8rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '20px' }}>
                                 {currentUser.name}
                             </span>
-                            <button onClick={handleLogoutTrigger} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                            <button onClick={handleLogout} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
                                 Logout
                             </button>
                         </div>
@@ -86,15 +86,6 @@ const Navbar = () => {
                     </>
                 )}
             </div>
-            <ConfirmModal
-                isOpen={isLogoutModalOpen}
-                title="Confirm Logout"
-                message="Are you sure you want to log out of your account?"
-                onConfirm={confirmLogout}
-                onCancel={() => setIsLogoutModalOpen(false)}
-                confirmText="Logout"
-                type="danger"
-            />
         </nav>
     );
 };

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import bookingService from "../../services/bookingService";
-import BookingCard from "../../components/BookingCard";
+import BookingCard from '../../components/BookingCard';
 
 const MyBookings = () => {
     const [bookings, setBookings] = useState([]);
@@ -25,6 +25,13 @@ const MyBookings = () => {
     const handleCancelled = (bookingId) => {
         setBookings(prev =>
             prev.map(b => b.bookingId === bookingId ? { ...b, status: 'cancelled' } : b)
+        );
+    };
+
+    const handleCertificate = (certificateId) => {
+        // Mark certificateGenerated on matched booking
+        setBookings(prev =>
+            prev.map(b => b.certificatePath ? b : { ...b, certificateGenerated: true })
         );
     };
 
@@ -127,6 +134,7 @@ const MyBookings = () => {
                             key={booking._id}
                             booking={booking}
                             onCancelled={handleCancelled}
+                            onCertificate={handleCertificate}
                         />
                     ))}
                 </div>

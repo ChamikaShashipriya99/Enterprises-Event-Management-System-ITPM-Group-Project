@@ -1,3 +1,7 @@
+// frontend/src/pages/EventDetails.jsx
+// UPDATED: Adds booking availability check + Book Seat button
+// Replaces the old registerForEvent / unregisterFromEvent calls with the booking engine.
+
 import { useState, useEffect, useContext } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import eventService from '../services/eventService';

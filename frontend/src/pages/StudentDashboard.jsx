@@ -1,150 +1,208 @@
+// frontend/src/pages/StudentDashboard.jsx
+// UPDATED: Replaces registered events section with booking engine data.
+// Adds: booking count stats, My Bookings link, certificate download.
+
 import { useState, useEffect, useContext } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
-import eventService from '../services/eventService';
-import Skeleton from '../components/Skeleton';
+import bookingService from '../services/bookingService';
 
 const StudentDashboard = () => {
-    const { currentUser, refreshProfile } = useContext(AuthContext);
-    const [registeredEvents, setRegisteredEvents] = useState([]);
+    const { currentUser } = useContext(AuthContext);
+    const navigate = useNavigate();
+    const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
-        const fetchDashboardData = async () => {
+        const fetchData = async () => {
             try {
-                // Refresh profile to get latest registeredEvents IDs
-                await refreshProfile();
-
-                // Fetch all events and filter for ones the user is in
-                const response = await eventService.getAllEvents();
-                const allEvents = response.data;
-
-                // Since user.registeredEvents might be just IDs or full objects depending on population
-                // we filter allEvents based on membership
-                const userEvents = allEvents.filter(event =>
-                    event.registeredUsers?.includes(currentUser?._id)
-                );
-
-                setRegisteredEvents(userEvents);
-                setLoading(false);
+                const res = await bookingService.getMyBookings();
+                setBookings(res.data || []);
             } catch (error) {
-                console.error('Error fetching dashboard data:', error);
+                console.error('Error fetching bookings:', error);
+            } finally {
                 setLoading(false);
             }
         };
+        if (currentUser) fetchData();
+    }, [currentUser]);
 
-        if (currentUser) {
-            fetchDashboardData();
+    const confirmed = bookings.filter(b => b.status === 'confirmed');
+    const attended = bookings.filter(b => b.status === 'attended');
+    const certs = attended.filter(b => b.certificateGenerated);
+    const upcoming = confirmed.filter(b => new Date(b.event?.date) > new Date());
+
+    const handleDownloadCert = async (b) => {
+        try {
+            const res = await bookingService.generateCertificate(b.bookingId, false);
+            const blob = await bookingService.downloadCertificate(res.data.certificateId);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `certificate_${res.data.certificateId}.pdf`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            alert(err.response?.data?.message || 'Download failed');
         }
-    }, []);
+    };
 
     if (loading) return (
-        <div style={{ padding: '40px 5%' }}>
-            <div style={{ marginBottom: '40px' }}>
-                <Skeleton variant="title" width="400px" style={{ marginBottom: '10px' }} />
-                <Skeleton variant="text" width="60%" />
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
-                {[1, 2, 3].map(i => (
-                    <section key={i} className="glass-card" style={{ padding: '30px' }}>
-                        <Skeleton variant="title" width="150px" style={{ marginBottom: '20px' }} />
-                        {[1, 2].map(j => (
-                            <div key={j} style={{ padding: '15px', background: 'rgba(255,255,255,0.05)', borderRadius: '8px', marginBottom: '15px' }}>
-                                <Skeleton variant="text" width="70%" />
-                                <Skeleton variant="text" width="40%" />
-                            </div>
-                        ))}
-                    </section>
-                ))}
-            </div>
+        <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>
+            Loading dashboard...
         </div>
     );
 
     return (
         <div style={{ padding: '40px 5%' }}>
+            {/* Header */}
             <div style={{ marginBottom: '40px' }}>
-                <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', fontWeight: '800' }}>Student <span style={{ color: '#6366f1' }}>Dashboard</span></h1>
-                <p style={{ color: '#94a3b8' }}>Welcome back, {currentUser?.name}. Track your learning and participation.</p>
+                <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', fontWeight: '800' }}>
+                    Student <span style={{ color: '#6366f1' }}>Dashboard</span>
+                </h1>
+                <p style={{ color: '#94a3b8' }}>
+                    Welcome back, {currentUser?.name}. Track your events and certificates.
+                </p>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
-                <section className="glass-card" style={{ padding: '30px' }}>
-                    <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
-                        <span style={{ color: '#6366f1' }}>📅</span> Registered Events
-                    </h2>
-                    {registeredEvents.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {registeredEvents.map((event) => (
-                                <Link
-                                    key={event._id}
-                                    to={`/events/${event._id}`}
-                                    style={{
-                                        padding: '15px',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        borderRadius: '8px',
-                                        borderLeft: '4px solid #6366f1',
-                                        textDecoration: 'none',
-                                        color: 'white',
-                                        transition: 'transform 0.2s',
-                                        display: 'block'
-                                    }}
-                                    onMouseOver={(e) => e.currentTarget.style.transform = 'translateX(5px)'}
-                                    onMouseOut={(e) => e.currentTarget.style.transform = 'translateX(0)'}
+            {/* Stats */}
+            <div style={{
+                display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))',
+                gap: '1.25rem', marginBottom: '2.5rem'
+            }}>
+                {[
+                    { label: 'Total Bookings', value: bookings.length, icon: '📋', color: '#6366f1' },
+                    { label: 'Upcoming', value: upcoming.length, icon: '🚀', color: '#818cf8' },
+                    { label: 'Events Attended', value: attended.length, icon: '✅', color: '#34d399' },
+                    { label: 'Certificates', value: certs.length, icon: '🎓', color: '#fbbf24' },
+                ].map(stat => (
+                    <div key={stat.label} className="glass-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
+                        <div style={{ fontSize: '1.6rem', marginBottom: '0.3rem' }}>{stat.icon}</div>
+                        <div style={{ fontSize: '1.9rem', fontWeight: '800', color: stat.color }}>{stat.value}</div>
+                        <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600' }}>{stat.label}</div>
+                    </div>
+                ))}
+            </div>
+
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '1.75rem' }}>
+
+                {/* Upcoming Bookings */}
+                <section className="glass-card" style={{ padding: '1.75rem' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
+                        <h2 style={{ fontSize: '1.25rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                            <span style={{ color: '#6366f1' }}>📅</span> Upcoming Events
+                        </h2>
+                        <Link to="/my-bookings" style={{ fontSize: '0.82rem', color: '#6366f1', fontWeight: '600' }}>
+                            View All →
+                        </Link>
+                    </div>
+
+                    {upcoming.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {upcoming.slice(0, 4).map(b => (
+                                <Link key={b._id} to={`/bookings/${b.bookingId}`} style={{
+                                    padding: '12px 14px', background: 'rgba(255,255,255,0.04)',
+                                    borderRadius: '9px', borderLeft: '3px solid #6366f1',
+                                    textDecoration: 'none', color: 'white', display: 'block',
+                                    transition: 'transform 0.2s'
+                                }}
+                                    onMouseEnter={e => e.currentTarget.style.transform = 'translateX(4px)'}
+                                    onMouseLeave={e => e.currentTarget.style.transform = 'translateX(0)'}
                                 >
-                                    <div style={{ fontWeight: '600', marginBottom: '4px' }}>{event.title}</div>
-                                    <div style={{ fontSize: '0.8rem', color: '#94a3b8' }}>📍 {event.location} • 📅 {new Date(event.date).toLocaleDateString()}</div>
+                                    <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '3px' }}>
+                                        {b.event?.title}
+                                    </div>
+                                    <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                                        📍 {b.event?.location} &nbsp;·&nbsp; 📅 {new Date(b.event?.date).toLocaleDateString()}
+                                    </div>
+                                    <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace', marginTop: '2px' }}>
+                                        {b.bookingId}
+                                    </div>
                                 </Link>
                             ))}
                         </div>
                     ) : (
-                        <div style={{ textAlign: 'center', padding: '20px' }}>
-                            <p style={{ color: '#64748b', marginBottom: '1.5rem' }}>No events registered yet. Start exploring!</p>
-                            <Link to="/events" className="btn-primary" style={{ padding: '10px 20px', textDecoration: 'none', fontSize: '0.9rem' }}>
+                        <div style={{ textAlign: 'center', padding: '1.5rem' }}>
+                            <p style={{ color: '#64748b', marginBottom: '1rem', fontSize: '0.9rem' }}>
+                                No upcoming bookings yet.
+                            </p>
+                            <Link to="/events" className="btn-primary" style={{
+                                padding: '9px 20px', textDecoration: 'none', fontSize: '0.85rem'
+                            }}>
                                 Browse Events
                             </Link>
                         </div>
                     )}
                 </section>
 
-                <section className="glass-card" style={{ padding: '30px' }}>
-                    <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
-                        <span style={{ color: '#10b981' }}>🎓</span> My Certificates
+                {/* Certificates */}
+                <section className="glass-card" style={{ padding: '1.75rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: '#fbbf24' }}>🎓</span> My Certificates
                     </h2>
-                    {currentUser?.certificates?.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
-                            {currentUser.certificates.map((cert, index) => (
-                                <div key={index} style={{
-                                    padding: '15px',
-                                    background: 'rgba(255,255,255,0.05)',
-                                    borderRadius: '8px',
-                                    display: 'flex',
-                                    justifyContent: 'space-between',
-                                    alignItems: 'center'
+
+                    {attended.length > 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                            {attended.slice(0, 4).map(b => (
+                                <div key={b._id} style={{
+                                    padding: '12px 14px', background: 'rgba(255,255,255,0.04)',
+                                    borderRadius: '9px', display: 'flex',
+                                    justifyContent: 'space-between', alignItems: 'center'
                                 }}>
-                                    <span>{cert}</span>
-                                    <button className="btn-primary" style={{
-                                        padding: '5px 12px',
-                                        background: 'rgba(16, 185, 129, 0.1)',
-                                        color: '#10b981',
-                                        border: '1px solid #10b981',
-                                        fontSize: '0.8rem'
-                                    }}>Download</button>
+                                    <div>
+                                        <div style={{ fontWeight: '600', fontSize: '0.9rem', color: '#f1f5f9' }}>
+                                            {b.event?.title}
+                                        </div>
+                                        <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
+                                            {new Date(b.event?.date).toLocaleDateString()}
+                                        </div>
+                                    </div>
+                                    <button
+                                        onClick={() => handleDownloadCert(b)}
+                                        style={{
+                                            padding: '6px 14px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '600',
+                                            background: 'rgba(16,185,129,0.1)', color: '#34d399',
+                                            border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer',
+                                            whiteSpace: 'nowrap'
+                                        }}
+                                    >
+                                        📄 Download
+                                    </button>
                                 </div>
                             ))}
                         </div>
                     ) : (
-                        <p style={{ color: '#64748b' }}>Complete events to earn certificates.</p>
+                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                            Attend events to earn certificates. They'll appear here.
+                        </p>
                     )}
                 </section>
 
-                <section className="glass-card" style={{ padding: '30px' }}>
-                    <h2 style={{ marginBottom: '20px', fontSize: '1.5rem', display: 'flex', alignItems: 'center', gap: '10px', fontWeight: '700' }}>
-                        <span style={{ color: '#f59e0b' }}>🕒</span> Event History
+                {/* Quick Actions */}
+                <section className="glass-card" style={{ padding: '1.75rem' }}>
+                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <span style={{ color: '#a855f7' }}>⚡</span> Quick Actions
                     </h2>
-                    <p style={{ color: '#64748b' }}>Your past event participations will appear here for easy access.</p>
-                    <div style={{ marginTop: '20px', padding: '15px', background: 'rgba(255,255,255,0.03)', borderRadius: '8px', textAlign: 'center', color: '#94a3b8', fontSize: '0.9rem' }}>
-                        Feature Coming Soon
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                        {[
+                            { label: '🔍 Browse Events', to: '/events', color: '#6366f1' },
+                            { label: '📋 All My Bookings', to: '/my-bookings', color: '#818cf8' },
+                            { label: '👤 Edit Profile', to: '/edit-profile', color: '#a855f7' },
+                        ].map(item => (
+                            <Link key={item.to} to={item.to} style={{
+                                padding: '11px 16px', borderRadius: '9px',
+                                background: 'rgba(255,255,255,0.04)',
+                                border: '1px solid rgba(255,255,255,0.07)',
+                                color: item.color, fontWeight: '600', fontSize: '0.9rem',
+                                textDecoration: 'none', display: 'block',
+                                transition: 'background 0.2s, transform 0.2s'
+                            }}
+                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateX(4px)'; }}
+                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.transform = 'translateX(0)'; }}
+                            >
+                                {item.label}
+                            </Link>
+                        ))}
                     </div>
                 </section>
             </div>

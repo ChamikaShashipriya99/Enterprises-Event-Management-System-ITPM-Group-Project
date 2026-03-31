@@ -16,6 +16,8 @@ const BookingDetail = () => {
     const [cancelling, setCancelling] = useState(false);
     const [showCancel, setShowCancel] = useState(false);
     const [reason, setReason] = useState('');
+    const [certLoading, setCertLoading] = useState(false);
+    const [certData, setCertData] = useState(null);
 
     useEffect(() => {
         const fetch = async () => {
@@ -46,6 +48,35 @@ const BookingDetail = () => {
             alert(err.response?.data?.message || 'Failed to cancel');
         } finally {
             setCancelling(false);
+        }
+    };
+
+    const handleGenerateCert = async (withEmail) => {
+        setCertLoading(true);
+        try {
+            const res = await bookingService.generateCertificate(bookingId, withEmail);
+            setCertData(res.data);
+            setBooking(prev => ({ ...prev, certificateGenerated: true }));
+        } catch (err) {
+            alert(err.response?.data?.message || 'Failed to generate certificate');
+        } finally {
+            setCertLoading(false);
+        }
+    };
+
+    const handleDownload = async () => {
+        const id = certData?.certificateId || booking?.certificateId;
+        if (!id) return;
+        try {
+            const blob = await bookingService.downloadCertificate(id);
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `certificate_${id}.pdf`;
+            a.click();
+            window.URL.revokeObjectURL(url);
+        } catch (err) {
+            alert('Download failed');
         }
     };
 
@@ -152,7 +183,34 @@ const BookingDetail = () => {
                         </button>
                     )}
 
-                    
+                    {booking.status === 'attended' && !booking.certificateGenerated && (
+                        <>
+                            <button onClick={() => handleGenerateCert(false)} disabled={certLoading} style={{
+                                padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
+                                background: 'rgba(16,185,129,0.1)', color: '#34d399',
+                                border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer'
+                            }}>
+                                {certLoading ? 'Generating...' : '🎓 Generate Certificate'}
+                            </button>
+                            <button onClick={() => handleGenerateCert(true)} disabled={certLoading} style={{
+                                padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
+                                background: 'rgba(99,102,241,0.1)', color: '#818cf8',
+                                border: '1px solid rgba(99,102,241,0.25)', cursor: 'pointer'
+                            }}>
+                                {certLoading ? 'Sending...' : '📧 Generate & Email Certificate'}
+                            </button>
+                        </>
+                    )}
+
+                    {(booking.certificateGenerated || certData) && (
+                        <button onClick={handleDownload} style={{
+                            padding: '10px 20px', borderRadius: '8px', fontSize: '0.88rem', fontWeight: '600',
+                            background: 'linear-gradient(135deg,#6366f1,#a855f7)', color: 'white',
+                            border: 'none', cursor: 'pointer'
+                        }}>
+                            📄 Download Certificate PDF
+                        </button>
+                    )}
                 </div>
             </div>
 
