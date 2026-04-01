@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import userService from '../services/userService';
 import authService from '../services/authService';
+import toast from 'react-hot-toast';
 import Skeleton from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
 import { 
@@ -30,7 +31,7 @@ import {
 import './Profile.css';
 
 const Profile = () => {
-    const { currentUser, token, logout, systemNotifications, setSystemNotifications, systemUnreadCount } = useContext(AuthContext);
+    const { currentUser, token, logout, systemNotifications, setSystemNotifications, systemUnreadCount, fetchSystemNotifications } = useContext(AuthContext);
     const [profile, setProfile] = useState(null);
     const [mfaQrCode, setMfaQrCode] = useState(null);
     const [mfaCode, setMfaCode] = useState('');
@@ -147,24 +148,28 @@ const Profile = () => {
                 method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            setSystemNotifications(systemNotifications.map(n => n._id === id ? { ...n, isRead: true } : n));
+            setSystemNotifications(prev => prev.map(n => n._id === id ? { ...n, isRead: true } : n));
         } catch (err) {
             console.error('Failed to mark read', err);
+            toast.error("Failed to mark as read");
         }
     };
 
     const handleMarkAllRead = async () => {
         try {
-            const unreadNotifs = systemNotifications.filter(n => !n.isRead);
-            await Promise.all(unreadNotifs.map(n => 
-                fetch(`http://localhost:5000/api/notifications/${n._id}/read`, {
-                    method: 'PUT',
-                    headers: { 'Authorization': `Bearer ${token}` }
-                })
-            ));
-            setSystemNotifications(systemNotifications.map(n => ({ ...n, isRead: true })));
+            const res = await fetch(`http://localhost:5000/api/notifications/read-all`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            
+            if (res.ok) {
+                setSystemNotifications(prev => prev.map(n => ({ ...n, isRead: true })));
+                fetchSystemNotifications();
+                toast.success("All marked as read");
+            }
         } catch (err) {
             console.error('Failed to mark all read', err);
+            toast.error("Failed to clear notifications");
         }
     };
 

@@ -81,7 +81,7 @@ const reportItem = async (req, res) => {
                     user: student._id,
                     message: `Official Hub Alert 📢: An Administrator has reported a '${type}' item (${itemName}). Please check the Recovery Hub!`,
                     isRead: false,
-                    link: '/lost-and-found'
+                    link: '/events/lost-and-found'
                 });
             }
         }

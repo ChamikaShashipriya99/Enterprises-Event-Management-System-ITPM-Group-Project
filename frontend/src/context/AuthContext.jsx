@@ -33,6 +33,23 @@ export const AuthProvider = ({ children }) => {
         setLoading(false);
     }, []);
 
+    const fetchSystemNotifications = async () => {
+        if (user?.token) {
+            try {
+                const res = await fetch(`http://localhost:5000/api/notifications`, {
+                    headers: { 'Authorization': `Bearer ${user.token}` }
+                });
+                if (res.ok) {
+                    const data = await res.json();
+                    setSystemNotifications(data);
+                    setSystemUnreadCount(data.filter(n => !n.isRead).length);
+                }
+            } catch (error) {
+                console.error("Error fetching system notifications", error);
+            }
+        }
+    };
+
     useEffect(() => {
         const fetchInitialUnreadCount = async () => {
             if (user?.token && location.pathname !== '/chat') {
@@ -45,23 +62,6 @@ export const AuthProvider = ({ children }) => {
                 }
             } else if (location.pathname === '/chat') {
                 setUnreadCount(0);
-            }
-        };
-
-        const fetchSystemNotifications = async () => {
-            if (user?.token) {
-                try {
-                    const res = await fetch(`http://localhost:5000/api/notifications`, {
-                        headers: { 'Authorization': `Bearer ${user.token}` }
-                    });
-                    if (res.ok) {
-                        const data = await res.json();
-                        setSystemNotifications(data);
-                        setSystemUnreadCount(data.filter(n => !n.isRead).length);
-                    }
-                } catch (error) {
-                    console.error("Error fetching system notifications", error);
-                }
             }
         };
 
