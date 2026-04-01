@@ -22,7 +22,7 @@ import './Sidebar.css';
 
 const Sidebar = () => {
     const [isLogoutModalOpen, setIsLogoutModalOpen] = useState(false);
-    const { currentUser, logout, unreadCount } = useContext(AuthContext);
+    const { currentUser, logout, unreadCount, systemUnreadCount } = useContext(AuthContext);
     const navigate = useNavigate();
 
     const menuItems = {
@@ -33,6 +33,7 @@ const Sidebar = () => {
             { path: '/admin/lost-found', icon: <ShieldAlert size={20} />, text: 'Recovery Hub' },
             { path: '/admin/audit-logs', icon: <History size={20} />, text: 'System Logs' },
             { path: '/chat', icon: <MessageSquare size={20} />, text: 'Messages', badge: unreadCount },
+            { path: '/profile?tab=notifications', icon: <Bell size={20} />, text: 'Notifications', badge: systemUnreadCount },
         ],
         organizer: [
             { path: '/organizer-dashboard', icon: <LayoutDashboard size={20} />, text: 'Dashboard' },
@@ -40,6 +41,7 @@ const Sidebar = () => {
             { path: '/create-event', icon: <PlusCircle size={20} />, text: 'Create Event' },
             { path: '/lost-and-found', icon: <ShieldAlert size={20} />, text: 'Recovery Hub' },
             { path: '/chat', icon: <MessageSquare size={20} />, text: 'Messages', badge: unreadCount },
+            { path: '/profile?tab=notifications', icon: <Bell size={20} />, text: 'Notifications', badge: systemUnreadCount },
         ]
     };
 

@@ -22,18 +22,22 @@ import {
     Globe,
     Lock,
     Clock,
-    UserCircle
+    UserCircle,
+    Bell,
+    CheckCircle2,
+    Inbox
 } from 'lucide-react';
 import './Profile.css';
 
 const Profile = () => {
-    const { currentUser, token, logout } = useContext(AuthContext);
+    const { currentUser, token, logout, systemNotifications, setSystemNotifications, systemUnreadCount } = useContext(AuthContext);
     const [profile, setProfile] = useState(null);
     const [mfaQrCode, setMfaQrCode] = useState(null);
     const [mfaCode, setMfaCode] = useState('');
     const [sessions, setSessions] = useState([]);
     const [loading, setLoading] = useState(true);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
+    const [activeTab, setActiveTab] = useState('overview');
     const navigate = useNavigate();
 
     const fetchProfile = async () => {
@@ -60,6 +64,12 @@ const Profile = () => {
         if (token) {
             fetchProfile();
             fetchSessions();
+        }
+        
+        // Handle tab switching from URL
+        const params = new URLSearchParams(window.location.search);
+        if (params.get('tab') === 'notifications') {
+            setActiveTab('notifications');
         }
     }, [token]);
 
@@ -131,6 +141,33 @@ const Profile = () => {
         }
     })();
 
+    const handleMarkAsRead = async (id) => {
+        try {
+            await fetch(`http://localhost:5000/api/notifications/${id}/read`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+            setSystemNotifications(systemNotifications.map(n => n._id === id ? { ...n, isRead: true } : n));
+        } catch (err) {
+            console.error('Failed to mark read', err);
+        }
+    };
+
+    const handleMarkAllRead = async () => {
+        try {
+            const unreadNotifs = systemNotifications.filter(n => !n.isRead);
+            await Promise.all(unreadNotifs.map(n => 
+                fetch(`http://localhost:5000/api/notifications/${n._id}/read`, {
+                    method: 'PUT',
+                    headers: { 'Authorization': `Bearer ${token}` }
+                })
+            ));
+            setSystemNotifications(systemNotifications.map(n => ({ ...n, isRead: true })));
+        } catch (err) {
+            console.error('Failed to mark all read', err);
+        }
+    };
+
     if (loading) return (
         <div className="profile-container">
             <div className="glass-card" style={{ padding: '40px', marginBottom: '80px', height: '250px' }}>
@@ -180,152 +217,217 @@ const Profile = () => {
                 </Link>
             </header>
 
-            <div className="profile-main-grid">
-                <div className="info-section">
-                    <div className="info-card">
-                        <h2 className="card-title">
-                            <User size={24} color="var(--primary)" />
-                            Personal Information
-                        </h2>
-                        <div className="info-grid">
-                            <div className="info-item">
-                                <div className="info-icon"><Mail size={20} /></div>
-                                <div>
-                                    <div className="info-label">Email Address</div>
-                                    <div className="info-value">{profile.email}</div>
+            <div className="profile-nav-tabs">
+                <button 
+                    className={`tab-btn ${activeTab === 'overview' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('overview')}
+                >
+                    <User size={18} /> Account Overview
+                </button>
+                <button 
+                    className={`tab-btn ${activeTab === 'notifications' ? 'active' : ''}`}
+                    onClick={() => setActiveTab('notifications')}
+                >
+                    <Bell size={18} /> Alerts & Notifications
+                    {systemUnreadCount > 0 && <span className="tab-badge">{systemUnreadCount}</span>}
+                </button>
+            </div>
+
+            {activeTab === 'overview' ? (
+                <div className="profile-main-grid">
+                    <div className="info-section">
+                        <div className="info-card">
+                            <h2 className="card-title">
+                                <User size={24} color="var(--primary)" />
+                                Personal Information
+                            </h2>
+                            <div className="info-grid">
+                                <div className="info-item">
+                                    <div className="info-icon"><Mail size={20} /></div>
+                                    <div>
+                                        <div className="info-label">Email Address</div>
+                                        <div className="info-value">{profile.email}</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-icon"><Phone size={20} /></div>
-                                <div>
-                                    <div className="info-label">Phone Number</div>
-                                    <div className="info-value">{profile.phone || 'Not provided'}</div>
+                                <div className="info-item">
+                                    <div className="info-icon"><Phone size={20} /></div>
+                                    <div>
+                                        <div className="info-label">Phone Number</div>
+                                        <div className="info-value">{profile.phone || 'Not provided'}</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-icon"><Calendar size={20} /></div>
-                                <div>
-                                    <div className="info-label">Member Since</div>
-                                    <div className="info-value">{new Date(profile.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                                <div className="info-item">
+                                    <div className="info-icon"><Calendar size={20} /></div>
+                                    <div>
+                                        <div className="info-label">Member Since</div>
+                                        <div className="info-value">{new Date(profile.createdAt).toLocaleDateString(undefined, { year: 'numeric', month: 'long', day: 'numeric' })}</div>
+                                    </div>
                                 </div>
-                            </div>
-                            <div className="info-item">
-                                <div className="info-icon"><Clock size={20} /></div>
-                                <div>
-                                    <div className="info-label">Last Login</div>
-                                    <div className="info-value">{profile.lastLogin ? new Date(profile.lastLogin).toLocaleString() : 'First time login'}</div>
+                                <div className="info-item">
+                                    <div className="info-icon"><Clock size={20} /></div>
+                                    <div>
+                                        <div className="info-label">Last Login</div>
+                                        <div className="info-value">{profile.lastLogin ? new Date(profile.lastLogin).toLocaleString() : 'First time login'}</div>
+                                    </div>
                                 </div>
                             </div>
                         </div>
                     </div>
-                </div>
 
-                <div className="security-section">
-                    <div className="info-card mfa-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
-                            <h2 className="card-title" style={{ marginBottom: 0 }}>
-                                <Lock size={24} color="#10b981" />
-                                Security
-                            </h2>
-                            <span className={`mfa-status-badge ${profile.isMfaEnabled ? 'mfa-enabled' : 'mfa-disabled'}`}>
-                                {profile.isMfaEnabled ? 'MFA ACTIVE' : 'MFA INACTIVE'}
-                            </span>
+                    <div className="security-section">
+                        <div className="info-card mfa-card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '20px' }}>
+                                <h2 className="card-title" style={{ marginBottom: 0 }}>
+                                    <Lock size={24} color="#10b981" />
+                                    Security
+                                </h2>
+                                <span className={`mfa-status-badge ${profile.isMfaEnabled ? 'mfa-enabled' : 'mfa-disabled'}`}>
+                                    {profile.isMfaEnabled ? 'MFA ACTIVE' : 'MFA INACTIVE'}
+                                </span>
+                            </div>
+                            
+                            <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
+                                Multi-Factor Authentication adds an extra layer of protection to your account.
+                            </p>
+
+                            {!profile.isMfaEnabled ? (
+                                <>
+                                    {!mfaQrCode ? (
+                                        <button onClick={handleGenerateMfa} className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
+                                            <Shield size={18} />
+                                            Enable MFA Protection
+                                        </button>
+                                    ) : (
+                                        <div className="qr-setup-box">
+                                            <p style={{ color: '#0f172a', fontWeight: '700', marginBottom: '15px' }}>Scan with Authenticator App</p>
+                                            <img src={mfaQrCode} alt="MFA QR Code" style={{ width: '180px', height: '180px', marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
+                                            <input
+                                                type="text"
+                                                placeholder="6-digit code"
+                                                className="input-field"
+                                                style={{ color: '#0f172a', border: '2px solid #e2e8f0', background: '#f8fafc', textAlign: 'center', letterSpacing: '8px', fontSize: '1.4rem', fontWeight: 'bold' }}
+                                                value={mfaCode}
+                                                onChange={(e) => setMfaCode(e.target.value)}
+                                                maxLength={6}
+                                            />
+                                            <button onClick={handleVerifyMfa} className="btn-primary" style={{ width: '100%', marginTop: '10px' }}>
+                                                Verify & Activate
+                                            </button>
+                                            <button onClick={() => setMfaQrCode(null)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.8rem', marginTop: '15px', cursor: 'pointer' }}>
+                                                Cancel Setup
+                                            </button>
+                                        </div>
+                                    )}
+                                </>
+                            ) : (
+                                <button onClick={handleDisableMfa} className="action-btn-v2" style={{ padding: '10px', width: '100%', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
+                                    Disable MFA Protection
+                                </button>
+                            )}
                         </div>
-                        
-                        <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginBottom: '20px' }}>
-                            Multi-Factor Authentication adds an extra layer of protection to your account.
-                        </p>
 
-                        {!profile.isMfaEnabled ? (
-                            <>
-                                {!mfaQrCode ? (
-                                    <button onClick={handleGenerateMfa} className="btn-primary" style={{ width: '100%', display: 'flex', justifyContent: 'center', alignItems: 'center', gap: '8px' }}>
-                                        <Shield size={18} />
-                                        Enable MFA Protection
-                                    </button>
-                                ) : (
-                                    <div className="qr-setup-box">
-                                        <p style={{ color: '#0f172a', fontWeight: '700', marginBottom: '15px' }}>Scan with Authenticator App</p>
-                                        <img src={mfaQrCode} alt="MFA QR Code" style={{ width: '180px', height: '180px', marginBottom: '20px', border: '1px solid #e2e8f0', borderRadius: '8px' }} />
-                                        <input
-                                            type="text"
-                                            placeholder="6-digit code"
-                                            className="input-field"
-                                            style={{ color: '#0f172a', border: '2px solid #e2e8f0', background: '#f8fafc', textAlign: 'center', letterSpacing: '8px', fontSize: '1.4rem', fontWeight: 'bold' }}
-                                            value={mfaCode}
-                                            onChange={(e) => setMfaCode(e.target.value)}
-                                            maxLength={6}
-                                        />
-                                        <button onClick={handleVerifyMfa} className="btn-primary" style={{ width: '100%', marginTop: '10px' }}>
-                                            Verify & Activate
-                                        </button>
-                                        <button onClick={() => setMfaQrCode(null)} style={{ background: 'none', border: 'none', color: '#64748b', fontSize: '0.8rem', marginTop: '15px', cursor: 'pointer' }}>
-                                            Cancel Setup
-                                        </button>
+                        <div className="info-card">
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
+                                <h2 className="card-title" style={{ marginBottom: 0 }}>
+                                    <Globe size={24} color="var(--primary)" />
+                                    Active Sessions
+                                </h2>
+                                <button onClick={handleLogoutAll} className="action-btn-v2">
+                                    Logout All
+                                </button>
+                            </div>
+                            
+                            <div className="sessions-list">
+                                {sessions.map((session) => (
+                                    <div key={session.sessionId} className="session-item-v2">
+                                        <div className="session-icon">
+                                            {session.os?.toLowerCase().includes('win') || session.os?.toLowerCase().includes('mac') ? <Laptop size={18} /> : 
+                                             session.os?.toLowerCase().includes('android') || session.os?.toLowerCase().includes('ios') ? <Smartphone size={18} /> : 
+                                             <Monitor size={18} />}
+                                        </div>
+                                        <div className="session-details">
+                                            <div className="session-info">
+                                                {session.browser} on {session.os}
+                                                {session.sessionId === currentSessionId && (
+                                                    <span style={{ fontSize: '0.7rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px' }}>Current</span>
+                                                )}
+                                            </div>
+                                            <div className="session-meta">
+                                                {session.ip} • {new Date(session.lastActivity).toLocaleDateString()}
+                                            </div>
+                                        </div>
+                                        {session.sessionId !== currentSessionId && (
+                                            <button onClick={() => handleRevokeSession(session.sessionId)} className="action-btn-v2" title="Revoke access">
+                                                <LogOut size={16} />
+                                            </button>
+                                        )}
                                     </div>
-                                )}
-                            </>
-                        ) : (
-                            <button onClick={handleDisableMfa} className="action-btn-v2" style={{ padding: '10px', width: '100%', border: '1px solid rgba(239, 68, 68, 0.2)' }}>
-                                Disable MFA Protection
+                                ))}
+                            </div>
+                        </div>
+
+                        <div className="info-card" style={{ borderLeft: '4px solid #ef4444', padding: '25px' }}>
+                            <h3 style={{ fontSize: '1.1rem', marginBottom: '10px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <AlertCircle size={18} />
+                                Danger Zone
+                            </h3>
+                            <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
+                                Permanently delete your account and all associated data. This action cannot be undone.
+                            </p>
+                            <button onClick={() => setDeleteModalOpen(true)} className="action-btn-v2" style={{ width: '100%', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '10px' }}>
+                                Delete Account
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            ) : (
+                <div className="notifications-container">
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
+                        <h2 className="card-title" style={{ marginBottom: 0 }}>
+                            <Inbox size={24} color="var(--primary)" />
+                            Recent Alerts
+                        </h2>
+                        {systemUnreadCount > 0 && (
+                            <button className="mark-all-read-btn" onClick={handleMarkAllRead}>
+                                <CheckCircle2 size={16} /> Mark all as read
                             </button>
                         )}
                     </div>
 
-                    <div className="info-card">
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
-                            <h2 className="card-title" style={{ marginBottom: 0 }}>
-                                <Globe size={24} color="var(--primary)" />
-                                Active Sessions
-                            </h2>
-                            <button onClick={handleLogoutAll} className="action-btn-v2">
-                                Logout All
-                            </button>
+                    {systemNotifications.length === 0 ? (
+                        <div className="notif-empty-state">
+                            <div className="notif-empty-icon"><Bell size={64} /></div>
+                            <h3>No Notifications Yet</h3>
+                            <p>You're all caught up! High-priority alerts will appear here.</p>
                         </div>
-                        
-                        <div className="sessions-list">
-                            {sessions.map((session) => (
-                                <div key={session.sessionId} className="session-item-v2">
-                                    <div className="session-icon">
-                                        {session.os?.toLowerCase().includes('win') || session.os?.toLowerCase().includes('mac') ? <Laptop size={18} /> : 
-                                         session.os?.toLowerCase().includes('android') || session.os?.toLowerCase().includes('ios') ? <Smartphone size={18} /> : 
-                                         <Monitor size={18} />}
-                                    </div>
-                                    <div className="session-details">
-                                        <div className="session-info">
-                                            {session.browser} on {session.os}
-                                            {session.sessionId === currentSessionId && (
-                                                <span style={{ fontSize: '0.7rem', background: 'rgba(99, 102, 241, 0.1)', color: 'var(--primary)', padding: '2px 6px', borderRadius: '4px', marginLeft: '8px' }}>Current</span>
-                                            )}
-                                        </div>
-                                        <div className="session-meta">
-                                            {session.ip} • {new Date(session.lastActivity).toLocaleDateString()}
-                                        </div>
-                                    </div>
-                                    {session.sessionId !== currentSessionId && (
-                                        <button onClick={() => handleRevokeSession(session.sessionId)} className="action-btn-v2" title="Revoke access">
-                                            <LogOut size={16} />
-                                        </button>
-                                    )}
+                    ) : (
+                        systemNotifications.map((notif) => (
+                            <div 
+                                key={notif._id} 
+                                className={`notification-card ${!notif.isRead ? 'unread' : ''}`}
+                                onClick={() => !notif.isRead && handleMarkAsRead(notif._id)}
+                            >
+                                <div className="notif-icon-wrapper">
+                                    <Bell size={24} />
                                 </div>
-                            ))}
-                        </div>
-                    </div>
-
-                    <div className="info-card" style={{ borderLeft: '4px solid #ef4444', padding: '25px' }}>
-                        <h3 style={{ fontSize: '1.1rem', marginBottom: '10px', color: '#ef4444', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <AlertCircle size={18} />
-                            Danger Zone
-                        </h3>
-                        <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', marginBottom: '15px' }}>
-                            Permanently delete your account and all associated data. This action cannot be undone.
-                        </p>
-                        <button onClick={() => setDeleteModalOpen(true)} className="action-btn-v2" style={{ width: '100%', textAlign: 'center', border: '1px solid rgba(239, 68, 68, 0.2)', padding: '10px' }}>
-                            Delete Account
-                        </button>
-                    </div>
+                                <div className="notif-content">
+                                    <div className="notif-message">{notif.message}</div>
+                                    <div className="notif-time">
+                                        <Clock size={14} />
+                                        {new Date(notif.createdAt).toLocaleString(undefined, { 
+                                            month: 'short', 
+                                            day: 'numeric', 
+                                            hour: '2-digit', 
+                                            minute: '2-digit' 
+                                        })}
+                                    </div>
+                                </div>
+                                {!notif.isRead && <div style={{ color: 'var(--primary)' }}><CheckCircle2 size={18} /></div>}
+                            </div>
+                        ))
+                    )}
                 </div>
-            </div>
+            )}
 
             <ConfirmModal
                 isOpen={deleteModalOpen}

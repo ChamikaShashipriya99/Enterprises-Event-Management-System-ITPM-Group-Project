@@ -1,38 +1,33 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useContext } from 'react';
 import { Bell } from 'lucide-react';
+import { AuthContext } from '../context/AuthContext';
 
 const NotificationDropdown = ({ currentUser }) => {
-    const [notifications, setNotifications] = useState([]);
+    const { 
+        systemNotifications: notifications, 
+        setSystemNotifications: setNotifications, 
+        systemUnreadCount: unreadCount 
+    } = useContext(AuthContext);
+    
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
     const prevUnreadCountRef = useRef(0);
 
     const token = localStorage.getItem('token') || (currentUser && currentUser.token) || '';
-    const apiUrl = import.meta.env?.VITE_API_URL || 'http://localhost:5000';
+    const apiUrl = 'http://localhost:5000';
 
-    const fetchNotifications = async () => {
-        if (!token) return;
+    const markAsRead = async (id) => {
         try {
-            const res = await fetch(`${apiUrl}/api/notifications`, {
+            await fetch(`${apiUrl}/api/notifications/${id}/read`, {
+                method: 'PUT',
                 headers: { 'Authorization': `Bearer ${token}` }
             });
-            if (res.ok) {
-                const data = await res.json();
-                setNotifications(data);
-            }
+            // Update context state
+            setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
         } catch (error) {
-            console.error('Error fetching notifications:', error);
+            console.error('Error marking as read:', error);
         }
     };
-
-    useEffect(() => {
-        if (currentUser) {
-            fetchNotifications();
-            // Automatically poll for new notifications every 5 seconds (perfect for live presentation)
-            const interval = setInterval(fetchNotifications, 5000);
-            return () => clearInterval(interval);
-        }
-    }, [currentUser, token, apiUrl]);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -43,20 +38,6 @@ const NotificationDropdown = ({ currentUser }) => {
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
-
-    const markAsRead = async (id) => {
-        try {
-            await fetch(`${apiUrl}/api/notifications/${id}/read`, {
-                method: 'PUT',
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            setNotifications(notifications.map(n => n._id === id ? { ...n, isRead: true } : n));
-        } catch (error) {
-            console.error('Error marking as read:', error);
-        }
-    };
-
-    const unreadCount = notifications.filter(n => !n.isRead).length;
 
     useEffect(() => {
         if (unreadCount > prevUnreadCountRef.current) {
@@ -92,7 +73,7 @@ const NotificationDropdown = ({ currentUser }) => {
     return (
         <div ref={dropdownRef} style={{ position: 'relative', display: 'flex', alignItems: 'center' }}>
             <button 
-                onClick={() => { setIsOpen(!isOpen); if (!isOpen) fetchNotifications(); }}
+                onClick={() => setIsOpen(!isOpen)}
                 style={{
                     background: 'transparent',
                     border: 'none',

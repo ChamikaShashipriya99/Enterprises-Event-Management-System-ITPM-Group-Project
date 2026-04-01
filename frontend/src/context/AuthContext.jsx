@@ -15,6 +15,8 @@ export const AuthProvider = ({ children }) => {
     const [loading, setLoading] = useState(true);
     const [socket, setSocket] = useState(null);
     const [unreadCount, setUnreadCount] = useState(0);
+    const [systemNotifications, setSystemNotifications] = useState([]);
+    const [systemUnreadCount, setSystemUnreadCount] = useState(0);
     const location = useLocation();
 
     useEffect(() => {
@@ -45,7 +47,29 @@ export const AuthProvider = ({ children }) => {
                 setUnreadCount(0);
             }
         };
+
+        const fetchSystemNotifications = async () => {
+            if (user?.token) {
+                try {
+                    const res = await fetch(`http://localhost:5000/api/notifications`, {
+                        headers: { 'Authorization': `Bearer ${user.token}` }
+                    });
+                    if (res.ok) {
+                        const data = await res.json();
+                        setSystemNotifications(data);
+                        setSystemUnreadCount(data.filter(n => !n.isRead).length);
+                    }
+                } catch (error) {
+                    console.error("Error fetching system notifications", error);
+                }
+            }
+        };
+
         fetchInitialUnreadCount();
+        fetchSystemNotifications();
+
+        const interval = setInterval(fetchSystemNotifications, 5000);
+        return () => clearInterval(interval);
     }, [user, location.pathname]);
 
     useEffect(() => {
@@ -135,7 +159,10 @@ export const AuthProvider = ({ children }) => {
         loading,
         socket,
         unreadCount,
-        setUnreadCount
+        setUnreadCount,
+        systemNotifications,
+        setSystemNotifications,
+        systemUnreadCount
     };
 
     return (

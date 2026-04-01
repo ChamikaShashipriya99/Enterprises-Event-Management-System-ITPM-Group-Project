@@ -156,6 +156,26 @@ exports.registerForEvent = async (req, res, next) => {
         await user.save();
 
         res.status(200).json({ success: true, message: 'Successfully registered for event' });
+
+        // Check if event is now full and notify organizer/admins
+        if (event.registeredUsers.length === event.capacity) {
+            // Notify Organizer
+            await Notification.create({
+                user: event.organizer,
+                message: `Capacity Alert 🎟️: Your event '${event.title}' has reached its maximum capacity of ${event.capacity} participants.`,
+                isRead: false
+            });
+
+            // Notify Admins
+            const admins = await User.find({ role: 'admin' });
+            for (const admin of admins) {
+                await Notification.create({
+                    user: admin._id,
+                    message: `Moderation Alert: The event titled '${event.title}' is now at full capacity (${event.capacity}).`,
+                    isRead: false
+                });
+            }
+        }
     } catch (error) {
         next(error);
     }
