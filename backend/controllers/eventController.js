@@ -96,7 +96,7 @@ exports.deleteEvent = async (req, res, next) => {
 // @access  Private/Admin
 exports.getAllEvents = async (req, res, next) => {
     try {
-        const events = await Event.find().populate('organizer', 'name email');
+        const events = await Event.find().populate('organizer', 'name email profilePicture');
         res.status(200).json({ success: true, count: events.length, data: events });
     } catch (error) {
         next(error);
@@ -195,7 +195,7 @@ exports.unregisterFromEvent = async (req, res, next) => {
 // @access  Private
 exports.getEvents = async (req, res, next) => {
     try {
-        const events = await Event.find().populate('organizer', 'name email');
+        const events = await Event.find().populate('organizer', 'name email profilePicture');
         res.status(200).json({ success: true, count: events.length, data: events });
     } catch (error) {
         next(error);
@@ -207,7 +207,7 @@ exports.getEvents = async (req, res, next) => {
 // @access  Private
 exports.getEvent = async (req, res, next) => {
     try {
-        const event = await Event.findById(req.params.id).populate('organizer', 'name email');
+        const event = await Event.findById(req.params.id).populate('organizer', 'name email profilePicture');
         if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
         res.status(200).json({ success: true, data: event });
     } catch (error) {

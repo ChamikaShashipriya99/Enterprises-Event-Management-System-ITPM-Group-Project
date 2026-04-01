@@ -133,7 +133,15 @@ const EventDetail = () => {
                     
                     <div className="organizer-pill">
                         <div className="organizer-avatar">
-                            {event.organizer?.name?.charAt(0)}
+                            {event.organizer?.profilePicture ? (
+                                <img 
+                                    src={event.organizer.profilePicture.startsWith('http') ? event.organizer.profilePicture : `http://localhost:5000${event.organizer.profilePicture}`} 
+                                    alt={event.organizer.name}
+                                    style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                                />
+                            ) : (
+                                event.organizer?.name?.charAt(0)
+                            )}
                         </div>
                         <div className="organizer-info">
                             <span className="organizer-name">Organized by <strong style={{ color: 'white' }}>{event.organizer?.name}</strong></span>
