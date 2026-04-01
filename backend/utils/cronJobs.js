@@ -69,7 +69,8 @@ EventBuddy Team`;
                         // Create in-app notification
                         await Notification.create({
                             user: booking.student._id,
-                            message: `Reminder: Your upcoming event "${event.title}" is happening soon on ${eventDateStr} at ${eventTimeStr}. Location: ${event.location}`
+                            message: `Reminder: Your upcoming event "${event.title}" is happening soon on ${eventDateStr} at ${eventTimeStr}. Location: ${event.location}`,
+                            link: `/event/${event._id}`
                         });
 
                         sentCount++;

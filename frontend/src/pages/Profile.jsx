@@ -405,7 +405,10 @@ const Profile = () => {
                             <div 
                                 key={notif._id} 
                                 className={`notification-card ${!notif.isRead ? 'unread' : ''}`}
-                                onClick={() => !notif.isRead && handleMarkAsRead(notif._id)}
+                                onClick={() => {
+                                    if (!notif.isRead) handleMarkAsRead(notif._id);
+                                    if (notif.link) navigate(notif.link);
+                                }}
                             >
                                 <div className="notif-icon-wrapper">
                                     <Bell size={24} />

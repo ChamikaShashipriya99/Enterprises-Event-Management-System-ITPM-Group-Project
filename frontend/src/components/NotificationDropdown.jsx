@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef, useContext } from 'react';
 import { Bell } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
+import { useNavigate } from 'react-router-dom';
 
 const NotificationDropdown = ({ currentUser }) => {
     const { 
@@ -12,6 +13,7 @@ const NotificationDropdown = ({ currentUser }) => {
     const [isOpen, setIsOpen] = useState(false);
     const dropdownRef = useRef(null);
     const prevUnreadCountRef = useRef(0);
+    const navigate = useNavigate();
 
     const token = localStorage.getItem('token') || (currentUser && currentUser.token) || '';
     const apiUrl = 'http://localhost:5000';
@@ -136,11 +138,17 @@ const NotificationDropdown = ({ currentUser }) => {
                         notifications.map(notification => (
                             <div 
                                 key={notification._id}
-                                onClick={() => !notification.isRead && markAsRead(notification._id)}
+                                onClick={() => {
+                                    if (!notification.isRead) markAsRead(notification._id);
+                                    if (notification.link) {
+                                        navigate(notification.link);
+                                        setIsOpen(false);
+                                    }
+                                }}
                                 style={{
                                     padding: '12px 15px',
                                     borderBottom: '1px solid rgba(255, 255, 255, 0.05)',
-                                    cursor: notification.isRead ? 'default' : 'pointer',
+                                    cursor: 'pointer',
                                     background: notification.isRead ? 'transparent' : 'rgba(99, 102, 241, 0.1)',
                                     transition: 'background 0.2s',
                                     color: notification.isRead ? '#94a3b8' : '#f8fafc',

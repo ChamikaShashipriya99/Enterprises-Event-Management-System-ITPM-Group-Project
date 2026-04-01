@@ -43,7 +43,8 @@ const reportItem = async (req, res) => {
             await Notification.create({
                 user: req.user._id,
                 message: `Smart Match Alert 🧩: We found ${potentialMatches.length} recent '${oppositeType}' report(s) matching the '${category}' category for your ${itemName}. Check the feed!`,
-                isRead: false
+                isRead: false,
+                link: '/lost-and-found'
             });
 
             // Notify the users who reported the potential matching items
@@ -51,7 +52,8 @@ const reportItem = async (req, res) => {
                 await Notification.create({
                     user: match.reporter,
                     message: `Smart Match Alert 🧩: A new '${type}' report for '${itemName}' was just added. It might match your '${match.itemName}'!`,
-                    isRead: false
+                    isRead: false,
+                    link: '/lost-and-found'
                 });
             }
         }
@@ -64,7 +66,8 @@ const reportItem = async (req, res) => {
             await Notification.create({
                 user: admin._id,
                 message: `Moderation Alert: A new '${type}' report for a '${itemName}' was just submitted by a user.`,
-                isRead: false
+                isRead: false,
+                link: '/admin/lost-found'
             });
         }
 
@@ -77,7 +80,8 @@ const reportItem = async (req, res) => {
                 await Notification.create({
                     user: student._id,
                     message: `Official Hub Alert 📢: An Administrator has reported a '${type}' item (${itemName}). Please check the Recovery Hub!`,
-                    isRead: false
+                    isRead: false,
+                    link: '/lost-and-found'
                 });
             }
         }

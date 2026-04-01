@@ -16,7 +16,8 @@ exports.createEvent = async (req, res, next) => {
             await Notification.create({
                 user: student._id,
                 message: `New Event Alert 🎉: An Organizer just published a new event titled '${event.title}'. Book your spot before it fills up!`,
-                isRead: false
+                isRead: false,
+                link: `/event/${event._id}`
             });
         }
 
@@ -163,7 +164,8 @@ exports.registerForEvent = async (req, res, next) => {
             await Notification.create({
                 user: event.organizer,
                 message: `Capacity Alert 🎟️: Your event '${event.title}' has reached its maximum capacity of ${event.capacity} participants.`,
-                isRead: false
+                isRead: false,
+                link: `/event/${event._id}`
             });
 
             // Notify Admins
@@ -172,7 +174,8 @@ exports.registerForEvent = async (req, res, next) => {
                 await Notification.create({
                     user: admin._id,
                     message: `Moderation Alert: The event titled '${event.title}' is now at full capacity (${event.capacity}).`,
-                    isRead: false
+                    isRead: false,
+                    link: `/event/${event._id}`
                 });
             }
         }

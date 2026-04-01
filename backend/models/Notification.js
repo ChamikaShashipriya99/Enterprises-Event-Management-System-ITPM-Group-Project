@@ -13,6 +13,9 @@ const notificationSchema = new mongoose.Schema({
     isRead: {
         type: Boolean,
         default: false
+    },
+    link: {
+        type: String
     }
 }, {
     timestamps: true
