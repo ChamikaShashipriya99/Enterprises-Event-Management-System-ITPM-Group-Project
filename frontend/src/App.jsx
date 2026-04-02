@@ -1,8 +1,10 @@
 // frontend/src/App.jsx
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
-import { useContext } from 'react';
+import { useState, useEffect, useContext } from 'react';
 import { AuthProvider, AuthContext } from './context/AuthContext';
 import { Toaster } from 'react-hot-toast';
+import AOS from 'aos';
+import 'aos/dist/aos.css';
 
 // Components
 import Navbar from './components/Navbar';
@@ -76,6 +78,15 @@ const CommonLayoutWrapper = () => {
 };
 
 function App() {
+  useEffect(() => {
+    AOS.init({
+      duration: 1000,
+      easing: 'ease-in-out',
+      once: true,
+      mirror: false
+    });
+  }, []);
+
   return (
     <Router>
       <AuthProvider>

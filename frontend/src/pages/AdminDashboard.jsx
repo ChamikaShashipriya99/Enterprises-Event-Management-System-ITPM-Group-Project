@@ -1,6 +1,7 @@
 // frontend/src/pages/AdminDashboard.jsx
 import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 import eventService from '../services/eventService';
 import bookingService from '../services/bookingService';
@@ -139,47 +140,72 @@ const AdminDashboard = () => {
         <div style={{ padding: '2rem 5%' }}>
             <h1 style={{ fontSize: '2.5rem', marginBottom: '2rem', fontWeight: '800' }}>Admin <span style={{ color: '#6366f1' }}>Dashboard</span></h1>
 
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                gap: '1.5rem',
-                marginBottom: '3rem'
-            }}>
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, staggerChildren: 0.1 }}
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                    gap: '1.5rem',
+                    marginBottom: '3rem'
+                }}
+            >
                 {mainStatCards.map((card, index) => (
-                    <div key={index} className="glass-card" style={{
-                        padding: '1.5rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.8rem',
-                        transition: 'transform 0.3s ease',
-                        cursor: 'default'
-                    }}>
+                    <motion.div 
+                        key={index} 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: index * 0.1 }}
+                        whileHover={{ scale: 1.03, y: -5 }}
+                        className="glass-card" style={{
+                            padding: '1.5rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.8rem',
+                            cursor: 'default'
+                        }}
+                    >
                         <div style={{ color: card.color }}>{card.icon}</div>
                         <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500' }}>{card.title}</div>
                         <div style={{ fontSize: '2.2rem', fontWeight: 'bold', color: 'white' }}>{card.value}</div>
-                    </div>
+                    </motion.div>
                 ))}
-            </div>
+            </motion.div>
 
             {/* Community Pulse Section */}
             <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '12px' }}>
                 Student <span style={{ color: '#10b981' }}>Community Pulse</span> <TrendingUp size={24} style={{ color: '#10b981' }} />
             </h2>
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
-                gap: '1.5rem',
-                marginBottom: '3rem'
-            }}>
+            <motion.div 
+                initial={{ opacity: 0 }}
+                whileInView={{ opacity: 1 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.8 }}
+                style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                    gap: '1.5rem',
+                    marginBottom: '3rem'
+                }}
+            >
                 {pulseCards.map((card, index) => (
-                    <div key={index} className="glass-card" style={{
-                        padding: '1.5rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        gap: '0.3rem',
-                        borderLeft: `4px solid ${card.color}`,
-                        transition: 'transform 0.3s ease'
-                    }}>
+                    <motion.div 
+                        key={index} 
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        viewport={{ once: true }}
+                        transition={{ delay: index * 0.1 }}
+                        whileHover={{ y: -5 }}
+                        className="glass-card" style={{
+                            padding: '1.5rem',
+                            display: 'flex',
+                            flexDirection: 'column',
+                            gap: '0.3rem',
+                            borderLeft: `4px solid ${card.color}`,
+                        }}
+                    >
                         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
                             <span style={{ color: card.color }}>{card.icon}</span>
                             <span style={{ fontSize: '0.7rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>Real-time</span>
@@ -187,9 +213,9 @@ const AdminDashboard = () => {
                         <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500', marginTop: '0.5rem' }}>{card.title}</div>
                         <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{chatStats.activeNow > 0 ? card.value : 0}</div>
                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{card.desc}</div>
-                    </div>
+                    </motion.div>
                 ))}
-            </div>
+            </motion.div>
 
             {/* Visual Insights Section */}
             <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem', display: 'flex', alignItems: 'center', gap: '12px' }}>

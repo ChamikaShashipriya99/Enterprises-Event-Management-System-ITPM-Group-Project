@@ -1,6 +1,7 @@
 // frontend/src/pages/StudentDashboard.jsx
 import { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 import bookingService from '../services/bookingService';
 import eventService from '../services/eventService';
@@ -106,23 +107,33 @@ const StudentDashboard = () => {
             </header>
 
             {/* Stats Grid */}
-            <div style={{ 
-                display: 'grid', 
-                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
-                gap: '20px', 
-                marginBottom: '40px' 
-            }}>
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, staggerChildren: 0.1 }}
+                style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+                    gap: '20px', 
+                    marginBottom: '40px' 
+                }}
+            >
                 {statCards.map((stat, idx) => (
-                    <div key={idx} className="glass-card" style={{ 
-                        padding: '24px', 
-                        display: 'flex', 
-                        alignItems: 'center', 
-                        gap: '20px',
-                        transition: 'transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)',
-                        cursor: 'default'
-                    }}
-                    onMouseOver={(e) => e.currentTarget.style.transform = 'translateY(-5px)'}
-                    onMouseOut={(e) => e.currentTarget.style.transform = 'translateY(0)'}
+                    <motion.div 
+                        key={idx} 
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        viewport={{ once: true }}
+                        transition={{ duration: 0.4, delay: idx * 0.1 }}
+                        whileHover={{ y: -5, scale: 1.02, transition: { duration: 0.2 } }}
+                        className="glass-card" 
+                        style={{ 
+                            padding: '24px', 
+                            display: 'flex', 
+                            alignItems: 'center', 
+                            gap: '20px',
+                            cursor: 'default'
+                        }}
                     >
                         <div style={{ 
                             width: '56px', 
@@ -141,9 +152,9 @@ const StudentDashboard = () => {
                             <div style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '500', marginBottom: '4px' }}>{stat.title}</div>
                             <div style={{ fontSize: '1.8rem', fontWeight: '800', color: 'white' }}>{stat.value}</div>
                         </div>
-                    </div>
+                    </motion.div>
                 ))}
-            </div>
+            </motion.div>
 
             <div style={{ 
                 display: 'grid', 

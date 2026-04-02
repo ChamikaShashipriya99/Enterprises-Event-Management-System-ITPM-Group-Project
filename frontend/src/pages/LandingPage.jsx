@@ -146,7 +146,10 @@ const LandingPage = () => {
 
       {/* Features Section */}
       <section style={{ padding: '8rem 10%' }}>
-        <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
+        <div 
+          data-aos="fade-up"
+          style={{ textAlign: 'center', marginBottom: '5rem' }}
+        >
           <h2 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1rem' }}>
             Everything You Need <br /> To <span style={{ color: '#6366f1' }}>Rule Your Events</span>
           </h2>
@@ -198,7 +201,10 @@ const LandingPage = () => {
               bg: 'rgba(236, 72, 153, 0.05)'
             }
           ].map((feature, i) => (
-            <div key={i} className="glass-card" style={{ 
+            <div key={i} 
+              data-aos="zoom-in"
+              data-aos-delay={i * 100}
+              className="glass-card" style={{ 
               padding: '2.5rem',
               transition: 'transform 0.3s ease',
               cursor: 'default',
@@ -233,7 +239,9 @@ const LandingPage = () => {
         padding: '8rem 10%',
         background: 'linear-gradient(to bottom, transparent, rgba(99, 102, 241, 0.05), transparent)'
       }}>
-        <div style={{ textAlign: 'center', marginBottom: '5rem' }}>
+        <div 
+          data-aos="zoom-out"
+          style={{ textAlign: 'center', marginBottom: '5rem' }}>
           <h2 style={{ fontSize: '3rem', fontWeight: '800', marginBottom: '1rem' }}>
             Four Steps to <span style={{ color: '#6366f1' }}>Success</span>
           </h2>
@@ -252,7 +260,10 @@ const LandingPage = () => {
             { step: '03', title: 'Host with Confidence', desc: 'Use our real-time tools to monitor check-ins and engage with participants via our smart chat system.' },
             { step: '04', title: 'Recognize Achievement', desc: 'Awards verified certificates automatically based on attendance and performance.' }
           ].map((item, i) => (
-            <div key={i} style={{ display: 'flex', gap: '2.5rem', alignItems: 'flex-start' }}>
+            <div key={i} 
+              data-aos="fade-left"
+              data-aos-delay={i * 200}
+              style={{ display: 'flex', gap: '2.5rem', alignItems: 'flex-start' }}>
               <span style={{ 
                 fontSize: '4rem', 
                 fontWeight: '900', 
@@ -270,7 +281,9 @@ const LandingPage = () => {
 
       {/* CTA Section */}
       <section style={{ padding: '8rem 10%', textAlign: 'center' }}>
-        <div className="glass-card" style={{ 
+        <div 
+          data-aos="flip-up"
+          className="glass-card" style={{ 
           padding: '5rem 2rem', 
           background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)',
           display: 'flex',

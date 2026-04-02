@@ -1,6 +1,7 @@
 // frontend/src/pages/OrganizerDashboard.jsx
 import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
+import { motion } from 'framer-motion';
 import { AuthContext } from '../context/AuthContext';
 import eventService from '../services/eventService';
 import bookingService from '../services/bookingService';
@@ -141,34 +142,66 @@ const OrganizerDashboard = () => {
             </div>
 
             {/* Core Stats Section */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}>
-                <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #6366f1' }}>
+            <motion.div 
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, staggerChildren: 0.1 }}
+                style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '1.5rem', marginBottom: '3rem' }}
+            >
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    whileHover={{ scale: 1.02, y: -5 }}
+                    className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #6366f1' }}
+                >
                     <div style={{ color: '#6366f1', marginBottom: '10px' }}><Calendar size={28} /></div>
                     <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500' }}>My Events</div>
                     <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{events.length}</div>
-                </div>
+                </motion.div>
 
-                <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #a855f7' }}>
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.1 }}
+                    whileHover={{ scale: 1.02, y: -5 }}
+                    className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #a855f7' }}
+                >
                     <div style={{ color: '#a855f7', marginBottom: '10px' }}><Users size={28} /></div>
                     <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500' }}>Total Bookings</div>
                     <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{totalBooked}</div>
-                </div>
+                </motion.div>
 
-                <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #10b981' }}>
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.2 }}
+                    whileHover={{ scale: 1.02, y: -5 }}
+                    className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #10b981' }}
+                >
                     <div style={{ color: '#10b981', marginBottom: '10px' }}><Trophy size={28} /></div>
                     <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500' }}>Total Capacity</div>
                     <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{totalCapacity}</div>
-                </div>
+                </motion.div>
 
-                <div className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #f59e0b' }}>
+                <motion.div 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.3 }}
+                    whileHover={{ scale: 1.02, y: -5 }}
+                    className="glass-card" style={{ padding: '1.5rem', borderLeft: '4px solid #f59e0b' }}
+                >
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
                         <div style={{ color: '#f59e0b' }}><Zap size={28} /></div>
                         <span style={{ fontSize: '0.7rem', color: '#f59e0b', background: 'rgba(245, 158, 11, 0.1)', padding: '2px 8px', borderRadius: '10px', fontWeight: 'bold' }}>LIVE</span>
                     </div>
                     <div style={{ color: '#94a3b8', fontSize: '0.8rem', fontWeight: '500' }}>Chat Active</div>
                     <div style={{ fontSize: '1.8rem', fontWeight: 'bold', color: 'white' }}>{chatStats.activeNow}</div>
-                </div>
-            </div>
+                </motion.div>
+            </motion.div>
 
             {/* Visual Insights Section */}
             <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '12px' }}>
