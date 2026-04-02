@@ -98,6 +98,7 @@ function App() {
             <Route path="/" element={<LandingPage />} />
             <Route path="/events" element={<AllEvents />} />
             <Route path="/events/:id" element={<EventDetail />} />
+            <Route path="/gallery" element={<Gallery />} />
             <Route path="/verify-email/:token" element={<VerifyEmail />} />
             <Route path="/forgot-password" element={<ForgotPassword />} />
             <Route path="/reset-password/:token" element={<ResetPassword />} />
@@ -195,7 +196,6 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/edit-profile" element={<EditProfile />} />
             <Route path="/chat" element={<ChatPage />} />
-            <Route path="/gallery" element={<Gallery />} />
             <Route path="/bookings/:bookingId" element={<BookingDetail />} />
             <Route path="/checkin" element={<CheckIn />} />
           </Route>

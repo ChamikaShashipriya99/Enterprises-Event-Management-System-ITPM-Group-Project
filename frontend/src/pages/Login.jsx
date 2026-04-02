@@ -2,7 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
-import { LogIn, ShieldCheck } from 'lucide-react';
+import { LogIn, ShieldCheck, ArrowLeft } from 'lucide-react';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -79,12 +79,33 @@ const Login = () => {
 
     return (
         <div style={{
+            position: 'relative',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             minHeight: 'calc(100vh - 100px)',
             padding: '20px'
         }}>
+            <Link 
+                to="/" 
+                style={{ 
+                    position: 'absolute', 
+                    top: '40px', 
+                    left: '5%', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    color: '#94a3b8', 
+                    textDecoration: 'none',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
+            >
+                <ArrowLeft size={20} /> Back to Home
+            </Link>
             <div className="glass-card" style={{
                 width: '100%',
                 maxWidth: '450px',

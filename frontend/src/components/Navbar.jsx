@@ -154,6 +154,10 @@ const Navbar = () => {
 
                 {!currentUser && (
                     <div style={{ display: 'flex', gap: '2rem', alignItems: 'center' }}>
+                        <Link to="/gallery" style={getLinkStyle('/gallery')}>
+                            <Search size={18} /> Gallery
+                        </Link>
+                        <div style={{ width: '1px', background: 'rgba(255,255,255,0.1)', height: '20px' }}></div>
                         <Link to="/login" style={{ color: '#f8fafc', fontWeight: '600', textDecoration: 'none' }}>Login</Link>
                         <Link to="/register" className="btn-primary" style={{ display: 'flex', alignItems: 'center', gap: '8px', textDecoration: 'none' }}>
                             Get Started <ChevronRight size={18} />

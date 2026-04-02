@@ -2,7 +2,7 @@ import { useState, useContext } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import PasswordStrengthMeter from '../components/PasswordStrengthMeter';
-import { CheckCircle2 } from 'lucide-react';
+import { CheckCircle2, ArrowLeft } from 'lucide-react';
 
 const Register = () => {
     const [formData, setFormData] = useState({ name: '', email: '', password: '', role: 'student', roleCode: '' });
@@ -49,12 +49,33 @@ const Register = () => {
 
     return (
         <div style={{
+            position: 'relative',
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
             minHeight: 'calc(100vh - 100px)',
             padding: '20px'
         }}>
+            <Link 
+                to="/" 
+                style={{ 
+                    position: 'absolute', 
+                    top: '40px', 
+                    left: '5%', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    gap: '8px', 
+                    color: '#94a3b8', 
+                    textDecoration: 'none',
+                    fontSize: '1rem',
+                    fontWeight: '500',
+                    transition: 'all 0.3s ease'
+                }}
+                onMouseEnter={(e) => e.currentTarget.style.color = 'white'}
+                onMouseLeave={(e) => e.currentTarget.style.color = '#94a3b8'}
+            >
+                <ArrowLeft size={20} /> Back to Home
+            </Link>
             <div className="glass-card" style={{
                 width: '100%',
                 maxWidth: '500px',
