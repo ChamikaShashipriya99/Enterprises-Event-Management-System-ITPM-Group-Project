@@ -33,8 +33,10 @@ const updateUserProfile = async (req, res) => {
 
     if (user) {
         user.name = req.body.name || user.name;
-        user.phone = req.body.phone || user.phone;
-        user.profilePicture = req.body.profilePicture || user.profilePicture;
+        
+        // Allow clearing phone or profilePicture explicitly
+        if (req.body.phone !== undefined) user.phone = req.body.phone;
+        if (req.body.profilePicture !== undefined) user.profilePicture = req.body.profilePicture;
 
         if (req.body.password) {
             user.password = req.body.password;

@@ -178,9 +178,18 @@ const Navbar = () => {
                                 display: 'flex', 
                                 alignItems: 'center', 
                                 justifyContent: 'center',
-                                color: 'white'
+                                color: 'white',
+                                overflow: 'hidden'
                             }}>
-                                <User size={20} />
+                                {currentUser?.profilePicture ? (
+                                    <img 
+                                        src={currentUser.profilePicture.startsWith('http') ? currentUser.profilePicture : `http://localhost:5000${currentUser.profilePicture}`} 
+                                        alt="Avatar" 
+                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                    />
+                                ) : (
+                                    <User size={20} />
+                                )}
                             </div>
                             <span style={{ fontSize: '0.85rem', color: '#94a3b8', fontWeight: '600' }}>{currentUser.name.split(' ')[0]}</span>
                         </Link>

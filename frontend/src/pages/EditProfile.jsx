@@ -156,32 +156,62 @@ const EditProfile = () => {
                                     style={{ display: 'none' }}
                                     accept="image/png, image/jpeg, image/jpg"
                                 />
-                                <label
-                                    htmlFor="fileInput"
-                                    style={{
-                                        padding: '10px 20px',
-                                        background: 'rgba(255,255,255,0.05)',
-                                        border: '1px solid rgba(255,255,255,0.1)',
-                                        borderRadius: '8px',
-                                        color: '#6366f1',
-                                        fontSize: '0.9rem',
-                                        fontWeight: '600',
-                                        cursor: 'pointer',
-                                        display: 'inline-block',
-                                        transition: 'all 0.3s ease',
-                                        textAlign: 'center'
-                                    }}
-                                    onMouseOver={(e) => {
-                                        e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
-                                        e.currentTarget.style.borderColor = '#6366f1';
-                                    }}
-                                    onMouseOut={(e) => {
-                                        e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
-                                        e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
-                                    }}
-                                >
-                                    {uploading ? 'Processing...' : 'Change Picture'}
-                                </label>
+                                <div style={{ display: 'flex', gap: '10px', alignItems: 'center' }}>
+                                    <label
+                                        htmlFor="fileInput"
+                                        style={{
+                                            padding: '10px 20px',
+                                            background: 'rgba(255,255,255,0.05)',
+                                            border: '1px solid rgba(255,255,255,0.1)',
+                                            borderRadius: '8px',
+                                            color: '#6366f1',
+                                            fontSize: '0.9rem',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            display: 'inline-block',
+                                            transition: 'all 0.3s ease',
+                                            textAlign: 'center'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.currentTarget.style.background = 'rgba(99, 102, 241, 0.1)';
+                                            e.currentTarget.style.borderColor = '#6366f1';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.currentTarget.style.background = 'rgba(255,255,255,0.05)';
+                                            e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)';
+                                        }}
+                                    >
+                                        {uploading ? 'Processing...' : 'Change Picture'}
+                                    </label>
+                                    
+                                    {formData.profilePicture && (
+                                        <button
+                                            type="button"
+                                            onClick={() => setFormData({ ...formData, profilePicture: '' })}
+                                            style={{
+                                                padding: '10px 20px',
+                                                background: 'rgba(239, 68, 68, 0.05)',
+                                                border: '1px solid rgba(239, 68, 68, 0.1)',
+                                                borderRadius: '8px',
+                                                color: '#ef4444',
+                                                fontSize: '0.9rem',
+                                                fontWeight: '600',
+                                                cursor: 'pointer',
+                                                transition: 'all 0.3s ease'
+                                            }}
+                                            onMouseOver={(e) => {
+                                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                                                e.currentTarget.style.borderColor = '#ef4444';
+                                            }}
+                                            onMouseOut={(e) => {
+                                                e.currentTarget.style.background = 'rgba(239, 68, 68, 0.05)';
+                                                e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.1)';
+                                            }}
+                                        >
+                                            Remove Picture
+                                        </button>
+                                    )}
+                                </div>
                             </div>
                         </div>
                         {uploading && <p style={{ color: '#6366f1', fontSize: '0.8rem', marginTop: '10px', fontWeight: '500' }}>Uploading image, please wait...</p>}
