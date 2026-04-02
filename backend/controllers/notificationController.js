@@ -3,8 +3,9 @@ const Notification = require('../models/Notification');
 // @desc    Get all notifications for logged in user
 // @route   GET /api/notifications
 // @access  Private
+// const getUserNotifications = async (req, res) => {
+//     console.log('Fetching notifications for user:', req.user._id);
 const getUserNotifications = async (req, res) => {
-    console.log('Fetching notifications for user:', req.user._id);
     try {
         const notifications = await Notification.find({ user: req.user._id })
             .sort({ createdAt: -1 });
@@ -20,7 +21,7 @@ const getUserNotifications = async (req, res) => {
 // @route   PUT /api/notifications/:id/read
 // @access  Private
 const markAsRead = async (req, res) => {
-    console.log('Marking notification as read:', req.params.id);
+    // console.log('Marking notification as read:', req.params.id);
     try {
         const notification = await Notification.findById(req.params.id);
 
@@ -47,7 +48,7 @@ const markAsRead = async (req, res) => {
 // @route   PUT /api/notifications/read-all
 // @access  Private
 const markAllAsRead = async (req, res) => {
-    console.log('Marking all notifications as read for user:', req.user._id);
+    // console.log('Marking all notifications as read for user:', req.user._id);
     try {
         await Notification.updateMany(
             { user: req.user._id, isRead: false },
