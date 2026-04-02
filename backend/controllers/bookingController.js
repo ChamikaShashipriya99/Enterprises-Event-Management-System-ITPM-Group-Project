@@ -136,9 +136,14 @@ exports.createBooking = async (req, res) => {
             status: 'confirmed',
         });
 
-        await User.findByIdAndUpdate(studentId, {
-            $addToSet: { registeredEvents: eventId },
-        });
+        await Promise.all([
+            User.findByIdAndUpdate(studentId, {
+                $addToSet: { registeredEvents: eventId },
+            }),
+            Event.findByIdAndUpdate(eventId, {
+                $addToSet: { registeredUsers: studentId },
+            })
+        ]);
 
         const student = await User.findById(studentId);
 
@@ -226,9 +231,14 @@ exports.cancelBooking = async (req, res) => {
         booking.cancellationReason = reason || 'No reason provided';
         await booking.save();
 
-        await User.findByIdAndUpdate(studentId, {
-            $pull: { registeredEvents: booking.event._id },
-        });
+        await Promise.all([
+            User.findByIdAndUpdate(studentId, {
+                $pull: { registeredEvents: booking.event._id },
+            }),
+            Event.findByIdAndUpdate(booking.event._id, {
+                $pull: { registeredUsers: studentId },
+            })
+        ]);
 
         const student = await User.findById(studentId);
         sendCancellationEmail({
@@ -258,7 +268,7 @@ exports.cancelBooking = async (req, res) => {
 exports.getMyBookings = async (req, res) => {
     try {
         const bookings = await Booking.find({ student: req.user._id })
-            .populate('event', 'title date location capacity')
+            .populate('event', 'title date location capacity image')
             .sort({ createdAt: -1 });
 
         return res.status(200).json({
@@ -276,7 +286,7 @@ exports.getMyBookings = async (req, res) => {
 exports.getBookingById = async (req, res) => {
     try {
         const booking = await Booking.findOne({ bookingId: req.params.bookingId })
-            .populate('event', 'title date location capacity organizer')
+            .populate('event', 'title date location capacity organizer image')
             .populate('student', 'name email');
 
         if (!booking) {

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
 import eventService from '../services/eventService';
 
 const EditEvent = () => {
@@ -80,14 +79,7 @@ const EditEvent = () => {
         setUploading(true);
 
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
-            const config = {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    Authorization: `Bearer ${user?.token}`
-                }
-            };
-            const { data } = await axios.post('http://localhost:5000/api/users/upload', uploadData, config);
+            const data = await eventService.uploadImage(uploadData);
             setFormData(prev => ({ ...prev, image: data.url }));
             setUploading(false);
         } catch (err) {

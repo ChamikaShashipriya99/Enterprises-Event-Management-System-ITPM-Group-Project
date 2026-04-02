@@ -13,6 +13,8 @@ const connectDB = require('./config/db');
 const passport = require('passport');
 require('./config/passport')(passport);
 
+const path = require('path');
+
 const app = express();
 
 connectDB();
@@ -23,6 +25,9 @@ require('./utils/cronJobs');
 app.use(cors());
 app.use(express.json());
 app.use(passport.initialize());
+
+// Serve static files from the 'uploads' directory
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 app.get('/', (req, res) => {
     res.send('API is running...');

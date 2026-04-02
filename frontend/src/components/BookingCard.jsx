@@ -1,14 +1,43 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { 
+    Calendar, 
+    MapPin, 
+    Clock, 
+    ExternalLink, 
+    XCircle, 
+    CheckCircle2, 
+    GraduationCap,
+    Download,
+    AlertCircle,
+    ChevronRight,
+    ArrowRight
+} from 'lucide-react';
 import bookingService from '../services/bookingService';
 
 const statusColors = {
-    confirmed: { bg: 'rgba(99,102,241,0.12)', color: '#818cf8', border: 'rgba(99,102,241,0.25)' },
-    attended:  { bg: 'rgba(16,185,129,0.12)',  color: '#34d399', border: 'rgba(16,185,129,0.25)' },
-    cancelled: { bg: 'rgba(239,68,68,0.10)',   color: '#f87171', border: 'rgba(239,68,68,0.20)' },
+    confirmed: { 
+        bg: 'rgba(99, 102, 241, 0.1)', 
+        color: '#818cf8', 
+        border: 'rgba(99, 102, 241, 0.2)',
+        icon: <CheckCircle2 size={14} />,
+        glow: 'rgba(99, 102, 241, 0.2)'
+    },
+    attended:  { 
+        bg: 'rgba(16, 185, 129, 0.1)',  
+        color: '#34d399', 
+        border: 'rgba(16, 185, 129, 0.2)',
+        icon: <GraduationCap size={14} />,
+        glow: 'rgba(16, 185, 129, 0.2)'
+    },
+    cancelled: { 
+        bg: 'rgba(244, 63, 94, 0.1)',   
+        color: '#fb7185', 
+        border: 'rgba(244, 63, 94, 0.2)',
+        icon: <XCircle size={14} />,
+        glow: 'rgba(244, 63, 94, 0.2)'
+    },
 };
-
-const statusIcons = { confirmed: '✅', attended: '🎓', cancelled: '❌' };
 
 const BookingCard = ({ booking, onCancelled, onCertificate }) => {
     const [cancelling, setCancelling] = useState(false);
@@ -49,86 +78,142 @@ const BookingCard = ({ booking, onCancelled, onCertificate }) => {
     };
 
     return (
-        <div style={{
-            background: 'rgba(30,41,59,0.7)',
-            border: '1px solid rgba(255,255,255,0.08)',
-            borderRadius: '14px',
-            padding: '1.5rem',
-            backdropFilter: 'blur(12px)',
-            transition: 'transform 0.2s, box-shadow 0.2s',
-            position: 'relative'
+        <div className="glass-card" style={{
+            display: 'flex',
+            overflow: 'hidden',
+            transition: 'all 0.4s cubic-bezier(0.4, 0, 0.2, 1)',
+            position: 'relative',
+            minHeight: '180px',
+            flexDirection: window.innerWidth < 768 ? 'column' : 'row'
         }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-3px)'; e.currentTarget.style.boxShadow = '0 12px 40px rgba(0,0,0,0.3)'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = 'none'; }}
+            onMouseEnter={e => { 
+                e.currentTarget.style.transform = 'translateY(-5px)'; 
+                e.currentTarget.style.borderColor = 'rgba(99, 102, 241, 0.3)';
+                e.currentTarget.style.boxShadow = `0 20px 40px rgba(0,0,0,0.4), 0 0 20px ${s.glow}`;
+            }}
+            onMouseLeave={e => { 
+                e.currentTarget.style.transform = 'translateY(0)'; 
+                e.currentTarget.style.borderColor = 'var(--glass-border)';
+                e.currentTarget.style.boxShadow = '0 8px 32px 0 rgba(0, 0, 0, 0.37)';
+            }}
         >
-            {/* Left accent bar */}
+            {/* Left Image Section */}
             <div style={{
-                position: 'absolute', left: 0, top: 0, bottom: 0, width: '4px',
-                background: s.color, borderRadius: '14px 0 0 14px'
-            }} />
-
-            <div style={{ paddingLeft: '0.5rem' }}>
-                {/* Header */}
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem', flexWrap: 'wrap', gap: '0.5rem' }}>
-                    <div>
-                        <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '0.25rem', color: '#f1f5f9' }}>
-                            {booking.event?.title || 'Event'}
-                        </h3>
-                        <span style={{ fontSize: '0.75rem', color: '#64748b', fontFamily: 'monospace' }}>
-                            {booking.bookingId}
-                        </span>
-                    </div>
-                    <span style={{
-                        padding: '4px 12px', borderRadius: '20px', fontSize: '0.78rem', fontWeight: '600',
-                        background: s.bg, color: s.color, border: `1px solid ${s.border}`
+                width: window.innerWidth < 768 ? '100%' : '240px',
+                height: window.innerWidth < 768 ? '160px' : 'auto',
+                position: 'relative',
+                overflow: 'hidden',
+                flexShrink: 0
+            }}>
+                {booking.event?.image ? (
+                    <img 
+                        src={`http://localhost:5000${booking.event.image}`} 
+                        alt={booking.event.title}
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                    />
+                ) : (
+                    <div style={{ 
+                        width: '100%', height: '100%', 
+                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.1) 0%, rgba(168, 85, 247, 0.1) 100%)',
+                        display: 'flex', alignItems: 'center', justifyContent: 'center'
                     }}>
-                        {statusIcons[booking.status]} {booking.status.charAt(0).toUpperCase() + booking.status.slice(1)}
-                    </span>
+                        <Calendar size={40} style={{ opacity: 0.2 }} />
+                    </div>
+                )}
+                <div style={{ 
+                    position: 'absolute', inset: 0, 
+                    background: 'linear-gradient(to right, transparent, rgba(15, 23, 42, 0.5))' 
+                }} />
+                
+                {/* Status Badge floating on image */}
+                <div style={{
+                    position: 'absolute', top: '15px', left: '15px',
+                    padding: '6px 12px', borderRadius: '10px', fontSize: '0.75rem', fontWeight: '800',
+                    background: s.bg, color: s.color, border: `1px solid ${s.border}`,
+                    backdropFilter: 'blur(10px)', display: 'flex', alignItems: 'center', gap: '6px',
+                    boxShadow: '0 4px 12px rgba(0,0,0,0.2)'
+                }}>
+                    {s.icon} {booking.status.toUpperCase()}
                 </div>
+            </div>
 
-                {/* Event details */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.25rem' }}>
+            {/* Right Content Section */}
+            <div style={{ padding: '1.5rem 2rem', flex: 1, display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1rem' }}>
                     <div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '2px' }}>Date</div>
-                        <div style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>
-                            📅 {eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                        <h3 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'white', marginBottom: '4px', letterSpacing: '-0.02em' }}>
+                            {booking.event?.title || 'Untitled Event'}
+                        </h3>
+                        <div style={{ fontSize: '0.8rem', color: '#64748b', fontWeight: '600', fontFamily: 'monospace', letterSpacing: '0.05em' }}>
+                            REF: {booking.bookingId}
                         </div>
                     </div>
-                    <div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '2px' }}>Location</div>
-                        <div style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>📍 {booking.event?.location || '—'}</div>
+                </div>
+
+                <div style={{ 
+                    display: 'grid', 
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))', 
+                    gap: '20px', 
+                    marginBottom: '1.5rem' 
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ color: '#6366f1' }}><Calendar size={18} /></div>
+                        <div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Event Date</div>
+                            <div style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: '600' }}>
+                                {eventDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </div>
+                        </div>
                     </div>
-                    <div>
-                        <div style={{ fontSize: '0.72rem', color: '#64748b', fontWeight: '600', textTransform: 'uppercase', marginBottom: '2px' }}>Booked</div>
-                        <div style={{ fontSize: '0.88rem', color: '#cbd5e1' }}>
-                            🕒 {new Date(booking.createdAt).toLocaleDateString()}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ color: '#10b981' }}><MapPin size={18} /></div>
+                        <div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Location</div>
+                            <div style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: '600' }}>{booking.event?.location || '—'}</div>
+                        </div>
+                    </div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <div style={{ color: '#a855f7' }}><Clock size={14} /></div>
+                        <div>
+                            <div style={{ fontSize: '0.7rem', color: '#64748b', fontWeight: '700', textTransform: 'uppercase' }}>Booked On</div>
+                            <div style={{ fontSize: '0.9rem', color: '#cbd5e1', fontWeight: '600' }}>{new Date(booking.createdAt).toLocaleDateString()}</div>
                         </div>
                     </div>
                 </div>
 
-                {/* Actions */}
-                <div style={{ display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
+                {/* Actions Footer */}
+                <div style={{ 
+                    display: 'flex', 
+                    gap: '12px', 
+                    borderTop: '1px solid rgba(255,255,255,0.05)', 
+                    paddingTop: '1.25rem',
+                    marginTop: 'auto'
+                }}>
                     <button
                         onClick={() => navigate(`/bookings/${booking.bookingId}`)}
+                        className="btn-primary"
                         style={{
-                            padding: '7px 16px', borderRadius: '7px', fontSize: '0.82rem', fontWeight: '600',
-                            background: 'rgba(99,102,241,0.12)', color: '#818cf8',
-                            border: '1px solid rgba(99,102,241,0.25)', cursor: 'pointer'
+                            padding: '8px 18px', fontSize: '0.85rem', borderRadius: '10px',
+                            display: 'flex', alignItems: 'center', gap: '8px'
                         }}
                     >
-                        View Details
+                        View Pass <ArrowRight size={16} />
                     </button>
 
                     {canCancel && (
                         <button
                             onClick={() => setShowCancel(true)}
                             style={{
-                                padding: '7px 16px', borderRadius: '7px', fontSize: '0.82rem', fontWeight: '600',
-                                background: 'rgba(239,68,68,0.08)', color: '#f87171',
-                                border: '1px solid rgba(239,68,68,0.2)', cursor: 'pointer'
+                                padding: '8px 18px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: '700',
+                                background: 'rgba(244, 63, 94, 0.1)', color: '#fb7185',
+                                border: '1px solid rgba(244, 63, 94, 0.2)', cursor: 'pointer',
+                                transition: 'all 0.3s ease',
+                                display: 'flex', alignItems: 'center', gap: '8px'
                             }}
+                            onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(244, 63, 94, 0.2)'; }}
+                            onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(244, 63, 94, 0.1)'; }}
                         >
-                            Cancel Booking
+                            <XCircle size={16} /> Cancel
                         </button>
                     )}
 
@@ -137,80 +222,106 @@ const BookingCard = ({ booking, onCancelled, onCertificate }) => {
                             onClick={handleCertificate}
                             disabled={certLoading}
                             style={{
-                                padding: '7px 16px', borderRadius: '7px', fontSize: '0.82rem', fontWeight: '600',
-                                background: 'rgba(16,185,129,0.1)', color: '#34d399',
-                                border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer'
+                                padding: '8px 18px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: '700',
+                                background: 'rgba(16, 185, 129, 0.1)', color: '#34d399',
+                                border: '1px solid rgba(16, 185, 129, 0.2)', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: '8px'
                             }}
                         >
-                            {certLoading ? 'Generating...' : '🎓 Get Certificate'}
+                            {certLoading ? 'Processing...' : <><GraduationCap size={16} /> Claim Certificate</>}
                         </button>
                     )}
 
-                    {booking.certificateGenerated && booking.certificatePath && (
+                    {booking.status === 'attended' && booking.certificateGenerated && (
                         <button
                             onClick={() => navigate(`/bookings/${booking.bookingId}/certificate`)}
                             style={{
-                                padding: '7px 16px', borderRadius: '7px', fontSize: '0.82rem', fontWeight: '600',
-                                background: 'rgba(16,185,129,0.1)', color: '#34d399',
-                                border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer'
+                                padding: '8px 18px', borderRadius: '10px', fontSize: '0.85rem', fontWeight: '700',
+                                background: 'rgba(16, 185, 129, 0.1)', color: '#34d399',
+                                border: '1px solid rgba(16, 185, 129, 0.2)', cursor: 'pointer',
+                                display: 'flex', alignItems: 'center', gap: '8px'
                             }}
                         >
-                            📄 Download Certificate
+                            <Download size={16} /> Download Certificate
                         </button>
                     )}
                 </div>
             </div>
 
-            {/* Cancel modal */}
+            {/* Premium Cancel Modal */}
             {showCancel && (
                 <div style={{
-                    position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.7)', zIndex: 1000,
-                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '1rem'
+                    position: 'fixed', inset: 0, background: 'rgba(15, 23, 42, 0.8)', zIndex: 1000,
+                    display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '20px',
+                    backdropFilter: 'blur(10px)', animation: 'fadeIn 0.3s ease'
                 }}>
-                    <div style={{
-                        background: '#1e293b', border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '16px', padding: '2rem', width: '100%', maxWidth: '440px'
+                    <div className="glass-card" style={{
+                        padding: '40px', width: '100%', maxWidth: '480px',
+                        position: 'relative', border: '1px solid rgba(255,255,255,0.1)'
                     }}>
-                        <h3 style={{ marginBottom: '0.5rem', fontSize: '1.2rem' }}>Cancel Booking</h3>
-                        <p style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '1.25rem' }}>
-                            Are you sure you want to cancel your booking for <strong style={{ color: '#f1f5f9' }}>{booking.event?.title}</strong>?
+                        <div style={{ 
+                            width: '64px', height: '64px', borderRadius: '20px', 
+                            background: 'rgba(244, 63, 94, 0.1)', color: '#f43f5e',
+                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                            marginBottom: '24px'
+                        }}>
+                            <AlertCircle size={32} />
+                        </div>
+                        <h3 style={{ fontSize: '1.8rem', fontWeight: '800', color: 'white', marginBottom: '12px' }}>Are you sure?</h3>
+                        <p style={{ color: '#94a3b8', fontSize: '1.05rem', lineHeight: '1.6', marginBottom: '24px' }}>
+                            You are about to cancel your seat for <strong style={{ color: 'white' }}>{booking.event?.title}</strong>. This action cannot be undone on the day of the event.
                         </p>
-                        <textarea
-                            placeholder="Reason for cancellation (optional)"
-                            value={reason}
-                            onChange={e => setReason(e.target.value)}
-                            rows={3}
-                            style={{
-                                width: '100%', padding: '10px 14px', borderRadius: '8px', fontSize: '0.9rem',
-                                background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
-                                color: 'white', resize: 'none', outline: 'none', boxSizing: 'border-box', marginBottom: '1.25rem'
-                            }}
-                        />
-                        <div style={{ display: 'flex', gap: '0.75rem' }}>
+                        
+                        <div style={{ marginBottom: '24px' }}>
+                            <label style={{ display: 'block', fontSize: '0.75rem', fontWeight: '700', color: '#64748b', textTransform: 'uppercase', marginBottom: '8px' }}>Reason for cancellation</label>
+                            <textarea
+                                placeholder="Tell us why you're cancelling..."
+                                value={reason}
+                                onChange={e => setReason(e.target.value)}
+                                rows={3}
+                                style={{
+                                    width: '100%', padding: '15px', borderRadius: '12px', fontSize: '1rem',
+                                    background: 'rgba(15, 23, 42, 0.5)', border: '1px solid rgba(255,255,255,0.1)',
+                                    color: 'white', resize: 'none', outline: 'none', transition: 'border-color 0.3s'
+                                }}
+                                onFocus={e => e.currentTarget.style.borderColor = '#f43f5e'}
+                                onBlur={e => e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'}
+                            />
+                        </div>
+
+                        <div style={{ display: 'flex', gap: '16px' }}>
                             <button
                                 onClick={handleCancel}
                                 disabled={cancelling}
+                                className="btn-primary"
                                 style={{
-                                    flex: 1, padding: '10px', borderRadius: '8px', fontWeight: '600', fontSize: '0.9rem',
-                                    background: 'linear-gradient(135deg,#ef4444,#dc2626)', color: 'white', border: 'none', cursor: 'pointer'
+                                    flex: 1, background: 'linear-gradient(135deg, #f43f5e 0%, #be123c 100%)',
+                                    padding: '14px', borderRadius: '12px', fontSize: '1rem'
                                 }}
                             >
-                                {cancelling ? 'Cancelling...' : 'Yes, Cancel'}
+                                {cancelling ? 'Processing...' : 'Yes, Cancel Reservation'}
                             </button>
                             <button
                                 onClick={() => { setShowCancel(false); setReason(''); }}
                                 style={{
-                                    flex: 1, padding: '10px', borderRadius: '8px', fontWeight: '600', fontSize: '0.9rem',
+                                    flex: 1, padding: '14px', borderRadius: '12px', fontWeight: '700', fontSize: '1rem',
                                     background: 'rgba(255,255,255,0.05)', color: '#94a3b8',
                                     border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer'
                                 }}
                             >
-                                Keep Booking
+                                No, Keep it
                             </button>
                         </div>
                     </div>
                 </div>
             )}
+            
+            <style>{`
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: scale(0.95); }
+                    to { opacity: 1; transform: scale(1); }
+                }
+            `}</style>
         </div>
     );
 };

@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import axios from 'axios';
 import eventService from '../services/eventService';
 
 const CreateEvent = () => {
@@ -17,7 +16,6 @@ const CreateEvent = () => {
     const [errors, setErrors] = useState({});
     const [error, setError] = useState('');
     const navigate = useNavigate();
-    const [error, setError] = useState('');
 
     const validateForm = () => {
         let newErrors = {};
@@ -53,14 +51,7 @@ const CreateEvent = () => {
         setUploading(true);
 
         try {
-            const user = JSON.parse(localStorage.getItem('user'));
-            const config = {
-                headers: {
-                    'Content-Type': 'multipart/form-data',
-                    Authorization: `Bearer ${user?.token}`
-                }
-            };
-            const { data } = await axios.post('http://localhost:5000/api/users/upload', uploadData, config);
+            const data = await eventService.uploadImage(uploadData);
             setFormData(prev => ({ ...prev, image: data.url }));
             setUploading(false);
         } catch (err) {

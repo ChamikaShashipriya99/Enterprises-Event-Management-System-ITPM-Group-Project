@@ -1,13 +1,9 @@
 // frontend/src/pages/AdminDashboard.jsx
-// UPDATED: Adds booking stats card and Booking Management quick link.
-// All existing stat cards are preserved. Only 2 additions made.
-
-import { useState, useEffect } from 'react';
 import { useState, useEffect, useContext } from 'react';
 import { Link } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import eventService from '../services/eventService';
-import bookingService from '../services/bookingService';   // NEW
+import bookingService from '../services/bookingService';
 import chatService from '../services/chatService';
 import Skeleton from '../components/Skeleton';
 import { 
@@ -34,14 +30,21 @@ import {
 } from 'recharts';
 
 const AdminDashboard = () => {
+    const { socket, unreadCount } = useContext(AuthContext);
+    const [loading, setLoading] = useState(true);
+    
     const [stats, setStats] = useState({
         totalUsers: 0,
         totalEvents: 0,
         totalOrganizers: 0,
         totalStudents: 0
     });
-    // NEW: booking summary
-    const [bookingStats, setBookingStats] = useState({ total: 0, attended: 0 });
+    
+    const [bookingStats, setBookingStats] = useState({ 
+        total: 0, 
+        attended: 0 
+    });
+    
     const [chatStats, setChatStats] = useState({
         activeNow: 0,
         todayMsgs: 0,
@@ -55,55 +58,44 @@ const AdminDashboard = () => {
             announcementReach: 0
         }
     });
-    const [loading, setLoading] = useState(true);
-    const { socket, unreadCount } = useContext(AuthContext);
 
-    const fetchStats = async (showLoading = false) => {
+    const fetchData = async (showLoading = false) => {
         try {
             if (showLoading) setLoading(true);
             const user = JSON.parse(localStorage.getItem('user'));
             const token = user?.token;
             
-            const [eventRes, chatRes] = await Promise.all([
+            const [eventRes, bookRes, chatRes] = await Promise.all([
                 eventService.getAdminStats(),
+                bookingService.getAllBookings(),
                 chatService.getChatStats(token)
             ]);
             
             setStats(eventRes.data);
+            
+            const bookings = bookRes.data || [];
+            setBookingStats({
+                total: bookings.length,
+                attended: bookings.filter(b => b.status === 'attended').length
+            });
+            
             setChatStats(chatRes);
-            setLoading(false);
         } catch (error) {
-            console.error('Error fetching admin stats:', error);
+            console.error('Error fetching admin dashboard stats:', error);
+        } finally {
             setLoading(false);
         }
     };
 
+    // Initial load
     useEffect(() => {
-        const fetchStats = async () => {
-            try {
-                const [eventRes, bookRes] = await Promise.all([
-                    eventService.getAdminStats(),
-                    bookingService.getAllBookings()       // NEW
-                ]);
-                setStats(eventRes.data);
-                // NEW: derive quick stats from bookings list
-                const bookings = bookRes.data || [];
-                setBookingStats({
-                    total: bookings.length,
-                    attended: bookings.filter(b => b.status === 'attended').length
-                });
-                setLoading(false);
-            } catch (error) {
-                console.error('Error fetching admin stats:', error);
-                setLoading(false);
-            }
-        };
-        fetchStats();
+        fetchData(true);
     }, []);
-        fetchStats(true);
 
+    // Socket real-time updates for chat
+    useEffect(() => {
         if (socket) {
-            const handleUpdate = () => fetchStats(false);
+            const handleUpdate = () => fetchData(false);
             
             socket.on("message-received", handleUpdate);
             socket.on("message-removed", handleUpdate);
@@ -121,17 +113,17 @@ const AdminDashboard = () => {
         }
     }, [socket]);
 
-    if (loading) return <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>Loading stats...</div>;
+    if (loading) return (
+        <div className="glass-card" style={{ padding: '4rem', textAlign: 'center', margin: '2rem 5%' }}>
+            <div style={{ marginBottom: '1rem' }}><Clock size={40} className="spin" style={{ color: '#6366f1' }} /></div>
+            <h2 style={{ color: '#94a3b8' }}>Synchronizing Dashboard Data...</h2>
+        </div>
+    );
 
-    const statCards = [
-        { title: 'Total Users', value: stats.totalUsers, icon: '👥', color: '#6366f1' },
-        { title: 'Total Events', value: stats.totalEvents, icon: '📅', color: '#a855f7' },
-        { title: 'System Organizers', value: stats.totalOrganizers, icon: '🏗️', color: '#ec4899' },
-        { title: 'Active Students', value: stats.totalStudents, icon: '🎓', color: '#10b981' },
-        // NEW stat card
-        { title: 'Total Bookings', value: bookingStats.total, icon: '🎟️', color: '#f59e0b' },
+    const mainStatCards = [
         { title: 'Total Users', value: stats.totalUsers, icon: <Users size={28} />, color: '#6366f1' },
         { title: 'Total Events', value: stats.totalEvents, icon: <Calendar size={28} />, color: '#a855f7' },
+        { title: 'Registered Bookings', value: bookingStats.total, icon: <Zap size={28} />, color: '#f59e0b' },
         { title: 'System Organizers', value: stats.totalOrganizers, icon: <Building2 size={28} />, color: '#ec4899' },
         { title: 'Active Students', value: stats.totalStudents, icon: <GraduationCap size={28} />, color: '#10b981' }
     ];
@@ -153,7 +145,7 @@ const AdminDashboard = () => {
                 gap: '1.5rem',
                 marginBottom: '3rem'
             }}>
-                {statCards.map((card, index) => (
+                {mainStatCards.map((card, index) => (
                     <div key={index} className="glass-card" style={{
                         padding: '1.5rem',
                         display: 'flex',
@@ -193,7 +185,7 @@ const AdminDashboard = () => {
                             <span style={{ fontSize: '0.7rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '2px 8px', borderRadius: '10px' }}>Real-time</span>
                         </div>
                         <div style={{ color: '#94a3b8', fontSize: '0.9rem', fontWeight: '500', marginTop: '0.5rem' }}>{card.title}</div>
-                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{card.value}</div>
+                        <div style={{ fontSize: '2rem', fontWeight: 'bold', color: 'white' }}>{chatStats.activeNow > 0 ? card.value : 0}</div>
                         <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{card.desc}</div>
                     </div>
                 ))}
@@ -254,7 +246,7 @@ const AdminDashboard = () => {
                 </div>
 
                 {/* 3. Content Breakdown Pie Chart */}
-                <div className="glass-card" style={{ padding: '2rem', minHeight: '400px', gridColumn: 'span 1' }}>
+                <div className="glass-card" style={{ padding: '2rem', minHeight: '400px' }}>
                     <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <PieChartIcon size={18} /> Content Distribution
                     </h3>
@@ -297,7 +289,7 @@ const AdminDashboard = () => {
                         <span style={{ color: '#94a3b8' }}>Self-Deletion Rate</span>
                         <Trash2 size={24} style={{ color: '#ef4444' }} />
                     </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{chatStats.insights?.selfDeletionRate}%</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{chatStats.insights?.selfDeletionRate || 0}%</div>
                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
                         Frequency of student-initiated message removals.
                     </div>
@@ -307,15 +299,15 @@ const AdminDashboard = () => {
                         <span style={{ color: '#94a3b8' }}>Announcement Reach</span>
                         <Megaphone size={24} style={{ color: '#a855f7' }} />
                     </div>
-                    <div style={{ fontSize: '2.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{chatStats.insights?.announcementReach}%</div>
+                    <div style={{ fontSize: '2.5rem', fontWeight: '800', margin: '0.5rem 0' }}>{chatStats.insights?.announcementReach || 0}%</div>
                     <div style={{ fontSize: '0.8rem', color: '#64748b' }}>
                         Percentage of students who read the latest admin update.
                     </div>
                 </div>
             </div>
 
+            <h2 style={{ fontSize: '1.8rem', marginBottom: '1.5rem', fontWeight: '700', marginTop: '3rem' }}>Management <span style={{ color: '#6366f1' }}>Portal</span></h2>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
-                {/* Existing cards — untouched */}
                 <div className="glass-card" style={{ padding: '2rem' }}>
                     <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
                         <Users size={20} /> User Management
@@ -334,7 +326,6 @@ const AdminDashboard = () => {
                         Manage Events
                     </Link>
                 </div>
-                {/* NEW: Booking Management card */}
                 <div className="glass-card" style={{ padding: '2rem' }}>
                     <h3 style={{ marginBottom: '1rem' }}>Booking Management</h3>
                     <p style={{ color: '#94a3b8', marginBottom: '0.5rem' }}>

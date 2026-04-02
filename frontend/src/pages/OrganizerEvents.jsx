@@ -164,10 +164,34 @@ const OrganizerEvents = () => {
                                         onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.02)'}
                                         onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
                                     >
-                                        {/* Event name */}
-                                        <td style={{ padding: '20px', fontWeight: '700', fontSize: '0.95rem', maxWidth: '220px' }}>
-                                            <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-                                                {event.title}
+                                        {/* Event name with Image */}
+                                        <td style={{ padding: '20px', fontWeight: '700', fontSize: '0.95rem', maxWidth: '300px' }}>
+                                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                                <div style={{ 
+                                                    width: '44px', 
+                                                    height: '44px', 
+                                                    borderRadius: '8px', 
+                                                    overflow: 'hidden',
+                                                    background: 'rgba(255,255,255,0.05)',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    flexShrink: 0,
+                                                    border: '1px solid rgba(255,255,255,0.1)'
+                                                }}>
+                                                    {event.image ? (
+                                                        <img 
+                                                            src={`http://localhost:5000${event.image}`} 
+                                                            alt={event.title} 
+                                                            style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
+                                                        />
+                                                    ) : (
+                                                        <Calendar size={20} color="#94a3b8" />
+                                                    )}
+                                                </div>
+                                                <div style={{ whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                                    {event.title}
+                                                </div>
                                             </div>
                                         </td>
 
@@ -268,59 +292,6 @@ const OrganizerEvents = () => {
                                     </tr>
                                 );
                             })
-                            events.map(event => (
-                                <tr key={event._id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                                    <td style={{ padding: '20px', fontWeight: 'bold' }}>
-                                        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
-                                            <div style={{ 
-                                                width: '50px', 
-                                                height: '50px', 
-                                                borderRadius: '8px', 
-                                                overflow: 'hidden',
-                                                background: 'rgba(255,255,255,0.05)',
-                                                display: 'flex',
-                                                alignItems: 'center',
-                                                justifyContent: 'center',
-                                                flexShrink: 0
-                                            }}>
-                                                {event.image ? (
-                                                    <img 
-                                                        src={`http://localhost:5000${event.image}`} 
-                                                        alt={event.title} 
-                                                        style={{ width: '100%', height: '100%', objectFit: 'cover' }} 
-                                                    />
-                                                ) : (
-                                                <Calendar size={24} color="#94a3b8" />
-                                                )}
-                                            </div>
-                                            <span>{event.title}</span>
-                                        </div>
-                                    </td>
-                                    <td style={{ padding: '20px' }}>{new Date(event.date).toLocaleDateString()}</td>
-                                    <td style={{ padding: '20px', color: '#94a3b8' }}>{event.location}</td>
-                                    <td style={{ padding: '20px' }}>
-                                        <span style={{ padding: '4px 10px', borderRadius: '4px', background: 'rgba(99, 102, 241, 0.1)', color: '#6366f1' }}>
-                                            {event.registeredUsers?.length || 0} / {event.capacity}
-                                        </span>
-                                    </td>
-                                    <td style={{ padding: '20px' }}>
-                                        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center' }}>
-                                            <Link
-                                                to={`/edit-event/${event._id}`}
-                                                style={{ textDecoration: 'none', color: '#6366f1', fontSize: '0.9rem', fontWeight: 'bold' }}
-                                            >
-                                                Edit
-                                            </Link>
-                                            <button
-                                                onClick={() => handleDelete(event._id)}
-                                                style={{ background: 'none', border: 'none', color: '#ef4444', cursor: 'pointer' }}
-                                            >
-                                                Delete
-                                            </button>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ))
                         )}
                     </tbody>
                 </table>

@@ -112,6 +112,7 @@ const AllEvents = () => {
                         (typeof u === 'string' ? u === userId : u._id === userId)
                     );
 
+                    // Show blur and overlay if event passed OR if full AND user is NOT registered
                     const showOverlay = isPassed || (isFull && !isUserRegistered);
 
                     return (
@@ -128,7 +129,7 @@ const AllEvents = () => {
                                         ) : (
                                             <>
                                                 <Users size={40} className="passed-icon" style={{ color: '#10b981' }} />
-                                                <h3 className="passed-title">Full House</h3>
+                                                <h3 className="passed-title">House Full</h3>
                                                 <p className="passed-quote">"The house is packed! All spots have been secured."</p>
                                             </>
                                         )}

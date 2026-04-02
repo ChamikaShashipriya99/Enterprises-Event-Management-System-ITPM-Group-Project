@@ -1,16 +1,8 @@
 // frontend/src/pages/StudentDashboard.jsx
-// UPDATED: Replaces registered events section with booking engine data.
-// Adds: booking count stats, My Bookings link, certificate download.
-
 import { useState, useEffect, useContext } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import bookingService from '../services/bookingService';
-
-const StudentDashboard = () => {
-    const { currentUser } = useContext(AuthContext);
-    const navigate = useNavigate();
-    const [bookings, setBookings] = useState([]);
 import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
 import { 
@@ -29,35 +21,33 @@ import {
 
 const StudentDashboard = () => {
     const { currentUser, refreshProfile, unreadCount } = useContext(AuthContext);
-    const [registeredEvents, setRegisteredEvents] = useState([]);
+    const navigate = useNavigate();
+    
+    // States
+    const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
 
+    const fetchData = async () => {
+        try {
+            setLoading(true);
+            const res = await bookingService.getMyBookings();
+            setBookings(res.data || []);
+        } catch (error) {
+            console.error('Error fetching student dashboard data:', error);
+        } finally {
+            setLoading(false);
+        }
+    };
+
     useEffect(() => {
-        const fetchData = async () => {
-            try {
-                const res = await bookingService.getMyBookings();
-                setBookings(res.data || []);
-                await refreshProfile();
-                const response = await eventService.getAllEvents();
-                const allEvents = response.data;
-                const userEvents = allEvents.filter(event =>
-                    event.registeredUsers?.includes(currentUser?._id)
-                );
-                setRegisteredEvents(userEvents);
-                setLoading(false);
-            } catch (error) {
-                console.error('Error fetching bookings:', error);
-            } finally {
-                setLoading(false);
-            }
-        };
         if (currentUser) fetchData();
     }, [currentUser]);
 
+    // Derived stats
     const confirmed = bookings.filter(b => b.status === 'confirmed');
     const attended = bookings.filter(b => b.status === 'attended');
     const certs = attended.filter(b => b.certificateGenerated);
-    const upcoming = confirmed.filter(b => new Date(b.event?.date) > new Date());
+    const upcoming = confirmed.filter(b => b.event && new Date(b.event.date) > new Date());
 
     const handleDownloadCert = async (b) => {
         try {
@@ -66,106 +56,41 @@ const StudentDashboard = () => {
             const url = window.URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = `certificate_${res.data.certificateId}.pdf`;
+            a.download = `certificate_${b.event?.title || 'event'}.pdf`;
             a.click();
             window.URL.revokeObjectURL(url);
         } catch (err) {
-            alert(err.response?.data?.message || 'Download failed');
+            alert(err.response?.data?.message || 'Certificate download failed. Please ensure the event is completed.');
         }
     };
 
     const statCards = [
-        { title: 'Registered Events', value: registeredEvents.length, icon: <Calendar size={24} />, color: '#6366f1' },
-        { title: 'Certificates Earned', value: currentUser?.certificates?.length || 0, icon: <Award size={24} />, color: '#10b981' },
-        { title: 'Upcoming Today', value: registeredEvents.filter(e => new Date(e.date).toDateString() === new Date().toDateString()).length, icon: <Star size={24} />, color: '#f59e0b' },
-        { title: 'Community Messages', value: unreadCount, icon: <MessageCircle size={24} />, color: '#a855f7' }
+        { title: 'Total Bookings', value: bookings.length, icon: <Calendar size={24} />, color: '#6366f1' },
+        { title: 'Upcoming Events', value: upcoming.length, icon: <Star size={24} />, color: '#f59e0b' },
+        { title: 'Certificates Earned', value: certs.length, icon: <Award size={24} />, color: '#10b981' },
+        { title: 'Chat Notifications', value: unreadCount || 0, icon: <MessageCircle size={24} />, color: '#a855f7' }
     ];
 
     if (loading) return (
-        <div className="glass-card" style={{ padding: '2rem', textAlign: 'center' }}>
-            Loading dashboard...
         <div style={{ padding: '40px 5%' }}>
             <div style={{ marginBottom: '40px' }}>
                 <Skeleton variant="title" width="400px" style={{ marginBottom: '10px' }} />
                 <Skeleton variant="text" width="60%" />
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '20px', marginBottom: '40px' }}>
-                {[1, 2, 3, 4].map(i => <Skeleton key={i} height="120px" variant="rect" />)}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '40px' }}>
+                {[1, 2, 3, 4].map(i => <Skeleton key={i} height="120px" variant="rect" style={{ borderRadius: '16px' }} />)}
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '2fr 1.2fr', gap: '30px' }}>
-                <Skeleton height="400px" variant="rect" />
-                <Skeleton height="400px" variant="rect" />
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '30px' }}>
+                <Skeleton height="400px" variant="rect" style={{ borderRadius: '16px' }} />
+                <Skeleton height="400px" variant="rect" style={{ borderRadius: '16px' }} />
             </div>
         </div>
     );
 
     return (
-        <div style={{ padding: '40px 5%' }}>
-            {/* Header */}
-            <div style={{ marginBottom: '40px' }}>
-                <h1 style={{ fontSize: '2.5rem', marginBottom: '10px', fontWeight: '800' }}>
-                    Student <span style={{ color: '#6366f1' }}>Dashboard</span>
-                </h1>
-                <p style={{ color: '#94a3b8' }}>
-                    Welcome back, {currentUser?.name}. Track your events and certificates.
-                </p>
-            </div>
-
-            {/* Stats */}
-            <div style={{
-                display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(180px,1fr))',
-                gap: '1.25rem', marginBottom: '2.5rem'
-            }}>
-                {[
-                    { label: 'Total Bookings', value: bookings.length, icon: '📋', color: '#6366f1' },
-                    { label: 'Upcoming', value: upcoming.length, icon: '🚀', color: '#818cf8' },
-                    { label: 'Events Attended', value: attended.length, icon: '✅', color: '#34d399' },
-                    { label: 'Certificates', value: certs.length, icon: '🎓', color: '#fbbf24' },
-                ].map(stat => (
-                    <div key={stat.label} className="glass-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
-                        <div style={{ fontSize: '1.6rem', marginBottom: '0.3rem' }}>{stat.icon}</div>
-                        <div style={{ fontSize: '1.9rem', fontWeight: '800', color: stat.color }}>{stat.value}</div>
-                        <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: '600' }}>{stat.label}</div>
-                    </div>
-                ))}
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: '1.75rem' }}>
-
-                {/* Upcoming Bookings */}
-                <section className="glass-card" style={{ padding: '1.75rem' }}>
-                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.25rem' }}>
-                        <h2 style={{ fontSize: '1.25rem', fontWeight: '700', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                            <span style={{ color: '#6366f1' }}>📅</span> Upcoming Events
-                        </h2>
-                        <Link to="/my-bookings" style={{ fontSize: '0.82rem', color: '#6366f1', fontWeight: '600' }}>
-                            View All →
-                        </Link>
-                    </div>
-
-                    {upcoming.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {upcoming.slice(0, 4).map(b => (
-                                <Link key={b._id} to={`/bookings/${b.bookingId}`} style={{
-                                    padding: '12px 14px', background: 'rgba(255,255,255,0.04)',
-                                    borderRadius: '9px', borderLeft: '3px solid #6366f1',
-                                    textDecoration: 'none', color: 'white', display: 'block',
-                                    transition: 'transform 0.2s'
-                                }}
-                                    onMouseEnter={e => e.currentTarget.style.transform = 'translateX(4px)'}
-                                    onMouseLeave={e => e.currentTarget.style.transform = 'translateX(0)'}
-                                >
-                                    <div style={{ fontWeight: '600', fontSize: '0.9rem', marginBottom: '3px' }}>
-                                        {b.event?.title}
-                                    </div>
-                                    <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                                        📍 {b.event?.location} &nbsp;·&nbsp; 📅 {new Date(b.event?.date).toLocaleDateString()}
-                                    </div>
-                                    <div style={{ fontSize: '0.72rem', color: '#64748b', fontFamily: 'monospace', marginTop: '2px' }}>
-                                        {b.bookingId}
         <div style={{ padding: '40px 5%', maxWidth: '1600px', margin: '0 auto' }}>
             {/* Header section */}
-            <header style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end' }}>
+            <header style={{ marginBottom: '40px', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-end', flexWrap: 'wrap', gap: '1.5rem' }}>
                 <div>
                     <h1 style={{ fontSize: '2.8rem', marginBottom: '8px', fontWeight: '900', letterSpacing: '-1px' }}>
                         Student <span style={{ background: 'linear-gradient(to right, #6366f1, #a855f7)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Hub</span>
@@ -231,17 +156,17 @@ const StudentDashboard = () => {
                         <h2 style={{ fontSize: '1.6rem', fontWeight: '800', display: 'flex', alignItems: 'center', gap: '12px' }}>
                             <Calendar size={24} style={{ color: '#6366f1' }} /> My Schedule
                         </h2>
-                        <Link to="/events" style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                        <Link to="/events" style={{ fontSize: '0.85rem', color: '#6366f1', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '5px', textDecoration: 'none' }}>
                             Explore More <ChevronRight size={14} />
                         </Link>
                     </div>
 
-                    {registeredEvents.length > 0 ? (
+                    {upcoming.length > 0 ? (
                         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
-                            {registeredEvents.map((event) => (
+                            {upcoming.map((b) => (
                                 <Link
-                                    key={event._id}
-                                    to={`/events/${event._id}`}
+                                    key={b._id}
+                                    to={`/bookings/${b.bookingId}`}
                                     style={{
                                         padding: '20px',
                                         background: 'rgba(255,255,255,0.03)',
@@ -266,7 +191,7 @@ const StudentDashboard = () => {
                                     }}
                                 >
                                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'start' }}>
-                                        <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{event.title}</div>
+                                        <div style={{ fontWeight: '700', fontSize: '1.1rem' }}>{b.event?.title}</div>
                                         <span style={{ 
                                             fontSize: '0.7rem', 
                                             padding: '4px 8px', 
@@ -279,117 +204,38 @@ const StudentDashboard = () => {
                                             alignItems: 'center',
                                             gap: '4px'
                                         }}>
-                                            <CheckCircle2 size={10} /> Active
+                                            <CheckCircle2 size={10} /> Confirmed
                                         </span>
                                     </div>
-                                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', display: 'flex', gap: '15px', alignItems: 'center' }}>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} /> {event.location}</span>
-                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> {new Date(event.date).toLocaleDateString()}</span>
+                                    <div style={{ fontSize: '0.85rem', color: '#94a3b8', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} /> {b.event?.location}</span>
+                                        <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><Clock size={14} /> {new Date(b.event?.date).toLocaleDateString()}</span>
                                     </div>
                                     <div style={{ height: '4px', width: '100%', background: 'rgba(255,255,255,0.05)', borderRadius: '2px', marginTop: '4px' }}>
-                                        <div style={{ height: '100%', width: '40%', background: '#6366f1', borderRadius: '2px' }}></div>
+                                        <div style={{ height: '100%', width: '100%', background: 'linear-gradient(90deg, #6366f1, #a855f7)', borderRadius: '2px' }}></div>
                                     </div>
                                 </Link>
                             ))}
                         </div>
                     ) : (
-                        <div style={{ textAlign: 'center', padding: '1.5rem' }}>
-                            <p style={{ color: '#64748b', marginBottom: '1rem', fontSize: '0.9rem' }}>
-                                No upcoming bookings yet.
-                            </p>
-                            <Link to="/events" className="btn-primary" style={{
-                                padding: '9px 20px', textDecoration: 'none', fontSize: '0.85rem'
-                            }}>
-                                Browse Events
-                            </Link>
                         <div style={{ textAlign: 'center', padding: '60px 20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', border: '1px dashed rgba(255,255,255,0.1)' }}>
                             <div style={{ fontSize: '3rem', marginBottom: '15px', color: '#64748b' }}><Search size={48} style={{ margin: '0 auto' }} /></div>
-                            <h3 style={{ marginBottom: '10px' }}>No events yet</h3>
-                            <p style={{ color: '#64748b', marginBottom: '25px', fontSize: '0.9rem' }}>You haven't registered for any events. Discover new opportunities today!</p>
-                            <Link to="/events" className="btn-primary">Browse Events</Link>
+                            <h3 style={{ marginBottom: '10px' }}>No upcoming events</h3>
+                            <p style={{ color: '#64748b', marginBottom: '25px', fontSize: '0.9rem' }}>You haven't booked any events yet. Discover new opportunities today!</p>
+                            <Link to="/events" className="btn-primary" style={{ textDecoration: 'none' }}>Browse Events</Link>
                         </div>
                     )}
                 </section>
 
-                {/* Certificates */}
-                <section className="glass-card" style={{ padding: '1.75rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ color: '#fbbf24' }}>🎓</span> My Certificates
-                    </h2>
-
-                    {attended.length > 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                            {attended.slice(0, 4).map(b => (
-                                <div key={b._id} style={{
-                                    padding: '12px 14px', background: 'rgba(255,255,255,0.04)',
-                                    borderRadius: '9px', display: 'flex',
-                                    justifyContent: 'space-between', alignItems: 'center'
-                                }}>
-                                    <div>
-                                        <div style={{ fontWeight: '600', fontSize: '0.9rem', color: '#f1f5f9' }}>
-                                            {b.event?.title}
-                                        </div>
-                                        <div style={{ fontSize: '0.78rem', color: '#94a3b8' }}>
-                                            {new Date(b.event?.date).toLocaleDateString()}
-                                        </div>
-                                    </div>
-                                    <button
-                                        onClick={() => handleDownloadCert(b)}
-                                        style={{
-                                            padding: '6px 14px', borderRadius: '6px', fontSize: '0.78rem', fontWeight: '600',
-                                            background: 'rgba(16,185,129,0.1)', color: '#34d399',
-                                            border: '1px solid rgba(16,185,129,0.25)', cursor: 'pointer',
-                                            whiteSpace: 'nowrap'
-                                        }}
-                                    >
-                                        📄 Download
-                                    </button>
-                                </div>
-                            ))}
-                        </div>
-                    ) : (
-                        <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
-                            Attend events to earn certificates. They'll appear here.
-                        </p>
-                    )}
-                </section>
-
-                {/* Quick Actions */}
-                <section className="glass-card" style={{ padding: '1.75rem' }}>
-                    <h2 style={{ fontSize: '1.25rem', fontWeight: '700', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
-                        <span style={{ color: '#a855f7' }}>⚡</span> Quick Actions
-                    </h2>
-                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
-                        {[
-                            { label: '🔍 Browse Events', to: '/events', color: '#6366f1' },
-                            { label: '📋 All My Bookings', to: '/my-bookings', color: '#818cf8' },
-                            { label: '👤 Edit Profile', to: '/edit-profile', color: '#a855f7' },
-                        ].map(item => (
-                            <Link key={item.to} to={item.to} style={{
-                                padding: '11px 16px', borderRadius: '9px',
-                                background: 'rgba(255,255,255,0.04)',
-                                border: '1px solid rgba(255,255,255,0.07)',
-                                color: item.color, fontWeight: '600', fontSize: '0.9rem',
-                                textDecoration: 'none', display: 'block',
-                                transition: 'background 0.2s, transform 0.2s'
-                            }}
-                                onMouseEnter={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.08)'; e.currentTarget.style.transform = 'translateX(4px)'; }}
-                                onMouseLeave={e => { e.currentTarget.style.background = 'rgba(255,255,255,0.04)'; e.currentTarget.style.transform = 'translateX(0)'; }}
-                            >
-                                {item.label}
-                            </Link>
-                        ))}
-                    </div>
-                </section>
                 {/* Right Column: Certificates & Community */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
                     <section className="glass-card" style={{ padding: '30px', borderTop: '4px solid #10b981' }}>
                         <h2 style={{ fontSize: '1.6rem', fontWeight: '800', marginBottom: '25px', display: 'flex', alignItems: 'center', gap: '12px' }}>
-                            <Award size={24} style={{ color: '#10b981' }} /> Achievements
+                            <Award size={24} style={{ color: '#10b981' }} /> My Certificates
                         </h2>
-                        {currentUser?.certificates?.length > 0 ? (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(130px, 1fr))', gap: '15px' }}>
-                                {currentUser.certificates.map((cert, index) => (
+                        {certs.length > 0 ? (
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px' }}>
+                                {certs.map((b, index) => (
                                     <div key={index} style={{
                                         padding: '20px',
                                         background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)',
@@ -402,20 +248,27 @@ const StudentDashboard = () => {
                                         gap: '12px'
                                     }}>
                                         <Award size={32} style={{ color: '#10b981' }} />
-                                        <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'white' }}>{cert}</div>
-                                        <button style={{
-                                            padding: '6px 14px',
-                                            background: '#10b981',
-                                            color: 'white',
-                                            border: 'none',
-                                            borderRadius: '6px',
-                                            fontSize: '0.75rem',
-                                            fontWeight: '700',
-                                            cursor: 'pointer',
-                                            display: 'flex',
-                                            alignItems: 'center',
-                                            gap: '5px'
-                                        }}><Download size={14} /> Download</button>
+                                        <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                            {b.event?.title}
+                                        </div>
+                                        <button 
+                                            onClick={() => handleDownloadCert(b)}
+                                            style={{
+                                                padding: '6px 14px',
+                                                background: '#10b981',
+                                                color: 'white',
+                                                border: 'none',
+                                                borderRadius: '6px',
+                                                fontSize: '0.75rem',
+                                                fontWeight: '700',
+                                                cursor: 'pointer',
+                                                display: 'flex',
+                                                alignItems: 'center',
+                                                gap: '5px'
+                                            }}
+                                        >
+                                            <Download size={14} /> Download
+                                        </button>
                                     </div>
                                 ))}
                             </div>
@@ -432,7 +285,7 @@ const StudentDashboard = () => {
                         <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '25px', lineHeight: '1.6' }}>
                             Join {unreadCount > 0 ? unreadCount : 'active'} conversations with mentors and peers.
                         </p>
-                        <Link to="/chat" className="btn-primary" style={{ width: '100%', display: 'block', textAlign: 'center' }}>
+                        <Link to="/chat" className="btn-primary" style={{ width: '100%', display: 'block', textAlign: 'center', textDecoration: 'none' }}>
                             Open Chatroom
                         </Link>
                     </section>

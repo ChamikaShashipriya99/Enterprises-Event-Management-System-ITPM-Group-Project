@@ -62,6 +62,18 @@ const getAdminStats = async () => {
     return response.data;
 };
 
+const uploadImage = async (formData) => {
+    const user = JSON.parse(localStorage.getItem('user'));
+    const config = {
+        headers: {
+            'Content-Type': 'multipart/form-data',
+            Authorization: `Bearer ${user?.token}`
+        }
+    };
+    const response = await axios.post(`${API_URL}/users/upload`, formData, config);
+    return response.data;
+};
+
 const eventService = {
     createEvent,
     getMyEvents,
@@ -72,7 +84,8 @@ const eventService = {
     registerForEvent,
     unregisterFromEvent,
     getAdminEvents,
-    getAdminStats
+    getAdminStats,
+    uploadImage
 };
 
 export default eventService;
