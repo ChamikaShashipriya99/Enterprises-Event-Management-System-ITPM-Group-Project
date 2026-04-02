@@ -1,3 +1,13 @@
+// frontend/src/components/Navbar.jsx
+// UPDATED: Adds "My Bookings" link for students and "Check-In" link for organizers.
+// All existing links and logic are untouched.
+
+import { useContext } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
+import { AuthContext } from '../context/AuthContext';
+
+const Navbar = () => {
+    const { currentUser, logout } = useContext(AuthContext);
 import { useContext, useState, useEffect } from 'react';
 import { Link, useNavigate, useLocation } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
@@ -22,13 +32,8 @@ const Navbar = () => {
     const navigate = useNavigate();
     const location = useLocation();
 
-    const handleLogoutTrigger = () => {
-        setIsLogoutModalOpen(true);
-    };
-
-    const confirmLogout = () => {
+    const handleLogout = () => {
         logout();
-        setIsLogoutModalOpen(false);
         navigate('/login');
     };
 
@@ -70,6 +75,49 @@ const Navbar = () => {
             <div style={{ display: 'flex', gap: '2.5rem', alignItems: 'center' }}>
                 {currentUser && currentUser.role === 'student' && (
                     <>
+<<<<<<< feature/induwari/qr-function
+                        {currentUser.role === 'student' && (
+                            <>
+                                <Link to="/student-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
+                                <Link to="/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Explore Events</Link>
+                                {/* NEW */}
+                                <Link to="/my-bookings" style={{ color: '#f8fafc', textDecoration: 'none' }}>My Bookings</Link>
+                            </>
+                        )}
+                        {currentUser.role === 'organizer' && (
+                            <>
+                                <Link to="/organizer-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
+                                <Link to="/organizer-events" style={{ color: '#f8fafc', textDecoration: 'none' }}>My Events</Link>
+                                <Link to="/create-event" style={{ color: '#f8fafc', textDecoration: 'none' }}>Create Event</Link>
+                                {/* NEW */}
+                                <Link to="/checkin" style={{ color: '#f8fafc', textDecoration: 'none' }}>Check-In</Link>
+                            </>
+                        )}
+                        {currentUser.role === 'admin' && (
+                            <>
+                                <Link to="/admin-dashboard" style={{ color: '#f8fafc', textDecoration: 'none' }}>Dashboard</Link>
+                                <Link to="/admin/users" style={{ color: '#f8fafc', textDecoration: 'none' }}>Users</Link>
+                                <Link to="/admin/events" style={{ color: '#f8fafc', textDecoration: 'none' }}>Events</Link>
+                                {/* NEW */}
+                                <Link to="/admin/bookings" style={{ color: '#f8fafc', textDecoration: 'none' }}>Bookings</Link>
+                            </>
+                        )}
+                        <Link to="/profile" style={{ color: '#f8fafc', textDecoration: 'none' }}>Profile</Link>
+
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginLeft: '1rem' }}>
+                            <span style={{ fontSize: '0.8rem', color: '#94a3b8', background: 'rgba(255,255,255,0.05)', padding: '4px 10px', borderRadius: '20px' }}>
+                                {currentUser.name}
+                            </span>
+                            <button onClick={handleLogout} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem' }}>
+                                Logout
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <>
+                        <Link to="/login" style={{ color: '#f8fafc' }}>Login</Link>
+                        <Link to="/register" className="btn-primary">Get Started</Link>
+=======
                         <Link to="/student-dashboard" style={getLinkStyle('/student-dashboard')}><LayoutDashboard size={18} /> Dashboard</Link>
                         <Link to="/events" style={getLinkStyle('/events')}><Compass size={18} /> Explore</Link>
                         <Link to="/chat" style={getLinkStyle('/chat')}>
@@ -87,6 +135,7 @@ const Navbar = () => {
                         </Link>
                         <div style={{ width: '1px', background: 'rgba(255,255,255,0.15)', height: '24px', margin: '0 5px' }}></div>
                         <Link to="/lost-and-found" style={{ ...navLinkStyle, color: '#e879f9', fontWeight: '800' }}><ShieldAlert size={18} /> Recovery</Link>
+>>>>>>> main
                     </>
                 )}
 
@@ -134,6 +183,8 @@ const Navbar = () => {
                     </div>
                 )}
             </div>
+<<<<<<< feature/induwari/qr-function
+=======
 
             <ConfirmModal
                 isOpen={isLogoutModalOpen}
@@ -144,6 +195,7 @@ const Navbar = () => {
                 confirmText="Logout"
                 type="danger"
             />
+>>>>>>> main
         </nav>
     );
 };

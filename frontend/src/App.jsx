@@ -1,3 +1,11 @@
+// frontend/src/App.jsx
+// UPDATED: Adds booking engine routes.
+// All existing routes are untouched. Only new imports and routes added.
+
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { useContext } from 'react';
+import { AuthProvider, AuthContext } from './context/AuthContext';
+import Navbar from './components/Navbar';           // UPDATED version (Navbar.updated.jsx)
 import { BrowserRouter as Router, Routes, Route, Navigate, Outlet } from 'react-router-dom';
 import { useContext } from 'react';
 import { AuthProvider, AuthContext } from './context/AuthContext';
@@ -9,15 +17,31 @@ import EditProfile from './pages/EditProfile';
 import AdminUsers from './pages/AdminUsers';
 import Login from './pages/Login';
 import Register from './pages/Register';
-import StudentDashboard from './pages/StudentDashboard';
+import StudentDashboard from './pages/StudentDashboard';    // UPDATED version
 import OrganizerDashboard from './pages/OrganizerDashboard';
-import AdminDashboard from './pages/AdminDashboard';
+import AdminDashboard from './pages/AdminDashboard';        // UPDATED version
 import AdminEvents from './pages/AdminEvents';
 import AdminLostFound from './pages/AdminLostFound';
 import AllEvents from './pages/AllEvents';
-import EventDetail from './pages/EventDetail';
+import EventDetail from './pages/EventDetail';             // UPDATED version
 import CreateEvent from './pages/CreateEvent';
 import OrganizerEvents from './pages/OrganizerEvents';
+
+// NEW — Booking Engine pages (Induwari's module)
+import MyBookings from './pages/bookings/MyBookings';
+import BookingDetail from './pages/bookings/BookingDetail';
+import CheckIn from './pages/bookings/CheckIn';
+import AdminBookings from './pages/bookings/AdminBookings';
+
+const LandingPage = () => {
+  const { currentUser } = useContext(AuthContext);
+
+  if (currentUser) {
+    if (currentUser.role === 'admin') return <Navigate to="/admin-dashboard" />;
+    if (currentUser.role === 'organizer') return <Navigate to="/organizer-dashboard" />;
+    return <Navigate to="/student-dashboard" />;
+  }
+
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import EditEvent from './pages/EditEvent';
@@ -74,6 +98,93 @@ function App() {
       <AuthProvider>
         <Toaster position="top-right" reverseOrder={false} />
         <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* ── Existing routes (unchanged) ── */}
+          <Route path="/student-dashboard" element={
+            <ProtectedRoute role="student">
+              <StudentDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/organizer-dashboard" element={
+            <ProtectedRoute role="organizer">
+              <OrganizerDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/create-event" element={
+            <ProtectedRoute role="organizer">
+              <CreateEvent />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/organizer-events" element={
+            <ProtectedRoute role="organizer">
+              <OrganizerEvents />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/profile" element={
+            <ProtectedRoute>
+              <Profile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/edit-profile" element={
+            <ProtectedRoute>
+              <EditProfile />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin-dashboard" element={
+            <ProtectedRoute role="admin">
+              <AdminDashboard />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/users" element={
+            <ProtectedRoute role="admin">
+              <AdminUsers />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/events" element={
+            <ProtectedRoute role="admin">
+              <AdminEvents />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/events" element={<AllEvents />} />
+          <Route path="/events/:id" element={<EventDetail />} />
+
+          {/* ── NEW: Booking Engine routes (Induwari) ── */}
+          <Route path="/my-bookings" element={
+            <ProtectedRoute role="student">
+              <MyBookings />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/bookings/:bookingId" element={
+            <ProtectedRoute>
+              <BookingDetail />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/checkin" element={
+            <ProtectedRoute>
+              <CheckIn />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/admin/bookings" element={
+            <ProtectedRoute role="admin">
+              <AdminBookings />
+            </ProtectedRoute>
+          } />
+
+          <Route path="/" element={<LandingPage />} />
           {/* Public Routes (No Navbar/Layout or custom for Landing) */}
           <Route element={<MainLayout />}>
             <Route path="/" element={<LandingPage />} />

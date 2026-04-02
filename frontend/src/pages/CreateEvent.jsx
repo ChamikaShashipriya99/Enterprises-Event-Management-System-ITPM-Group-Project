@@ -17,6 +17,7 @@ const CreateEvent = () => {
     const [errors, setErrors] = useState({});
     const [error, setError] = useState('');
     const navigate = useNavigate();
+    const [error, setError] = useState('');
 
     const validateForm = () => {
         let newErrors = {};

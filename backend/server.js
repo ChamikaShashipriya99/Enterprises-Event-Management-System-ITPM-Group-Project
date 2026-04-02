@@ -1,5 +1,10 @@
+// ─────────────────────────────────────────────────────────────────────────────
+// MERGE INSTRUCTIONS FOR server.js
+// Add the booking route to your existing backend/server.js
+// Only the 2 lines marked NEW need to be added.
+// ─────────────────────────────────────────────────────────────────────────────
+
 const express = require('express');
-const path = require('path');
 const dotenv = require('dotenv');
 dotenv.config();
 
@@ -18,7 +23,6 @@ require('./utils/cronJobs');
 app.use(cors());
 app.use(express.json());
 app.use(passport.initialize());
-app.use('/uploads', express.static(path.join(__dirname, '/uploads')));
 
 app.get('/', (req, res) => {
     res.send('API is running...');
@@ -29,6 +33,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const eventRoutes = require('./routes/eventRoutes');
+const bookingRoutes = require('./routes/bookingRoutes'); // NEW
 const notificationRoutes = require('./routes/notificationRoutes');
 const lostItemRoutes = require('./routes/lostItemRoutes');
 const chatRoutes = require('./routes/chatRoutes');
@@ -37,6 +42,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/events', eventRoutes);
+app.use('/api/bookings', bookingRoutes); // NEW
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/lost-found', lostItemRoutes);
 app.use('/api/chat', chatRoutes);
