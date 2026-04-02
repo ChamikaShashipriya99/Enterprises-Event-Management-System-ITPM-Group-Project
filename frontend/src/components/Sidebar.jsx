@@ -34,12 +34,14 @@ const Sidebar = () => {
             { path: '/admin/audit-logs', icon: <History size={20} />, text: 'System Logs' },
             { path: '/chat', icon: <MessageSquare size={20} />, text: 'Messages', badge: unreadCount },
             { path: '/profile?tab=notifications', icon: <Bell size={20} />, text: 'Notifications', badge: systemUnreadCount },
+            { path: '/gallery', icon: <Search size={20} />, text: 'Gallery' },
         ],
         organizer: [
             { path: '/organizer-dashboard', icon: <LayoutDashboard size={20} />, text: 'Dashboard' },
             { path: '/organizer-events', icon: <Calendar size={20} />, text: 'My Events' },
             { path: '/create-event', icon: <PlusCircle size={20} />, text: 'Create Event' },
             { path: '/lost-and-found', icon: <ShieldAlert size={20} />, text: 'Recovery Hub' },
+            { path: '/gallery', icon: <Search size={20} />, text: 'Gallery' },
             { path: '/chat', icon: <MessageSquare size={20} />, text: 'Messages', badge: unreadCount },
             { path: '/profile?tab=notifications', icon: <Bell size={20} />, text: 'Notifications', badge: systemUnreadCount },
         ]

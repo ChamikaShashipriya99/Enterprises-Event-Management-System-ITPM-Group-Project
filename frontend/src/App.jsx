@@ -35,6 +35,7 @@ import LostAndFoundFeed from './pages/LostAndFoundFeed';
 import ReportItem from './pages/ReportItem';
 import ChatPage from './pages/ChatPage';
 import AuditLogs from './pages/AuditLogs';
+import Gallery from './pages/Gallery';
 
 // Booking Engine pages (Induwari's module)
 import MyBookings from './pages/bookings/MyBookings';
@@ -194,6 +195,7 @@ function App() {
             <Route path="/profile" element={<Profile />} />
             <Route path="/edit-profile" element={<EditProfile />} />
             <Route path="/chat" element={<ChatPage />} />
+            <Route path="/gallery" element={<Gallery />} />
             <Route path="/bookings/:bookingId" element={<BookingDetail />} />
             <Route path="/checkin" element={<CheckIn />} />
           </Route>

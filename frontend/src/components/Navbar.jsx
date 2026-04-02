@@ -15,7 +15,8 @@ import {
     Calendar,
     Zap,
     Plus,
-    Users
+    Users,
+    Search
 } from 'lucide-react';
 import EventBuddyLogo from '../assets/EventBuddy.png';
 
@@ -87,6 +88,9 @@ const Navbar = () => {
                                 </Link>
                                 <Link to="/my-bookings" style={getLinkStyle('/my-bookings')}>
                                     <Calendar size={18} /> My Bookings
+                                </Link>
+                                <Link to="/gallery" style={getLinkStyle('/gallery')}>
+                                    <Search size={18} /> Gallery
                                 </Link>
                             </>
                         )}
