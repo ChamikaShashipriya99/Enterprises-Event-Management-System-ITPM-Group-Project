@@ -2,11 +2,25 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
+import './AllEvents.css';
+import { 
+    Search, 
+    Calendar, 
+    Users, 
+    ArrowRight, 
+    MapPin,
+    Sparkles,
+    ShieldCheck,
+    History,
+    CalendarOff
+} from 'lucide-react';
 
 const AllEvents = () => {
     const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Reset time for accurate date-only comparison
 
     useEffect(() => {
         const fetchEvents = async () => {
@@ -28,33 +42,22 @@ const AllEvents = () => {
     );
 
     if (loading) return (
-        <div style={{ padding: '2rem 5%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
+        <div className="events-container">
+            <div className="events-header">
                 <Skeleton variant="title" width="300px" />
                 <Skeleton width="300px" height="45px" style={{ borderRadius: '30px' }} />
             </div>
 
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '2rem'
-            }}>
+            <div className="events-grid">
                 {[1, 2, 3, 4, 5, 6].map(i => (
-                    <div key={i} className="glass-card" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <Skeleton width="80px" height="24px" style={{ borderRadius: '20px' }} />
-                            <Skeleton width="100px" height="16px" />
-                        </div>
-                        <Skeleton variant="title" width="80%" />
-                        <Skeleton variant="text" width="100%" />
-                        <Skeleton variant="text" width="90%" />
-                        <Skeleton variant="text" width="60%" style={{ marginBottom: '1.5rem' }} />
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <Skeleton variant="circle" width="32px" height="32px" />
-                                <Skeleton width="80px" height="16px" />
-                            </div>
-                            <Skeleton width="100px" height="36px" />
+                    <div key={i} className="event-card" style={{ padding: '0' }}>
+                        <Skeleton width="100%" height="220px" />
+                        <div style={{ padding: '2rem' }}>
+                            <Skeleton width="80px" height="24px" style={{ borderRadius: '20px', marginBottom: '1rem' }} />
+                            <Skeleton variant="title" width="80%" />
+                            <Skeleton variant="text" width="100%" />
+                            <Skeleton variant="text" width="90%" />
+                            <Skeleton variant="text" width="60%" />
                         </div>
                     </div>
                 ))}
@@ -63,90 +66,158 @@ const AllEvents = () => {
     );
 
     return (
-        <div style={{ padding: '2rem 5%' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '2rem', flexWrap: 'wrap', gap: '1rem' }}>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: '800' }}>Explore <span style={{ color: '#6366f1' }}>Events</span></h1>
-                <input
-                    type="text"
-                    placeholder="Search events..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    style={{
-                        padding: '12px 20px',
-                        background: 'rgba(255,255,255,0.05)',
-                        border: '1px solid rgba(255,255,255,0.1)',
-                        borderRadius: '30px',
-                        color: 'white',
-                        width: '300px',
-                        outline: 'none',
-                        transition: 'border-color 0.3s'
-                    }}
-                    onFocus={(e) => e.target.style.borderColor = '#6366f1'}
-                    onBlur={(e) => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
-                />
-            </div>
+        <div className="events-container">
+            <header className="events-header">
+                <div>
+                    <h1 style={{ fontSize: '3.5rem', fontWeight: '800', lineHeight: '1', letterSpacing: '-0.02em', marginBottom: '1rem' }}>
+                        Join the <span style={{ color: '#6366f1' }}>Elite</span>
+                    </h1>
+                    <p style={{ color: '#94a3b8', fontSize: '1.2rem', fontWeight: '500' }}>Discover and participate in premium university events.</p>
+                </div>
+                
+                <div style={{ position: 'relative' }}>
+                    <input
+                        type="text"
+                        placeholder="Search events..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                        style={{
+                            padding: '16px 24px 16px 56px',
+                            background: 'rgba(255,255,255,0.03)',
+                            border: '1px solid rgba(255,255,255,0.08)',
+                            borderRadius: '20px',
+                            color: 'white',
+                            width: '400px',
+                            outline: 'none',
+                            fontSize: '1rem',
+                            transition: 'all 0.3s ease',
+                            boxShadow: '0 4px 20px rgba(0, 0, 0, 0.2)'
+                        }}
+                    />
+                    <Search size={22} style={{ position: 'absolute', left: '20px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+                </div>
+            </header>
 
-            <div style={{
-                display: 'grid',
-                gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))',
-                gap: '2rem'
-            }}>
-                {filteredEvents.map((event) => (
-                    <div key={event._id} className="glass-card" style={{
-                        padding: '1.5rem',
-                        display: 'flex',
-                        flexDirection: 'column',
-                        transition: 'transform 0.3s ease',
-                        height: '100%'
-                    }}>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1rem' }}>
-                            <span style={{
-                                background: 'rgba(99, 102, 241, 0.1)',
-                                color: '#6366f1',
-                                padding: '4px 12px',
-                                borderRadius: '20px',
-                                fontSize: '0.75rem',
-                                fontWeight: '600'
-                            }}>
-                                {new Date(event.date).toLocaleDateString()}
-                            </span>
-                            <span style={{ color: '#94a3b8', fontSize: '0.75rem' }}>
-                                {event.registeredUsers?.length || 0} / {event.capacity} Joined
-                            </span>
-                        </div>
-                        <h3 style={{ fontSize: '1.25rem', marginBottom: '0.75rem', fontWeight: '700' }}>{event.title}</h3>
-                        <p style={{
-                            color: '#94a3b8',
-                            fontSize: '0.9rem',
-                            lineHeight: '1.6',
-                            marginBottom: '1.5rem',
-                            flex: 1,
-                            display: '-webkit-box',
-                            WebkitLineClamp: 3,
-                            WebkitBoxOrient: 'vertical',
-                            overflow: 'hidden'
-                        }}>
-                            {event.description}
-                        </p>
-                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 'auto' }}>
-                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: 'linear-gradient(135deg, #6366f1 0%, #a855f7 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '0.8rem', fontWeight: 'bold' }}>
-                                    {event.organizer?.name?.charAt(0)}
+            <div className="events-grid">
+                {filteredEvents.map((event) => {
+                    const eventDate = new Date(event.date);
+                    const isPassed = eventDate < today;
+                    const isFull = event.registeredUsers?.length >= event.capacity;
+                    
+                    // Check if current user is registered
+                    const storedUser = localStorage.getItem('user');
+                    const currentUser = storedUser ? JSON.parse(storedUser) : null;
+                    const userId = currentUser?._id || currentUser?.id;
+                    const isUserRegistered = event.registeredUsers?.some(u => 
+                        (typeof u === 'string' ? u === userId : u._id === userId)
+                    );
+
+                    const showOverlay = isPassed || (isFull && !isUserRegistered);
+
+                    return (
+                        <div key={event._id} className={`event-card ${showOverlay ? 'is-passed' : ''}`}>
+                            {showOverlay && (
+                                <div className="passed-overlay">
+                                    <div className="passed-content">
+                                        {isPassed ? (
+                                            <>
+                                                <History size={40} className="passed-icon" />
+                                                <h3 className="passed-title">Event Passed</h3>
+                                                <p className="passed-quote">"The curtain has closed on this performance."</p>
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Users size={40} className="passed-icon" style={{ color: '#10b981' }} />
+                                                <h3 className="passed-title">Full House</h3>
+                                                <p className="passed-quote">"The house is packed! All spots have been secured."</p>
+                                            </>
+                                        )}
+                                    </div>
                                 </div>
-                                <span style={{ fontSize: '0.85rem', color: '#f8fafc' }}>{event.organizer?.name}</span>
+                            )}
+                            <div className="card-image-wrapper">
+                            <div className="badge-container">
+                                <div className="floating-badge badge-date">
+                                    <Calendar size={14} />
+                                    {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                </div>
+                                <div className="floating-badge badge-capacity">
+                                    <Users size={14} />
+                                    {event.registeredUsers?.length || 0} / {event.capacity}
+                                </div>
                             </div>
-                            <Link to={`/events/${event._id}`} className="btn-primary" style={{ padding: '8px 16px', fontSize: '0.85rem', textDecoration: 'none' }}>
-                                View Details
-                            </Link>
+                            
+                            {event.image ? (
+                                <img 
+                                    src={`http://localhost:5000${event.image}`} 
+                                    className="card-image"
+                                    alt={event.title}
+                                />
+                            ) : (
+                                <div className="card-image" style={{ 
+                                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    justifyContent: 'center',
+                                    color: 'rgba(99, 102, 241, 0.3)'
+                                }}>
+                                    <Sparkles size={64} strokeWidth={1} />
+                                </div>
+                            )}
+                            <div className="card-overlay-gradient"></div>
                         </div>
-                    </div>
-                ))}
+
+                        <div className="card-body">
+                            <h3 className="card-title">{event.title}</h3>
+                            <div className="card-meta">
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                    <Calendar size={14} style={{ color: '#6366f1' }} />
+                                    <span>{new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                </div>
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '1rem' }}>
+                                    <MapPin size={14} style={{ color: '#10b981' }} />
+                                    <span>{event.location}</span>
+                                </div>
+                            </div>
+                            <p className="card-description">
+                                {event.description}
+                            </p>
+                        </div>
+
+                        <footer className="card-footer">
+                            <div className="organizer-info">
+                                <div className="organizer-avatar">
+                                    {event.organizer?.profilePicture ? (
+                                        <img 
+                                            src={event.organizer.profilePicture.startsWith('http') ? event.organizer.profilePicture : `http://localhost:5000${event.organizer.profilePicture}`} 
+                                            alt={event.organizer.name}
+                                            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                                        />
+                                    ) : (
+                                        event.organizer?.name?.charAt(0)
+                                    )}
+                                </div>
+                                <div className="organizer-details">
+                                    <div className="name">{event.organizer?.name}</div>
+                                    <div className="role">Host <ShieldCheck size={10} style={{ display: 'inline', marginLeft: '2px' }} /></div>
+                                </div>
+                            </div>
+                                <Link to={`/events/${event._id}`} className={`details-btn ${(isPassed || isFull) ? 'btn-ghost' : ''}`}>
+                                    {isPassed ? 'View Archive' : (isFull ? 'View Details' : 'View')} <ArrowRight size={16} />
+                                </Link>
+                            </footer>
+                        </div>
+                    );
+                })}
             </div>
 
             {filteredEvents.length === 0 && (
-                <div style={{ textAlign: 'center', padding: '4rem', color: '#94a3b8' }}>
-                    <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>🔍</div>
-                    <p>No events found matching your search.</p>
+                <div style={{ textAlign: 'center', padding: '8rem 2rem', background: 'rgba(255,255,255,0.02)', borderRadius: '32px', border: '1px dashed rgba(255,255,255,0.1)' }}>
+                    <div style={{ width: '100px', height: '100px', borderRadius: '50%', background: 'rgba(255,255,255,0.05)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 2rem' }}>
+                        <Search size={48} style={{ color: '#64748b' }} />
+                    </div>
+                    <h2 style={{ fontSize: '2.2rem', fontWeight: '800', color: 'white', marginBottom: '1rem' }}>No results found</h2>
+                    <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>We couldn't find any events matching "{searchTerm}". Try adjusting your keywords.</p>
                 </div>
             )}
         </div>

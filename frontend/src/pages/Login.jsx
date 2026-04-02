@@ -2,6 +2,7 @@ import { useState, useContext, useEffect } from 'react';
 import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import authService from '../services/authService';
+import { LogIn, ShieldCheck } from 'lucide-react';
 
 const Login = () => {
     const [email, setEmail] = useState('');
@@ -133,7 +134,8 @@ const Login = () => {
                     </form>
                 ) : (
                     <form onSubmit={handleSubmit} style={{ textAlign: 'left' }}>
-                        <div style={{ marginBottom: '15px', padding: '15px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)' }}>
+                        <div style={{ marginBottom: '15px', padding: '15px', background: 'rgba(99, 102, 241, 0.1)', borderRadius: '8px', border: '1px solid rgba(99, 102, 241, 0.2)', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                            <ShieldCheck size={24} color="#6366f1" />
                             <p style={{ color: '#6366f1', fontSize: '0.9rem', textAlign: 'center', margin: 0 }}>
                                 <b>MFA Required</b><br />
                                 Please enter the 6-digit code from your authenticator app.

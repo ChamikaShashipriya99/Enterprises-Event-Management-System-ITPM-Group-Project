@@ -17,6 +17,9 @@ const app = express();
 
 connectDB();
 
+// Initialize automated background jobs
+require('./utils/cronJobs');
+
 app.use(cors());
 app.use(express.json());
 app.use(passport.initialize());
@@ -31,12 +34,18 @@ const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const eventRoutes = require('./routes/eventRoutes');
 const bookingRoutes = require('./routes/bookingRoutes'); // NEW
+const notificationRoutes = require('./routes/notificationRoutes');
+const lostItemRoutes = require('./routes/lostItemRoutes');
+const chatRoutes = require('./routes/chatRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/events', eventRoutes);
 app.use('/api/bookings', bookingRoutes); // NEW
+app.use('/api/notifications', notificationRoutes);
+app.use('/api/lost-found', lostItemRoutes);
+app.use('/api/chat', chatRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
@@ -47,6 +56,23 @@ app.use((err, req, res, next) => {
     });
 });
 
+const http = require('http');
+const { Server } = require('socket.io');
+const socketHandler = require('./utils/socketHandler');
+
 const PORT = process.env.PORT || 5000;
 
-app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
+const server = http.createServer(app);
+const io = new Server(server, {
+    pingTimeout: 60000,
+    cors: {
+        origin: "http://localhost:5173", // Replace with your frontend URL if different
+        methods: ["GET", "POST"]
+    },
+});
+
+socketHandler(io);
+app.set('io', io);
+
+
+server.listen(PORT, () => console.log(`Server running on port ${PORT}`));

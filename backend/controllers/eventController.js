@@ -1,5 +1,6 @@
 const Event = require('../models/Event');
 const User = require('../models/User');
+const Notification = require('../models/Notification');
 
 // @desc    Create new event
 // @route   POST /api/events
@@ -8,6 +9,28 @@ exports.createEvent = async (req, res, next) => {
     try {
         req.body.organizer = req.user.id;
         const event = await Event.create(req.body);
+
+        // Notify Students
+        const students = await User.find({ role: 'student' });
+        for (const student of students) {
+            await Notification.create({
+                user: student._id,
+                message: `New Event Alert 🎉: An Organizer just published a new event titled '${event.title}'. Book your spot before it fills up!`,
+                isRead: false,
+                link: `/events/${event._id}`
+            });
+        }
+
+        // Notify Admins
+        const admins = await User.find({ role: 'admin' });
+        for (const admin of admins) {
+            await Notification.create({
+                user: admin._id,
+                message: `Moderation Alert: An Organizer just created a new event titled '${event.title}'.`,
+                isRead: false
+            });
+        }
+
         res.status(201).json({ success: true, data: event });
     } catch (error) {
         next(error);
@@ -74,7 +97,7 @@ exports.deleteEvent = async (req, res, next) => {
 // @access  Private/Admin
 exports.getAllEvents = async (req, res, next) => {
     try {
-        const events = await Event.find().populate('organizer', 'name email');
+        const events = await Event.find().populate('organizer', 'name email profilePicture');
         res.status(200).json({ success: true, count: events.length, data: events });
     } catch (error) {
         next(error);
@@ -134,6 +157,28 @@ exports.registerForEvent = async (req, res, next) => {
         await user.save();
 
         res.status(200).json({ success: true, message: 'Successfully registered for event' });
+
+        // Check if event is now full and notify organizer/admins
+        if (event.registeredUsers.length === event.capacity) {
+            // Notify Organizer
+            await Notification.create({
+                user: event.organizer,
+                message: `Capacity Alert 🎟️: Your event '${event.title}' has reached its maximum capacity of ${event.capacity} participants.`,
+                isRead: false,
+                link: `/events/${event._id}`
+            });
+
+            // Notify Admins
+            const admins = await User.find({ role: 'admin' });
+            for (const admin of admins) {
+                await Notification.create({
+                    user: admin._id,
+                    message: `Moderation Alert: The event titled '${event.title}' is now at full capacity (${event.capacity}).`,
+                    isRead: false,
+                    link: `/event/${event._id}`
+                });
+            }
+        }
     } catch (error) {
         next(error);
     }
@@ -173,7 +218,7 @@ exports.unregisterFromEvent = async (req, res, next) => {
 // @access  Private
 exports.getEvents = async (req, res, next) => {
     try {
-        const events = await Event.find().populate('organizer', 'name email');
+        const events = await Event.find().populate('organizer', 'name email profilePicture');
         res.status(200).json({ success: true, count: events.length, data: events });
     } catch (error) {
         next(error);
@@ -185,7 +230,7 @@ exports.getEvents = async (req, res, next) => {
 // @access  Private
 exports.getEvent = async (req, res, next) => {
     try {
-        const event = await Event.findById(req.params.id).populate('organizer', 'name email');
+        const event = await Event.findById(req.params.id).populate('organizer', 'name email profilePicture');
         if (!event) return res.status(404).json({ success: false, message: 'Event not found' });
         res.status(200).json({ success: true, data: event });
     } catch (error) {

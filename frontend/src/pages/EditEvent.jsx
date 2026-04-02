@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import axios from 'axios';
 import eventService from '../services/eventService';
 
 const EditEvent = () => {
@@ -8,11 +9,14 @@ const EditEvent = () => {
         description: '',
         location: '',
         date: '',
-        capacity: ''
+        capacity: '',
+        image: ''
     });
     const [loading, setLoading] = useState(true);
     const [submitting, setSubmitting] = useState(false);
+    const [uploading, setUploading] = useState(false);
     const [errors, setErrors] = useState({});
+    const [error, setError] = useState('');
     const navigate = useNavigate();
     const { id } = useParams();
 
@@ -29,10 +33,12 @@ const EditEvent = () => {
                     description: event.description,
                     location: event.location,
                     date: formattedDate,
-                    capacity: event.capacity
+                    capacity: event.capacity,
+                    image: event.image || ''
                 });
                 setLoading(false);
             } catch (err) {
+                console.error(err);
                 setError('Failed to fetch event details');
                 setLoading(false);
             }
@@ -63,6 +69,32 @@ const EditEvent = () => {
     const handleChange = (e) => {
         setFormData({ ...formData, [e.target.name]: e.target.value });
         if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: '' });
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const uploadData = new FormData();
+        uploadData.append('image', file);
+        setUploading(true);
+
+        try {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const config = {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    Authorization: `Bearer ${user?.token}`
+                }
+            };
+            const { data } = await axios.post('http://localhost:5000/api/users/upload', uploadData, config);
+            setFormData(prev => ({ ...prev, image: data.url }));
+            setUploading(false);
+        } catch (err) {
+            console.error(err);
+            setUploading(false);
+            setError('Image upload failed');
+        }
     };
 
     const handleSubmit = async (e) => {
@@ -150,6 +182,26 @@ const EditEvent = () => {
                             style={{ padding: '12px', background: 'rgba(255,255,255,0.05)', border: errors.capacity ? '1px solid #ef4444' : '1px solid rgba(255,255,255,0.1)', borderRadius: '8px', color: 'white' }}
                         />
                         {errors.capacity && <p style={{ color: '#ef4444', fontSize: '0.8rem', marginTop: '-10px' }}>{errors.capacity}</p>}
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.5rem' }}>
+                        <label style={{ fontSize: '0.9rem', color: '#f8fafc' }}>Event Poster</label>
+                        <input
+                            type="file"
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            style={{ 
+                                padding: '10px', 
+                                background: 'rgba(255,255,255,0.05)', 
+                                border: '1px solid rgba(255,255,255,0.1)', 
+                                borderRadius: '8px', 
+                                color: 'white' 
+                            }}
+                        />
+                        {uploading && <p style={{ color: '#6366f1', fontSize: '0.85rem' }}>Uploading your poster...</p>}
+                        {formData.image && (
+                            <img src={`http://localhost:5000${formData.image}`} alt="Event Preview" style={{ width: '100%', maxHeight: '250px', objectFit: 'cover', borderRadius: '8px', marginTop: '10px' }} />
+                        )}
                     </div>
 
                     <div style={{ display: 'flex', gap: '1rem', marginTop: '1rem' }}>

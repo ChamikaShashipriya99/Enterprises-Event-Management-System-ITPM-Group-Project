@@ -1,0 +1,1187 @@
+import React, { useState, useEffect, useContext, useRef } from 'react';
+import io from 'socket.io-client';
+import { AuthContext } from '../context/AuthContext';
+import chatService from "../services/chatService";
+import toast from 'react-hot-toast';
+import axios from 'axios';
+import { 
+    Search, 
+    RefreshCw, 
+    MoreVertical, 
+    Send, 
+    Paperclip, 
+    Mic, 
+    MicOff, 
+    Square, 
+    X, 
+    Pin, 
+    PinOff, 
+    Trash2, 
+    Edit3, 
+    Check, 
+    CheckCheck, 
+    Image as ImageIcon, 
+    FileText, 
+    User, 
+    Users, 
+    Megaphone, 
+    Eraser, 
+    Smile, 
+    Maximize2, 
+    Menu, 
+    Info, 
+    ChevronDown, 
+    Clock,
+    ShieldAlert,
+    AlertTriangle,
+    Ghost
+} from 'lucide-react';
+
+const ENDPOINT = "http://localhost:5000";
+var selectedChatCompare;
+
+const ChatPage = () => {
+    const [chats, setChats] = useState([]);
+    const [selectedChat, setSelectedChat] = useState();
+    const [messages, setMessages] = useState([]);
+    const [newMessage, setNewMessage] = useState("");
+    const [socketConnected, setSocketConnected] = useState(false);
+    const [typing, setTyping] = useState(false);
+    const [isTyping, setIsTyping] = useState(false);
+    const [search, setSearch] = useState("");
+    const [searchResult, setSearchResult] = useState([]);
+    const [loading, setLoading] = useState(false);
+    const [editMessageId, setEditMessageId] = useState(null);
+    const [editContent, setEditContent] = useState("");
+    const [isAnnouncementMode, setIsAnnouncementMode] = useState(false);
+    const [previewImage, setPreviewImage] = useState(null);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [showMediaOnly, setShowMediaOnly] = useState(false);
+    const [page, setPage] = useState(1);
+    const [hasMore, setHasMore] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [deleteConfirmId, setDeleteConfirmId] = useState(null);
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const [selectedReadBy, setSelectedReadBy] = useState(null);
+    const [mentionSearch, setMentionSearch] = useState("");
+    const [showMentions, setShowMentions] = useState(false);
+    const [mentionSuggestions, setMentionSuggestions] = useState([]);
+    const [mentionIndex, setMentionIndex] = useState(-1);
+    const [isRefreshing, setIsRefreshing] = useState(false);
+
+    const { currentUser, socket } = useContext(AuthContext);
+    const messagesEndRef = useRef(null);
+    const fileInputRef = useRef(null);
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
+    const timerRef = useRef(null);
+
+    useEffect(() => {
+        if (isRecording) {
+            timerRef.current = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+        } else {
+            clearInterval(timerRef.current);
+            setRecordingTime(0);
+        }
+        return () => clearInterval(timerRef.current);
+    }, [isRecording]);
+
+    const scrollToBottom = () => {
+        messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    };
+
+    useEffect(() => {
+        scrollToBottom();
+    }, [messages]);
+
+    useEffect(() => {
+        if (!socket) return;
+        setSocketConnected(true);
+    }, [socket]);
+
+    useEffect(() => {
+        const fetchInitialData = async () => {
+            try {
+                const fetchedChats = await chatService.fetchChats(currentUser.token);
+                setChats(fetchedChats);
+
+                // Auto-access global chat if no chat is selected
+                if (!selectedChat) {
+                    const global = await chatService.accessGlobalChat(currentUser.token);
+                    if (!fetchedChats.find(c => c._id === global._id)) {
+                        setChats([global, ...fetchedChats]);
+                    }
+                    setSelectedChat(global);
+                }
+            } catch (error) {
+                console.error("Error fetching initial data", error);
+            }
+        };
+        fetchInitialData();
+    }, [currentUser]);
+
+    useEffect(() => {
+        const fetchMessages = async () => {
+            if (!selectedChat) return;
+
+            try {
+                setLoading(true);
+                setPage(1);
+                const data = await chatService.fetchMessages(selectedChat._id, currentUser.token, 1);
+                setMessages(data.messages);
+                setHasMore(data.hasMore);
+                setLoading(false);
+                socket.emit("join-chat", selectedChat._id);
+                socket.emit("mark-as-read", { chatId: selectedChat._id, userId: currentUser._id });
+                
+                // Reset unread count for this chat locally
+                setChats(prev => prev.map(c => c._id === selectedChat._id ? { ...c, unreadCount: 0 } : c));
+            } catch (error) {
+                console.error("Error fetching messages", error);
+                setLoading(false);
+            }
+        };
+        fetchMessages();
+        selectedChatCompare = selectedChat;
+        setSearchTerm("");
+        setShowMediaOnly(false);
+        // On mobile, close sidebar when a chat is selected
+        if (window.innerWidth <= 768) setIsSidebarOpen(false);
+    }, [selectedChat, socket]);
+
+    const fetchMoreMessages = async () => {
+        if (!hasMore || loading) return;
+        try {
+            const nextPage = page + 1;
+            const data = await chatService.fetchMessages(selectedChat._id, currentUser.token, nextPage);
+            setMessages(prev => [...data.messages, ...prev]);
+            setHasMore(data.hasMore);
+            setPage(nextPage);
+        } catch (error) {
+            console.error("Error fetching more messages", error);
+        }
+    };
+
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            const mediaRecorder = new MediaRecorder(stream);
+            mediaRecorderRef.current = mediaRecorder;
+            audioChunksRef.current = [];
+
+            mediaRecorder.ondataavailable = (event) => {
+                if (event.data.size > 0) {
+                    audioChunksRef.current.push(event.data);
+                }
+            };
+
+            mediaRecorder.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                const audioFile = new File([audioBlob], "voice-message.webm", { type: 'audio/webm' });
+                handleVoiceUpload(audioFile);
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorder.start();
+            setIsRecording(true);
+        } catch (error) {
+            console.error("Error starting recording:", error);
+            toast.error("Microphone access denied");
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
+
+    const handleVoiceUpload = async (file) => {
+        try {
+            setLoading(true);
+            const isAnnouncement = isAnnouncementMode;
+            setIsAnnouncementMode(false);
+
+            const formData = new FormData();
+            formData.append("file", file);
+            formData.append("chatId", selectedChat._id);
+
+            const uploadRes = await chatService.uploadFile(formData, currentUser.token);
+
+            const data = await chatService.sendMessage(
+                "Voice Message",
+                selectedChat._id,
+                currentUser.token,
+                uploadRes.fileUrl,
+                'audio',
+                isAnnouncement
+            );
+
+            if (data) {
+                socket.emit("new-message", data);
+                setMessages(prev => [...prev, data]);
+                
+                if (data.isAnnouncement) {
+                    setSelectedChat(prev => ({ 
+                        ...prev, 
+                        pinnedMessages: [...(prev.pinnedMessages || []), data] 
+                    }));
+                }
+                
+                toast.success(isAnnouncement ? "Voice Announcement posted!" : "Voice message sent");
+            }
+            setLoading(false);
+        } catch (error) {
+            console.error("Error uploading voice message", error);
+            setLoading(false);
+            toast.error("Failed to send voice message");
+        }
+    };
+
+    const filteredMessages = messages.filter(m => {
+        const matchesSearch = m.content?.toLowerCase().includes(searchTerm.toLowerCase());
+        const isMedia = m.fileUrl;
+        if (showMediaOnly) return isMedia && matchesSearch;
+        return matchesSearch;
+    });
+
+    useEffect(() => {
+        if (!socket) return;
+
+        const messageListener = (newMessageReceived) => {
+            if (!selectedChatCompare || selectedChatCompare._id !== newMessageReceived.chat._id) {
+                setChats(prev => {
+                    const chatFound = prev.find(c => c._id === newMessageReceived.chat._id);
+                    if (chatFound) {
+                        return prev.map(c => 
+                            c._id === newMessageReceived.chat._id ? { ...c, unreadCount: (c.unreadCount || 0) + 1, lastMessage: newMessageReceived } : c
+                        );
+                    } else {
+                        // New chat discovery!
+                        const newChat = { 
+                            ...newMessageReceived.chat, 
+                            unreadCount: 1, 
+                            lastMessage: newMessageReceived 
+                        };
+                        return [newChat, ...prev];
+                    }
+                });
+            } else {
+                setMessages(prev => [...prev, newMessageReceived]);
+                if (newMessageReceived.isAnnouncement) {
+                    setSelectedChat(prev => ({ 
+                        ...prev, 
+                        pinnedMessages: [...(prev.pinnedMessages || []), newMessageReceived] 
+                    }));
+                }
+                socket.emit("mark-as-read", { chatId: selectedChatCompare._id, userId: currentUser._id });
+            }
+        };
+
+        const updateListener = (updatedMessage) => {
+            setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
+            // Update sidebar lastMessage if matches
+            setChats(prev => prev.map(c => 
+                c.lastMessage?._id === updatedMessage._id ? { ...c, lastMessage: updatedMessage } : c
+            ));
+        };
+
+        const removeListener = (messageId) => {
+            setMessages(prev => prev.filter(m => m._id !== messageId));
+            // Update sidebar lastMessage if matches (clear it for now, as we don't know the previous one easily)
+            setChats(prev => prev.map(c => 
+                c.lastMessage?._id === messageId ? { ...c, lastMessage: { ...c.lastMessage, content: "Message deleted" } } : c
+            ));
+            toast("A message was deleted", { icon: <Trash2 size={16} color="#ef4444" /> });
+        };
+
+        const statusListener = (data) => {
+            setChats(prevChats => 
+                prevChats.map(chat => {
+                    const updatedParticipants = chat.participants.map(p => 
+                        p._id === data.userId ? { ...p, isOnline: data.isOnline, lastSeen: data.lastSeen } : p
+                    );
+                    return { ...chat, participants: updatedParticipants };
+                })
+            );
+        };
+
+        const readListener = (data) => {
+            if (selectedChatCompare && selectedChatCompare._id === data.chatId && data.readerId !== currentUser._id) {
+                setMessages(prev => prev.map(m => m.sender._id === currentUser._id ? { ...m, isRead: true } : m));
+            }
+        };
+
+        const reactionListener = (updatedMessage) => {
+            setMessages(prev => prev.map(m => m._id === updatedMessage._id ? updatedMessage : m));
+        };
+
+        const pinnedUpdateListener = (updatedChat) => {
+            if (selectedChatCompare && selectedChatCompare._id === updatedChat._id) {
+                setSelectedChat(updatedChat);
+                setChats(prev => prev.map(c => c._id === updatedChat._id ? { ...c, pinnedMessages: updatedChat.pinnedMessages } : c));
+            }
+        };
+
+        const chatClearedListener = ({ chatId }) => {
+            if (selectedChatCompare && selectedChatCompare._id === chatId) {
+                setMessages([]);
+                setSelectedChat(prev => ({ ...prev, lastMessage: null, pinnedMessages: [] }));
+                toast("Chat history was cleared by an admin", { icon: <Eraser size={16} color="#f59e0b" /> });
+            }
+        };
+
+        socket.on("message-received", messageListener);
+        socket.on("message-updated", updateListener);
+        socket.on("message-removed", removeListener);
+        socket.on("user-status-changed", statusListener);
+        socket.on("messages-read", readListener);
+        socket.on("reaction-updated", reactionListener);
+        socket.on("chat-pinned-updated", pinnedUpdateListener);
+        socket.on("chat-cleared", chatClearedListener);
+        socket.on("typing", () => setIsTyping(true));
+        socket.on("stop-typing", () => setIsTyping(false));
+
+        return () => {
+            socket.off("message-received", messageListener);
+            socket.off("message-updated", updateListener);
+            socket.off("message-removed", removeListener);
+            socket.off("user-status-changed", statusListener);
+            socket.off("messages-read", readListener);
+            socket.off("reaction-updated", reactionListener);
+            socket.off("chat-pinned-updated", pinnedUpdateListener);
+            socket.off("chat-cleared", chatClearedListener);
+            socket.off("typing");
+            socket.off("stop-typing");
+        };
+    }, [socket, currentUser]);
+
+    const handleClearChat = async () => {
+        if (!window.confirm("Are you sure you want to clear the entire chat history? This cannot be undone.")) return;
+        
+        try {
+            await chatService.clearChat(selectedChat._id, currentUser.token);
+            socket.emit("clear-chat", { chatId: selectedChat._id });
+            setMessages([]);
+            setSelectedChat(prev => ({ ...prev, lastMessage: null, pinnedMessages: [] }));
+            toast.success("Chat history cleared");
+        } catch (error) {
+            console.error("Error clearing chat", error);
+            toast.error("Failed to clear chat");
+        }
+    };
+
+    const handleTogglePin = async (messageId) => {
+        try {
+            const data = await chatService.togglePinMessage(selectedChat._id, messageId, currentUser.token);
+            socket.emit("message-pinned", data);
+            setSelectedChat(data);
+            setChats(prev => prev.map(c => c._id === data._id ? { ...c, pinnedMessages: data.pinnedMessages } : c));
+            toast.success(data.pinnedMessages.some(m => m._id === messageId) ? "Message pinned" : "Message unpinned");
+        } catch (error) {
+            console.error("Error toggling pin", error);
+            toast.error("Failed to pin message");
+        }
+    };
+
+    const jumpToMessage = (messageId) => {
+        const element = document.getElementById(`msg-${messageId}`);
+        if (element) {
+            element.scrollIntoView({ behavior: "smooth", block: "center" });
+            element.classList.add("highlight-pulse");
+            setTimeout(() => element.classList.remove("highlight-pulse"), 2000);
+        } else {
+            toast("Searching for message...", { icon: <Search size={16} color="#6366f1" /> });
+            // Advanced: If message not in DOM, we'd need to fetch more pages. 
+            // For now, prompt to load more.
+        }
+    };
+
+    const handleToggleReaction = async (messageId, emoji) => {
+        try {
+            const data = await chatService.toggleReaction(messageId, emoji, currentUser.token);
+            socket.emit("message-reacted", data);
+            setMessages(prev => prev.map(m => m._id === messageId ? data : m));
+        } catch (error) {
+            console.error("Error toggling reaction", error);
+            toast.error("Failed to react to message");
+        }
+    };
+
+    const handleSearch = async (e) => {
+        setSearch(e.target.value);
+        if (!e.target.value) {
+            setSearchResult([]);
+            return;
+        }
+        try {
+            const data = await chatService.searchUsers(e.target.value, currentUser.token);
+            setSearchResult(data);
+        } catch (error) {
+            console.error("Error searching users", error);
+        }
+    };
+
+    const accessChat = async (userId) => {
+        try {
+            const data = await chatService.accessChat(userId, currentUser.token);
+            if (!chats.find((c) => c._id === data._id)) setChats([data, ...chats]);
+            setSelectedChat(data);
+            setSearchResult([]);
+            setSearch("");
+        } catch (error) {
+            console.error("Error accessing chat", error);
+        }
+    };
+
+    const sendMessage = async (e) => {
+        if ((e.key === "Enter" || e.type === "click") && newMessage) {
+            socket.emit("stop-typing", selectedChat._id);
+            try {
+                const content = newMessage;
+                const isAnnouncement = isAnnouncementMode;
+                setNewMessage("");
+                setIsAnnouncementMode(false);
+                const data = await chatService.sendMessage(content, selectedChat._id, currentUser.token, null, null, isAnnouncement);
+                socket.emit("new-message", data);
+                if (data.isAnnouncement) {
+                    setSelectedChat(prev => ({ 
+                        ...prev, 
+                        pinnedMessages: [...(prev.pinnedMessages || []), data] 
+                    }));
+                }
+                setMessages(prev => [...prev, data]);
+            } catch (error) {
+                console.error("Error sending message", error);
+            }
+        }
+    };
+
+    const handleMentionSelect = (user) => {
+        const words = newMessage.split(" ");
+        words.pop(); // Remove the @part
+        const updatedMessage = [...words, `@${user.name} `].join(" ");
+        setNewMessage(updatedMessage);
+        setShowMentions(false);
+        setMentionSuggestions([]);
+        setMentionIndex(-1);
+    };
+
+    const handleEditMessage = async () => {
+        if (!editContent) return;
+        try {
+            const data = await chatService.updateMessage(editMessageId, editContent, currentUser.token);
+            socket.emit("message-edited", data);
+            setMessages(messages.map(m => m._id === editMessageId ? data : m));
+            setEditMessageId(null);
+            setEditContent("");
+        } catch (error) {
+            console.error("Error updating message", error);
+        }
+    };
+
+    const handleDeleteMessage = (messageId) => {
+        setDeleteConfirmId(messageId);
+    };
+
+    const handleManualRefresh = async () => {
+        try {
+            setIsRefreshing(true);
+            const fetchedChats = await chatService.fetchChats(currentUser.token);
+            setChats(fetchedChats);
+            
+            if (selectedChat) {
+                const data = await chatService.fetchMessages(selectedChat._id, currentUser.token, 1);
+                setMessages(data.messages);
+                setHasMore(data.hasMore);
+                setPage(1);
+            }
+            
+            toast.success("Chat synchronized");
+            setTimeout(() => setIsRefreshing(false), 500);
+        } catch (error) {
+            console.error("Refresh failed", error);
+            toast.error("Sync failed");
+            setIsRefreshing(false);
+        }
+    };
+
+    const handleConfirmDelete = async () => {
+        if (!deleteConfirmId) return;
+        try {
+            const data = await chatService.deleteMessage(deleteConfirmId, currentUser.token);
+            
+            if (data.type === 'soft') {
+                socket.emit("message-edited", data.updatedMessage);
+                setMessages(prev => prev.map(m => m._id === deleteConfirmId ? data.updatedMessage : m));
+                toast.success("Message removed by admin");
+            } else {
+                socket.emit("message-deleted", { messageId: deleteConfirmId, chatId: selectedChat._id });
+                setMessages(prev => prev.filter(m => m._id !== deleteConfirmId));
+                toast.success("Message deleted");
+            }
+            
+            setDeleteConfirmId(null);
+        } catch (error) {
+            console.error("Error deleting message", error);
+            toast.error("Failed to delete message");
+            setDeleteConfirmId(null);
+        }
+    };
+
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            setLoading(true);
+            const isAnnouncement = isAnnouncementMode;
+            setIsAnnouncementMode(false);
+            
+            const uploadRes = await chatService.uploadFile(formData, currentUser.token);
+            const data = await chatService.sendMessage(
+                "", 
+                selectedChat._id, 
+                currentUser.token, 
+                uploadRes.fileUrl, 
+                uploadRes.fileType,
+                isAnnouncement
+            );
+            
+            socket.emit("new-message", data);
+            setMessages(prev => [...prev, data]);
+            
+            if (data.isAnnouncement) {
+                setSelectedChat(prev => ({ 
+                    ...prev, 
+                    pinnedMessages: [...(prev.pinnedMessages || []), data] 
+                }));
+            }
+            
+            setLoading(false);
+            toast.success(isAnnouncement ? "Announcement posted!" : "File sent");
+        } catch (error) {
+            console.error("Error uploading file", error);
+            setLoading(false);
+            toast.error("Failed to upload file");
+        }
+    };
+
+    const typingHandler = async (e) => {
+        const value = e.target.value;
+        setNewMessage(value);
+
+        // Mention Detection
+        const lastWord = value.split(" ").pop();
+
+        if (lastWord.startsWith("@")) {
+            const searchPart = lastWord.substring(1);
+            setMentionSearch(searchPart);
+            setShowMentions(true);
+            
+            // If it's a group chat (like Global), search all students
+            // Otherwise just use current participants for efficiency, or also search all
+            if (searchPart.length >= 2) {
+                try {
+                    const results = await chatService.searchUsers(searchPart, currentUser.token);
+                    setMentionSuggestions(results.filter(u => u._id !== currentUser._id));
+                } catch (err) {
+                    console.error("Mention search failed", err);
+                }
+            } else if (selectedChat?.participants) {
+                // Fallback to participants for short queries
+                setMentionSuggestions(
+                    selectedChat.participants.filter(u => 
+                        u._id !== currentUser._id && 
+                        u.name.toLowerCase().includes(searchPart.toLowerCase())
+                    )
+                );
+            }
+        } else {
+            setShowMentions(false);
+            setMentionSuggestions([]);
+        }
+
+        if (!socketConnected) return;
+
+        if (!typing) {
+            setTyping(true);
+            socket.emit("typing", selectedChat._id);
+        }
+        let lastTypingTime = new Date().getTime();
+        var timerLength = 3000;
+        setTimeout(() => {
+            var timeNow = new Date().getTime();
+            var timeDiff = timeNow - lastTypingTime;
+            if (timeDiff >= timerLength && typing) {
+                socket.emit("stop-typing", selectedChat._id);
+                setTyping(false);
+            }
+        }, timerLength);
+    };
+
+    const getSender = (participants) => {
+        if (!participants || participants.length === 0) return { name: "Unknown", isOnline: false };
+        return participants[0]._id === currentUser._id ? participants[1] : participants[0];
+    };
+
+    const isNewDay = (currentMsg, prevMsg) => {
+        if (!prevMsg) return true;
+        const currentData = new Date(currentMsg.createdAt).toDateString();
+        const prevData = new Date(prevMsg.createdAt).toDateString();
+        return currentData !== prevData;
+    };
+
+    const formatDateLabel = (dateString) => {
+        const date = new Date(dateString);
+        const today = new Date();
+        const yesterday = new Date();
+        yesterday.setDate(today.getDate() - 1);
+
+        if (date.toDateString() === today.toDateString()) return "Today";
+        if (date.toDateString() === yesterday.toDateString()) return "Yesterday";
+        
+        return date.toLocaleDateString([], { 
+            day: 'numeric', 
+            month: 'long', 
+            year: date.getFullYear() !== today.getFullYear() ? 'numeric' : undefined 
+        });
+    };
+
+    return (
+        <div className={`chat-container ${isSidebarOpen ? 'sidebar-open' : ''}`}>
+            {/* Sidebar Toggle (Mobile Only) */}
+            <button 
+                className="mobile-menu-btn"
+                onClick={() => setIsSidebarOpen(!isSidebarOpen)}
+            >
+                {isSidebarOpen ? <X size={24} /> : <Menu size={24} />}
+            </button>
+
+            {/* Sidebar Overlay (Mobile Only) */}
+            {isSidebarOpen && window.innerWidth <= 768 && (
+                <div className="sidebar-overlay" onClick={() => setIsSidebarOpen(false)} />
+            )}
+
+            {/* Sidebar */}
+            <div className={`chat-sidebar ${isSidebarOpen ? 'active' : ''}`}>
+                <div className="chat-search" style={{ position: 'relative' }}>
+                    <div style={{ display: 'flex', gap: '10px', marginBottom: '10px', alignItems: 'center' }}>
+                        <input
+                            type="text"
+                            placeholder="Find chat..."
+                            className="input-field"
+                            style={{ marginBottom: 0, flex: 1 }}
+                            value={search}
+                            onChange={handleSearch}
+                        />
+                        <button 
+                            className={`refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+                            onClick={handleManualRefresh}
+                            title="Refresh Chats"
+                        >
+                            <RefreshCw size={18} />
+                        </button>
+                    </div>
+                    {searchResult.length > 0 && (
+                        <div style={{ 
+                            position: 'absolute', 
+                            background: '#1e293b', 
+                            width: '320px', 
+                            zIndex: 10,
+                            borderRadius: '8px',
+                            boxShadow: '0 4px 12px rgba(0,0,0,0.5)',
+                            marginTop: '5px'
+                        }}>
+                            {searchResult.map(user => (
+                                <div 
+                                    key={user._id} 
+                                    className="sidebar-item"
+                                    onClick={() => accessChat(user._id)}
+                                >
+                                    <div className="user-avatar">{user.name.charAt(0)}</div>
+                                    <div>{user.name}</div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+                <div style={{ flex: 1, overflowY: 'auto' }}>
+                    {chats.map(chat => {
+                        const isGroup = chat.isGroupChat;
+                        const sender = isGroup ? { name: chat.chatName } : getSender(chat.participants);
+                        return (
+                            <div 
+                                key={chat._id} 
+                                className={`sidebar-item ${selectedChat?._id === chat._id ? 'active' : ''}`}
+                                onClick={() => setSelectedChat(chat)}
+                            >
+                                <div className="user-avatar" style={isGroup ? { background: '#10b981' } : {}}>
+                                    {isGroup ? 'G' : sender.name.charAt(0)}
+                                    {!isGroup && (
+                                        <div 
+                                            className={`status-dot ${sender.isOnline ? 'status-online' : 'status-offline'}`}
+                                            style={{ position: 'absolute', bottom: 0, right: 0, border: '2px solid #0f172a', margin: 0 }}
+                                        />
+                                    )}
+                                </div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontWeight: 600, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                        {sender.name}
+                                        {isGroup && <span className="group-badge" style={{ fontSize: '0.65rem', padding: '2px 6px' }}>Group</span>}
+                                        {chat.unreadCount > 0 && <span className="unread-badge">{chat.unreadCount}</span>}
+                                    </div>
+                                    {chat.lastMessage && (
+                                        <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                                            {chat.lastMessage.content}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        );
+                    })}
+                </div>
+            </div>
+
+            {/* Chat Window */}
+            <div className="chat-window">
+                {selectedChat ? (
+                    <>
+                        <div className="chat-header" style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <div className="user-avatar" style={selectedChat.isGroupChat ? { background: '#10b981' } : {}}>
+                                    {selectedChat.isGroupChat ? 'G' : getSender(selectedChat.participants).name.charAt(0)}
+                                </div>
+                                <div>
+                                    <h2 style={{ fontSize: '1.2rem', fontWeight: 600 }}>
+                                        {selectedChat.isGroupChat ? selectedChat.chatName : getSender(selectedChat.participants).name}
+                                    </h2>
+                                    {!selectedChat.isGroupChat && (
+                                        <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
+                                            {getSender(selectedChat.participants).isOnline ? 'Online' : 
+                                                `Last seen ${new Date(getSender(selectedChat.participants).lastSeen).toLocaleTimeString()}`}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                                        <button 
+                                            className={`refresh-btn ${isRefreshing ? 'refreshing' : ''}`}
+                                            onClick={handleManualRefresh}
+                                            title="Refresh Messages"
+                                            style={{ marginRight: '5px' }}
+                                        >
+                                            <RefreshCw size={18} />
+                                        </button>
+                                        <input 
+                                            type="text" 
+                                            placeholder="Search messages..." 
+                                            className="input-field" 
+                                            style={{ marginBottom: 0, width: '200px', fontSize: '0.85rem', padding: '5px 10px' }}
+                                            value={searchTerm}
+                                            onChange={(e) => setSearchTerm(e.target.value)}
+                                        />
+                                        <button 
+                                            className={`btn-primary ${showMediaOnly ? 'active' : ''}`} 
+                                            style={{ padding: '6px 12px', fontSize: '0.8rem', background: showMediaOnly ? '#6366f1' : 'rgba(255,255,255,0.1)' }}
+                                            onClick={() => setShowMediaOnly(!showMediaOnly)}
+                                        >
+                                            {showMediaOnly ? 'Show All' : 'Gallery'}
+                                        </button>
+                                        {(currentUser.role === 'admin' || currentUser.role === 'organizer') && selectedChat.chatName === 'Global Students' && (
+                                            <button 
+                                                className="btn-primary" 
+                                                style={{ padding: '6px 12px', fontSize: '0.8rem', background: '#ef4444', display: 'flex', alignItems: 'center', gap: '6px' }}
+                                                onClick={handleClearChat}
+                                            >
+                                                <Eraser size={14} /> Clear Chat
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+
+                        {selectedChat.pinnedMessages && selectedChat.pinnedMessages.length > 0 && (
+                            <div className="pinned-messages-bar">
+                                <div className="pinned-icon"><Pin size={16} fill="currentColor" /></div>
+                                <div className="pinned-carousel">
+                                    {selectedChat.pinnedMessages.map((pm, idx) => (
+                                        <div key={pm._id} className="pinned-item" onClick={() => jumpToMessage(pm._id)}>
+                                            <span className="pinned-sender">{pm.sender?.name}:</span>
+                                            <span className="pinned-text">{pm.content?.substring(0, 40)}{pm.content?.length > 40 ? '...' : ''}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                                <div className="pinned-count">{selectedChat.pinnedMessages.length} pinned</div>
+                            </div>
+                        )}
+
+                        <div className="chat-messages">
+                            {hasMore && (
+                                <div style={{ textAlign: 'center', padding: '10px' }}>
+                                    <button 
+                                        className="btn-primary" 
+                                        style={{ background: 'rgba(255,255,255,0.05)', fontSize: '0.75rem', padding: '5px 15px' }}
+                                        onClick={fetchMoreMessages}
+                                    >
+                                        Load Earlier Messages
+                                    </button>
+                                </div>
+                            )}
+                            {loading && messages.length === 0 ? (
+                                <div style={{ textAlign: 'center', marginTop: '50px' }}>Loading...</div>
+                            ) : (
+                                filteredMessages.map((m, i) => {
+                                    if (!m || !m._id) return null;
+                                    // Custom rendering for media gallery mode
+                                    if (showMediaOnly && m.fileType === 'image') {
+                                        return (
+                                            <div key={m._id} className="gallery-item" onClick={() => setPreviewImage(`${ENDPOINT}${m.fileUrl}`)}>
+                                                <img src={`${ENDPOINT}${m.fileUrl}`} alt="gallery" />
+                                            </div>
+                                        );
+                                    }
+
+                                    const showDateSeparator = isNewDay(m, filteredMessages[i - 1]);
+
+                                    return (
+                                        <React.Fragment key={m._id}>
+                                            {showDateSeparator && (
+                                                <div className="chat-date-separator">
+                                                    <span className="chat-date-label">
+                                                        {formatDateLabel(m.createdAt)}
+                                                    </span>
+                                                </div>
+                                            )}
+                                            <div 
+                                                id={`msg-${m._id}`}
+                                                className={`message-bubble ${m.isAnnouncement ? 'message-announcement' : (m.sender._id === currentUser._id ? 'message-sent' : 'message-received')} ${['admin', 'organizer'].includes(m.sender.role) && !m.isAnnouncement ? 'message-admin' : ''}`}
+                                            >
+                                            {m.isAnnouncement && (
+                                                <div className="announcement-header">
+                                                    <Megaphone size={14} /> OFFICIAL ANNOUNCEMENT
+                                                </div>
+                                            )}
+                                            {selectedChat.isGroupChat && (m.sender._id !== currentUser._id || ['admin', 'organizer'].includes(m.sender.role)) && (
+                                                <div style={{ fontSize: '0.7rem', fontWeight: 'bold', marginBottom: '4px', opacity: 0.8, display: 'flex', alignItems: 'center', gap: '5px' }}>
+                                                    {m.sender._id !== currentUser._id ? m.sender.name : `You (${m.sender.role})`}
+                                                    {m.sender.role === 'admin' && <span className="admin-badge">ADMIN</span>}
+                                                    {m.sender.role === 'organizer' && <span className="admin-badge" style={{ background: '#a855f7' }}>ORGANIZER</span>}
+                                                </div>
+                                            )}
+                                            
+                                            {m.isDeletedByAdmin ? (
+                                                <div className="admin-deleted-placeholder" style={{ 
+                                                    borderLeft: `3px solid ${m.deletedByRole === 'organizer' ? '#a855f7' : '#ef4444'}`,
+                                                    padding: '5px 10px',
+                                                    margin: '5px 0'
+                                                }}>
+                                                    <i style={{ color: '#94a3b8' }}><AlertTriangle size={12} style={{ verticalAlign: 'middle', marginRight: '4px' }} /> {m.content}</i>
+                                                </div>
+                                            ) : editMessageId === m._id ? (
+                                                <div style={{ display: 'flex', flexDirection: 'column', gap: '5px' }}>
+                                                    <input 
+                                                        className="input-field" 
+                                                        style={{ marginBottom: 0, padding: '5px' }}
+                                                        value={editContent}
+                                                        onChange={(e) => setEditContent(e.target.value)}
+                                                    />
+                                                    <div style={{ display: 'flex', gap: '5px' }}>
+                                                        <button className="btn-primary" style={{ padding: '2px 8px', fontSize: '0.7rem' }} onClick={handleEditMessage}>Save</button>
+                                                        <button className="btn-primary" style={{ padding: '2px 8px', fontSize: '0.7rem', background: 'rgba(255,255,255,0.1)' }} onClick={() => setEditMessageId(null)}>Cancel</button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <>
+                                                    <div>
+                                                        {m.content.split(/(@\w+(?:\s\w+)?)/g).map((part, i) => (
+                                                            part.startsWith("@") ? (
+                                                                <span key={i} style={{ color: '#38bdf8', fontWeight: 'bold' }}>{part}</span>
+                                                            ) : part
+                                                        ))}
+                                                        {m.isEdited && <span className="edited-tag">(edited)</span>}
+                                                    </div>
+                                                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '5px', marginTop: '4px' }}>
+                                                        <span style={{ fontSize: '0.65rem', opacity: 0.6 }}>
+                                                            {new Date(m.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                                                        </span>
+                                                        {m.sender._id === currentUser._id && (
+                                                            <div 
+                                                                className={`read-receipt ${m.readBy?.length > 1 ? 'read' : ''} ${m.readBy?.length === selectedChat?.participants?.length ? 'read-all' : ''}`} 
+                                                                style={{ fontSize: '0.8rem', lineHeight: 1, cursor: 'pointer' }}
+                                                                title={m.readBy?.length > 1 ? `${m.readBy.length - 1} people seen` : 'Sent'}
+                                                                onClick={(e) => {
+                                                                    e.stopPropagation();
+                                                                    setSelectedReadBy(m.readBy);
+                                                                }}
+                                                            >
+                                                                {m.readBy?.length > 1 ? <CheckCheck size={14} color="#10b981" /> : <Check size={14} />}
+                                                            </div>
+                                                        )}
+                                                    </div>
+                                                </>
+                                            )}
+
+                                            {m.fileUrl && !m.isDeletedByAdmin && (
+                                                m.fileType === 'image' ? (
+                                                    <img 
+                                                        src={`${ENDPOINT}${m.fileUrl}`} 
+                                                        alt="uploaded" 
+                                                        className="message-image" 
+                                                        style={{ cursor: 'zoom-in' }}
+                                                        onClick={() => setPreviewImage(`${ENDPOINT}${m.fileUrl}`)}
+                                                    />
+                                                ) : m.fileType === 'audio' ? (
+                                                    <div className="audio-message">
+                                                        <audio src={`${ENDPOINT}${m.fileUrl}`} controls className="custom-audio-player" />
+                                                    </div>
+                                                ) : (
+                                                    <a 
+                                                        href={`${ENDPOINT}${m.fileUrl}`} 
+                                                        target="_blank" 
+                                                        rel="noopener noreferrer"
+                                                        className="message-file"
+                                                    >
+                                                        <FileText size={18} />
+                                                        <span>Download Attachment</span>
+                                                    </a>
+                                                )
+                                            )}
+
+                                            {!editMessageId && !m.isDeletedByAdmin && (
+                                                <div className="message-actions">
+                                                    {/* Students cannot unpin admin/organizer messages */}
+                                                    {!(currentUser.role === 'student' && ['admin', 'organizer'].includes(m.sender?.role) && selectedChat.pinnedMessages?.some(p => p?._id === m._id)) && (
+                                                        <button className="action-btn" onClick={() => handleTogglePin(m._id)}>
+                                                            {selectedChat.pinnedMessages?.some(p => p?._id === m._id) ? <><PinOff size={14} /> Unpin</> : <><Pin size={14} /> Pin</>}
+                                                        </button>
+                                                    )}
+                                                    {(m.sender._id === currentUser._id || ['admin', 'organizer'].includes(currentUser.role)) && (
+                                                        <>
+                                                            {m.sender._id === currentUser._id && (
+                                                                <button className="action-btn" onClick={() => {
+                                                                    setEditMessageId(m._id);
+                                                                    setEditContent(m.content);
+                                                                }}><Edit3 size={14} /> Edit</button>
+                                                            )}
+                                                            {/* Students cannot delete admin/organizer messages */}
+                                                            {!(currentUser.role === 'student' && ['admin', 'organizer'].includes(m.sender?.role)) && (
+                                                                <button className="action-btn deletion" onClick={() => handleDeleteMessage(m._id)}><Trash2 size={14} /> Delete</button>
+                                                            )}
+                                                        </>
+                                                    )}
+                                                </div>
+                                            )}
+
+                                            {!m.isDeletedByAdmin && (
+                                                <div className="reaction-picker">
+                                                    {['👍', '❤️', '😂', '😮', '😢', '🔥'].map(emoji => (
+                                                        <span 
+                                                            key={emoji} 
+                                                            className="reaction-emoji"
+                                                            onClick={() => handleToggleReaction(m._id, emoji)}
+                                                        >
+                                                            {emoji}
+                                                        </span>
+                                                    ))}
+                                                </div>
+                                            )}
+
+                                            {m.reactions && m.reactions.length > 0 && !m.isDeletedByAdmin && (
+                                                <div className="message-reactions">
+                                                    {Object.entries(
+                                                        m.reactions.reduce((acc, r) => {
+                                                            acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                                                            return acc;
+                                                        }, {})
+                                                    ).map(([emoji, count]) => {
+                                                        const hasReacted = m.reactions.some(r => r.emoji === emoji && r.user?._id === currentUser._id || r.user === currentUser._id);
+                                                        return (
+                                                            <div 
+                                                                key={emoji} 
+                                                                className={`reaction-badge ${hasReacted ? 'active' : ''}`}
+                                                                onClick={() => handleToggleReaction(m._id, emoji)}
+                                                            >
+                                                                {emoji} {count > 1 ? count : ''}
+                                                            </div>
+                                                        );
+                                                    })}
+                                                </div>
+                                            )}
+                                            </div>
+                                        </React.Fragment>
+                                    );
+                                })
+                            )}
+                            {isTyping && <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Typing...</div>}
+                            <div ref={messagesEndRef} />
+                        </div>
+                        <div className="chat-input-area">
+                            {showMentions && mentionSuggestions.length > 0 && (
+                                <div className="mentions-dropdown glass-card">
+                                    {mentionSuggestions.map(user => (
+                                        <div 
+                                            key={user._id} 
+                                            className="mention-item"
+                                            onClick={() => handleMentionSelect(user)}
+                                        >
+                                            <div className="user-avatar" style={{ width: '24px', height: '24px', fontSize: '0.7rem' }}>
+                                                {user.name.charAt(0)}
+                                            </div>
+                                            <span>{user.name}</span>
+                                            <span className="user-role" style={{ fontSize: '0.6rem', opacity: 0.6 }}>{user.role || 'Student'}</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+                            <input
+                                type="file"
+                                style={{ display: 'none' }}
+                                ref={fileInputRef}
+                                onChange={handleFileUpload}
+                            />
+                            <button 
+                                className="btn-primary" 
+                                style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.1)' }}
+                                onClick={() => fileInputRef.current.click()}
+                            >
+                                <Paperclip size={20} />
+                            </button>
+                            
+                            {isRecording ? (
+                                <div className="recording-status">
+                                    <span className="recording-dot"></span>
+                                    <span style={{ color: '#ef4444', fontSize: '0.9rem', fontWeight: 600 }}>
+                                        {Math.floor(recordingTime / 60)}:{(recordingTime % 60).toString().padStart(2, '0')}
+                                    </span>
+                                    <button className="stop-btn" onClick={stopRecording}><Square size={14} fill="currentColor" /></button>
+                                </div>
+                            ) : (
+                                <button 
+                                    className="btn-primary" 
+                                    style={{ padding: '8px 12px', background: 'rgba(255,255,255,0.1)' }}
+                                    onClick={startRecording}
+                                >
+                                    <Mic size={20} />
+                                </button>
+                            )}
+
+                             {(currentUser.role === 'admin' || currentUser.role === 'organizer') && (
+                                <button 
+                                    className={`btn-primary ${isAnnouncementMode ? 'active' : ''}`} 
+                                    style={{ padding: '8px 12px', background: isAnnouncementMode ? '#22c55e' : 'rgba(255,255,255,0.1)', border: isAnnouncementMode ? 'none' : '' }}
+                                    onClick={() => setIsAnnouncementMode(!isAnnouncementMode)}
+                                    title="Toggle Announcement Mode"
+                                >
+                                    <Megaphone size={20} />
+                                </button>
+                            )}
+                            <input
+                                type="text"
+                                placeholder={isRecording ? "Recording..." : "Type a message..."}
+                                className="input-field"
+                                style={{ marginBottom: 0 }}
+                                value={newMessage}
+                                onChange={typingHandler}
+                                onKeyDown={sendMessage}
+                                disabled={isRecording}
+                            />
+                            <button 
+                                className="btn-primary" 
+                                style={{ padding: '8px 20px' }}
+                                onClick={sendMessage}
+                                disabled={isRecording}
+                            >
+                                <Send size={20} />
+                            </button>
+                        </div>
+                    </>
+                ) : (
+                    <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)' }}>
+                        Select a chat to start messaging
+                    </div>
+                )}
+            </div>
+
+            {/* Lightbox Modal */}
+            {previewImage && (
+                <div className="lightbox-overlay" onClick={() => setPreviewImage(null)}>
+                    <div className="lightbox-content" onClick={(e) => e.stopPropagation()}>
+                        <img src={previewImage} alt="preview" />
+                        <button className="lightbox-close" onClick={() => setPreviewImage(null)}><X size={32} /></button>
+                    </div>
+                </div>
+            )}
+
+            {/* Custom Delete Confirmation Modal */}
+            {deleteConfirmId && (
+                <div className="lightbox-overlay" onClick={() => setDeleteConfirmId(null)}>
+                    <div className="glass-card" onClick={(e) => e.stopPropagation()} style={{ padding: '30px', textAlign: 'center', maxWidth: '400px' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', marginBottom: '20px' }}>
+                            <div style={{ background: 'rgba(239, 68, 68, 0.1)', color: '#ef4444', padding: '15px', borderRadius: '50%' }}>
+                                <ShieldAlert size={48} />
+                            </div>
+                        </div>
+                        <h3 style={{ marginBottom: '10px' }}>Delete Message?</h3>
+                        <p style={{ color: 'var(--text-muted)', marginBottom: '25px', fontSize: '0.9rem' }}>
+                            Are you sure you want to remove this message? This action cannot be undone.
+                        </p>
+                        <div style={{ display: 'flex', gap: '15px', justifyContent: 'center' }}>
+                            <button 
+                                className="btn-primary" 
+                                style={{ background: 'rgba(255,255,255,0.05)', padding: '10px 25px' }}
+                                onClick={() => setDeleteConfirmId(null)}
+                            >
+                                Cancel
+                            </button>
+                            <button 
+                                className="btn-primary" 
+                                style={{ background: '#ef4444', padding: '10px 25px' }}
+                                onClick={handleConfirmDelete}
+                            >
+                                Delete
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+            {/* Read By Modal */}
+            {selectedReadBy && (
+                <div className="modal-overlay" onClick={() => setSelectedReadBy(null)}>
+                    <div className="modal-content read-by-modal" onClick={e => e.stopPropagation()}>
+                        <div className="modal-header">
+                            <h3>Seen by</h3>
+                            <button className="close-btn" onClick={() => setSelectedReadBy(null)}><X size={20} /></button>
+                        </div>
+                        <div className="read-by-list">
+                            {selectedReadBy.filter(u => u._id !== currentUser._id).length === 0 ? (
+                                <div style={{ textAlign: 'center', padding: '20px', color: '#94a3b8' }}>
+                                    No one has seen this yet
+                                </div>
+                            ) : (
+                                selectedReadBy.filter(u => u._id !== currentUser._id).map(user => (
+                                    <div key={user._id} className="read-by-item">
+                                        <div className="user-avatar">{user.name.charAt(0)}</div>
+                                        <div className="user-info">
+                                            <div className="user-name">{user.name}</div>
+                                            <div className="user-role">{user.role}</div>
+                                        </div>
+                                        <div className="seen-check"><CheckCheck size={16} color="#10b981" /></div>
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+};
+
+export default ChatPage;
