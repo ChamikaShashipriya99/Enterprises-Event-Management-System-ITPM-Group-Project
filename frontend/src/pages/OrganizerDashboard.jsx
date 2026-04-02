@@ -222,45 +222,44 @@ const OrganizerDashboard = () => {
                     </div>
                 </div>
 
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '2rem', gridColumn: 'span 1' }}>
-                    <div className="glass-card" style={{ padding: '2rem', borderLeft: '4px solid #ec4899' }}>
-                        <h3 style={{ marginBottom: '1.2rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <ShieldCheck size={18} /> Moderation Impact
-                        </h3>
-                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1rem' }}>
-                            <div>
-                                <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Self-Deletion Rate</div>
-                                <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#ef4444' }}>{chatStats.insights?.selfDeletionRate || 0}%</div>
-                            </div>
-                            <div>
-                                <div style={{ color: '#94a3b8', fontSize: '0.8rem' }}>Announcement Reach</div>
-                                <div style={{ fontSize: '1.8rem', fontWeight: '800', color: '#a855f7' }}>{chatStats.insights?.announcementReach || 0}%</div>
-                            </div>
+                <div className="glass-card" style={{ padding: '2rem', display: 'flex', flexDirection: 'column', justifyContent: 'center', borderLeft: '4px solid #ec4899', minHeight: '400px' }}>
+                    <h3 style={{ marginBottom: '2rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <ShieldCheck size={18} /> Moderation Impact
+                    </h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                        <div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '8px' }}>Self-Deletion Rate</div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#ef4444' }}>{chatStats.insights?.selfDeletionRate || 0}%</div>
+                        </div>
+                        <div>
+                            <div style={{ color: '#94a3b8', fontSize: '0.9rem', marginBottom: '8px' }}>Announcement Reach</div>
+                            <div style={{ fontSize: '2.5rem', fontWeight: '800', color: '#a855f7' }}>{chatStats.insights?.announcementReach || 0}%</div>
                         </div>
                     </div>
+                </div>
 
-                    <div className="glass-card" style={{ padding: '1.5rem' }}>
-                        <h3 style={{ marginBottom: '1rem', fontSize: '1.1rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
-                            <PieChartIcon size={18} /> Content Distribution
-                        </h3>
-                        <div style={{ width: '100%', height: '160px' }}>
-                            <ResponsiveContainer>
-                                <PieChart>
-                                    <Pie
-                                        data={chatStats.fileBreakdown}
-                                        innerRadius={40}
-                                        outerRadius={55}
-                                        paddingAngle={5}
-                                        dataKey="value"
-                                    >
-                                        {chatStats.fileBreakdown.map((entry, index) => (
-                                            <Cell key={`cell-${index}`} fill={['#a855f7', '#6366f1', '#10b981', '#f59e0b'][index % 4]} />
-                                        ))}
-                                    </Pie>
-                                    <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: 'white' }} />
-                                </PieChart>
-                            </ResponsiveContainer>
-                        </div>
+                <div className="glass-card" style={{ padding: '2rem', minHeight: '400px' }}>
+                    <h3 style={{ marginBottom: '1.5rem', fontSize: '1.2rem', display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <PieChartIcon size={18} /> Content Distribution
+                    </h3>
+                    <div style={{ width: '100%', height: '300px' }}>
+                        <ResponsiveContainer>
+                            <PieChart>
+                                <Pie
+                                    data={chatStats.fileBreakdown}
+                                    innerRadius={50}
+                                    outerRadius={75}
+                                    paddingAngle={5}
+                                    dataKey="value"
+                                >
+                                    {chatStats.fileBreakdown.map((entry, index) => (
+                                        <Cell key={`cell-${index}`} fill={['#a855f7', '#6366f1', '#10b981', '#f59e0b'][index % 4]} />
+                                    ))}
+                                </Pie>
+                                <Tooltip contentStyle={{ background: '#1e293b', border: 'none', borderRadius: '8px', color: 'white' }} />
+                                <Legend verticalAlign="bottom" height={36}/>
+                            </PieChart>
+                        </ResponsiveContainer>
                     </div>
                 </div>
             </div>
