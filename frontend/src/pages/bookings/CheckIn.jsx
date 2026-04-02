@@ -1,18 +1,7 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import bookingService from "../../services/bookingService";
-
-// ── Lazy-load jsQR from CDN (no npm install needed) ──────────────────────────
-let jsQR = null;
-const loadJsQR = () =>
-    new Promise((resolve, reject) => {
-        if (jsQR) return resolve(jsQR);
-        if (window.jsQR) { jsQR = window.jsQR; return resolve(jsQR); }
-        const s = document.createElement('script');
-        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jsqr/1.4.0/jsQR.min.js';
-        s.onload = () => { jsQR = window.jsQR; resolve(jsQR); };
-        s.onerror = () => reject(new Error('Failed to load jsQR'));
-        document.head.appendChild(s);
-    });
+import jsQR from 'jsqr';
+import { Camera, Image, ClipboardPaste, CheckCircle2, XCircle, User, Mail, Calendar, Clock, AlertCircle, Lightbulb } from 'lucide-react';
 
 // ── Decode a File into QR data ────────────────────────────────────────────────
 // Uses FileReader + HTMLImageElement — works in ALL browsers including Safari.
@@ -26,12 +15,24 @@ const decodeQRFromFile = (file) =>
             img.onerror = () => reject(new Error('Could not load image — file may be corrupt.'));
             img.onload = () => {
                 try {
+                    const MAX_SIZE = 800;
+                    let width = img.naturalWidth;
+                    let height = img.naturalHeight;
+
+                    // Scale down massively high-resolution images to prevent browser freezing
+                    if (width > MAX_SIZE || height > MAX_SIZE) {
+                        const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
+                        width = Math.round(width * ratio);
+                        height = Math.round(height * ratio);
+                    }
+
                     const canvas = document.createElement('canvas');
-                    canvas.width  = img.naturalWidth;
-                    canvas.height = img.naturalHeight;
-                    const ctx = canvas.getContext('2d');
-                    ctx.drawImage(img, 0, 0);
-                    const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+                    canvas.width  = width;
+                    canvas.height = height;
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    ctx.drawImage(img, 0, 0, width, height);
+                    
+                    const imageData = ctx.getImageData(0, 0, width, height);
                     const qr = jsQR(imageData.data, imageData.width, imageData.height, {
                         inversionAttempts: 'attemptBoth',
                     });
@@ -109,22 +110,29 @@ const CheckIn = () => {
     const startCamera = useCallback(async () => {
         setCameraError('');
         try {
-            await loadJsQR();
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                throw new Error('Browser API not supported or secure context required.');
+            }
             const stream = await navigator.mediaDevices.getUserMedia({
-                video: { facingMode: 'environment', width: { ideal: 1280 }, height: { ideal: 720 } }
+                video: true // Simple default request, no strict constraints
             });
             streamRef.current = stream;
             if (videoRef.current) {
                 videoRef.current.srcObject = stream;
-                await videoRef.current.play();
+                try {
+                    await videoRef.current.play();
+                } catch (playErr) {
+                    console.warn('Video play interrupted usually due to fast re-renders. Ignoring:', playErr.message);
+                }
             }
             setCameraActive(true);
             setScanning(true);
         } catch (e) {
+            console.error('CheckIn Camera Error:', e);
             setCameraError(
                 e.name === 'NotAllowedError'
                     ? 'Camera permission denied. Please allow camera access and try again.'
-                    : 'Could not access camera. Try the Upload or Paste tab instead.'
+                    : `Camera error: ${e.message || e.name}. Check console for details.`
             );
         }
     }, []);
@@ -186,8 +194,9 @@ const CheckIn = () => {
     const processUploadFile = useCallback(async (file) => {
         if (!file) return;
 
+        console.log('Upload image selected:', file.name, file.type);
         if (!file.type.startsWith('image/')) {
-            setError('Please upload an image file (PNG, JPG, WEBP, etc.).');
+            setError('Please upload an image file (PNG, JPG, WEBP, etc.). File selected was: ' + file.type);
             return;
         }
 
@@ -197,8 +206,13 @@ const CheckIn = () => {
         setUploadScanning(true);
 
         try {
-            await loadJsQR();
+            // Artificial delay to allow React to render the "Scanning..." state
+            // and give the user visual feedback that processing is happening.
+            await new Promise(resolve => setTimeout(resolve, 600));
+
             const qrData = await decodeQRFromFile(file);
+            console.log('Decoded QR Data:', qrData);
+            
             if (qrData) {
                 await submitCheckIn(qrData);
             } else {
@@ -215,8 +229,11 @@ const CheckIn = () => {
     // Called by the hidden <input type="file">
     const handleFileInputChange = (e) => {
         const file = e.target.files[0];
-        e.target.value = ''; // allow re-selecting the same file
-        if (file) processUploadFile(file);
+        console.log('File input triggered:', file);
+        if (file) {
+            processUploadFile(file);
+        }
+        e.target.value = ''; // clear allowing re-selecting the same file
     };
 
     // ── Paste submit ──────────────────────────────────────────────────────────
@@ -236,18 +253,21 @@ const CheckIn = () => {
 
     // ── Render ────────────────────────────────────────────────────────────────
     return (
-        <div style={{ padding: '2rem 5%', maxWidth: '720px', margin: '0 auto' }}>
+        <div style={{ padding: '2rem 24px', maxWidth: '1200px', margin: '0 auto' }}>
 
             {/* Header */}
-            <div style={{ marginBottom: '2rem' }}>
-                <h1 style={{ fontSize: '2.2rem', fontWeight: '800', marginBottom: '0.3rem' }}>
+            <div style={{ marginBottom: '2.5rem' }}>
+                <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '0.3rem' }}>
                     QR <span style={{ color: '#6366f1' }}>Check-In</span>
                 </h1>
-                <p style={{ color: '#64748b', fontSize: '0.9rem' }}>
+                <p style={{ color: '#64748b', fontSize: '1rem' }}>
                     Scan with camera, upload a QR image, or paste QR data to mark attendance.
                 </p>
             </div>
 
+            <div style={{ display: 'grid', gridTemplateColumns: 'minmax(0, 1.8fr) minmax(0, 1fr)', gap: '3rem', alignItems: 'start' }}>
+                {/* ── Left Column: Scanner ── */}
+                <div>
             {/* Tab bar */}
             <div style={{
                 display: 'flex', gap: '0.5rem', marginBottom: '1.5rem',
@@ -256,9 +276,9 @@ const CheckIn = () => {
                 borderRadius: '12px', padding: '5px'
             }}>
                 {[
-                    { id: 'camera', icon: '📷', label: 'Camera' },
-                    { id: 'upload', icon: '🖼️', label: 'Upload Image' },
-                    { id: 'paste',  icon: '📋', label: 'Paste Data' },
+                    { id: 'camera', icon: <Camera size={16} />, label: 'Camera' },
+                    { id: 'upload', icon: <Image size={16} />, label: 'Upload Image' },
+                    { id: 'paste',  icon: <ClipboardPaste size={16} />, label: 'Paste Data' },
                 ].map(t => (
                     <button
                         key={t.id}
@@ -317,7 +337,7 @@ const CheckIn = () => {
                                 position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column',
                                 alignItems: 'center', justifyContent: 'center', gap: '1rem', color: '#64748b'
                             }}>
-                                <div style={{ fontSize: '3rem' }}>📷</div>
+                                <Camera size={64} style={{ opacity: 0.5, marginBottom: '10px' }} />
                                 <div style={{ fontSize: '0.9rem' }}>Starting camera…</div>
                             </div>
                         )}
@@ -499,7 +519,7 @@ const CheckIn = () => {
                     background: 'rgba(239,68,68,0.08)', border: '1px solid rgba(239,68,68,0.2)',
                     color: '#f87171', fontSize: '0.9rem', display: 'flex', gap: '0.75rem', alignItems: 'flex-start'
                 }}>
-                    <span>❌</span>
+                    <XCircle size={20} style={{ flexShrink: 0, marginTop: '2px' }} />
                     <span>{error}</span>
                 </div>
             )}
@@ -515,8 +535,8 @@ const CheckIn = () => {
                         <div style={{
                             width: '48px', height: '48px', borderRadius: '50%',
                             background: 'rgba(16,185,129,0.15)', display: 'flex',
-                            alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', flexShrink: 0
-                        }}>✅</div>
+                            alignItems: 'center', justifyContent: 'center', color: '#10b981', flexShrink: 0
+                        }}><CheckCircle2 size={24} /></div>
                         <div>
                             <div style={{ fontWeight: '800', fontSize: '1.15rem', color: '#34d399' }}>Check-In Successful!</div>
                             <div style={{ fontSize: '0.78rem', color: '#475569', fontFamily: 'monospace', marginTop: '2px' }}>{result.bookingId}</div>
@@ -524,17 +544,17 @@ const CheckIn = () => {
                     </div>
                     <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(150px,1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
                         {[
-                            { label: 'Student',       value: result.student?.name  || '—', icon: '👤' },
-                            { label: 'Email',         value: result.student?.email || '—', icon: '📧' },
-                            { label: 'Event',         value: result.event?.title   || '—', icon: '📅' },
-                            { label: 'Checked In At', value: result.checkedInAt ? new Date(result.checkedInAt).toLocaleString() : '—', icon: '🕒' },
+                            { label: 'Student',       value: result.student?.name  || '—', icon: <User size={14} /> },
+                            { label: 'Email',         value: result.student?.email || '—', icon: <Mail size={14} /> },
+                            { label: 'Event',         value: result.event?.title   || '—', icon: <Calendar size={14} /> },
+                            { label: 'Checked In At', value: result.checkedInAt ? new Date(result.checkedInAt).toLocaleString() : '—', icon: <Clock size={14} /> },
                         ].map(item => (
                             <div key={item.label} style={{
                                 padding: '12px 14px', borderRadius: '9px',
                                 background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)'
                             }}>
                                 <div style={{ fontSize: '0.68rem', color: '#475569', fontWeight: '700', textTransform: 'uppercase', marginBottom: '4px' }}>{item.label}</div>
-                                <div style={{ fontSize: '0.85rem', color: '#e2e8f0', wordBreak: 'break-all' }}>{item.icon} {item.value}</div>
+                                <div style={{ fontSize: '0.85rem', color: '#e2e8f0', wordBreak: 'break-all', display: 'flex', alignItems: 'center', gap: '6px' }}>{item.icon} {item.value}</div>
                             </div>
                         ))}
                     </div>
@@ -547,21 +567,25 @@ const CheckIn = () => {
                     </button>
                 </div>
             )}
+            </div> {/* End Left Column */}
 
-            {/* ── Tips ── */}
-            <div style={{
-                marginTop: '2rem', padding: '1.25rem 1.5rem', borderRadius: '10px',
-                background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)'
-            }}>
-                <div style={{ fontSize: '0.75rem', color: '#475569', fontWeight: '700', marginBottom: '0.6rem', textTransform: 'uppercase', letterSpacing: '0.06em' }}>
-                    💡 Tips
+            {/* ── Right Column: Tips ── */}
+            <div style={{ position: 'sticky', top: '100px' }}>
+                    <div style={{
+                        padding: '1.5rem 1.75rem', borderRadius: '14px',
+                        background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)'
+                    }}>
+                        <div style={{ fontSize: '0.85rem', color: '#475569', fontWeight: '800', marginBottom: '1rem', textTransform: 'uppercase', letterSpacing: '0.06em', display: 'flex', alignItems: 'center', gap: '6px' }}>
+                            <Lightbulb size={16} style={{ color: '#eab308' }} /> Check-In Instructions
+                        </div>
+                        <ul style={{ color: '#94a3b8', fontSize: '0.95rem', lineHeight: '1.85', paddingLeft: '1.25rem', margin: 0, display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                            <li><strong style={{ color: '#f8fafc' }}>Camera</strong> — hold the QR code steady in front of your webcam inside the bracket guides.</li>
+                            <li><strong style={{ color: '#f8fafc' }}>Upload</strong> — use a screenshot or photo of the QR code from the confirmation email.</li>
+                            <li><strong style={{ color: '#f8fafc' }}>Paste</strong> — copy the raw <code style={{ color: '#818cf8', background: 'rgba(99,102,241,0.1)', padding: '2px 6px', borderRadius: '4px' }}>REF</code> number from the booking and paste it here.</li>
+                            <li>Each QR code can only be used <strong style={{ color: '#f43f5e' }}>once</strong> — reuse attempts will be rejected.</li>
+                        </ul>
+                    </div>
                 </div>
-                <ul style={{ color: '#64748b', fontSize: '0.83rem', lineHeight: '1.85', paddingLeft: '1.25rem', margin: 0 }}>
-                    <li><strong style={{ color: '#94a3b8' }}>Camera</strong> — hold the QR code steady in front of your webcam inside the bracket guides.</li>
-                    <li><strong style={{ color: '#94a3b8' }}>Upload</strong> — use a screenshot or photo of the QR code from the confirmation email.</li>
-                    <li><strong style={{ color: '#94a3b8' }}>Paste</strong> — copy the raw <code style={{ color: '#818cf8', background: 'rgba(99,102,241,0.1)', padding: '1px 5px', borderRadius: '3px' }}>qrCodeData</code> string from the booking and paste it here.</li>
-                    <li>Each QR code can only be used <strong style={{ color: '#94a3b8' }}>once</strong> — reuse will be rejected.</li>
-                </ul>
             </div>
 
             <style>{`

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
+import { ClipboardList, CheckCircle2, GraduationCap, XCircle, BarChart3, Check } from 'lucide-react';
 import bookingService from "../../services/bookingService";
 
 const statusColors = {
@@ -68,10 +69,10 @@ const AdminBookings = () => {
                 gap: '1.25rem', marginBottom: '2.5rem'
             }}>
                 {[
-                    { label: 'Total Bookings', value: bookings.length, icon: '📋', color: '#6366f1' },
-                    { label: 'Confirmed', value: totalConfirmed, icon: '✅', color: '#818cf8' },
-                    { label: 'Attended', value: totalAttended, icon: '🎓', color: '#34d399' },
-                    { label: 'Cancelled', value: totalCancelled, icon: '❌', color: '#f87171' },
+                    { label: 'Total Bookings', value: bookings.length, icon: <ClipboardList size={28} />, color: '#6366f1' },
+                    { label: 'Confirmed', value: totalConfirmed, icon: <CheckCircle2 size={28} />, color: '#818cf8' },
+                    { label: 'Attended', value: totalAttended, icon: <GraduationCap size={28} />, color: '#34d399' },
+                    { label: 'Cancelled', value: totalCancelled, icon: <XCircle size={28} />, color: '#f87171' },
                 ].map(s => (
                     <div key={s.label} className="glass-card" style={{ padding: '1.25rem', textAlign: 'center' }}>
                         <div style={{ fontSize: '1.5rem', marginBottom: '0.25rem' }}>{s.icon}</div>
@@ -84,8 +85,8 @@ const AdminBookings = () => {
             {/* Per-event stats */}
             {stats.length > 0 && (
                 <div className="glass-card" style={{ padding: '1.75rem', marginBottom: '2rem' }}>
-                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1.25rem' }}>
-                        📊 Bookings by Event
+                    <h3 style={{ fontSize: '1.1rem', fontWeight: '700', marginBottom: '1.25rem', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                        <BarChart3 size={18} /> Bookings by Event
                     </h3>
                     <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
                         {stats.map((s, i) => {
@@ -218,7 +219,7 @@ const AdminBookings = () => {
                                     </td>
                                     <td style={{ padding: '1rem 1.25rem', fontSize: '0.85rem' }}>
                                         {b.certificateGenerated
-                                            ? <span style={{ color: '#34d399', fontWeight: '600' }}>✅ Issued</span>
+                                            ? <span style={{ color: '#34d399', fontWeight: '600', display: 'flex', alignItems: 'center', gap: '4px' }}><Check size={14} /> Issued</span>
                                             : <span style={{ color: '#64748b' }}>—</span>}
                                     </td>
                                     <td style={{ padding: '1rem 1.25rem' }}>

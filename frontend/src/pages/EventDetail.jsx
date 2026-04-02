@@ -21,7 +21,8 @@ import {
     Map,
     Share2,
     CalendarPlus,
-    History
+    History,
+    CheckCircle2
 } from 'lucide-react';
 
 const EventDetail = () => {
@@ -254,7 +255,7 @@ const EventDetail = () => {
                     }}>
                         {booked ? (
                              <div style={{ textAlign: 'center', padding: '1rem' }}>
-                                <div style={{ color: '#10b981', fontWeight: 'bold', marginBottom: '10px' }}>✅ Seat Booked!</div>
+                                <div style={{ color: '#10b981', fontWeight: 'bold', marginBottom: '10px', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}><CheckCircle2 size={18} /> Seat Booked!</div>
                                 <div style={{ fontSize: '0.75rem', fontFamily: 'monospace', color: '#94a3b8', marginBottom: '15px' }}>REF: {bookingRef}</div>
                                 <button 
                                     onClick={() => navigate('/my-bookings')} 
