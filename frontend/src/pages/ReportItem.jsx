@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { 
     Package, 
     Tag, 
@@ -148,8 +149,10 @@ const ReportItem = () => {
             
             if (isEditMode) {
                 await axios.put(`http://localhost:5000/api/lost-found/${id}`, formData, config);
+                toast.success('Item report updated successfully! 📝');
             } else {
                 await axios.post('http://localhost:5000/api/lost-found', formData, config);
+                toast.success(`${formData.type} item reported successfully! 🚀`);
             }
             navigate('/lost-and-found');
         } catch (err) {

@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import Skeleton from '../components/Skeleton';
 import { 
     Search, 
@@ -47,6 +48,7 @@ const LostAndFoundFeed = () => {
             const user = JSON.parse(localStorage.getItem('user'));
             const config = { headers: { Authorization: `Bearer ${user?.token}` } };
             await axios.put(`http://localhost:5000/api/lost-found/${id}/resolve`, {}, config);
+            toast.success('Item status updated to Resolved! ✅');
             
             // Re-fetch to update status
             fetchItems();
