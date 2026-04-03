@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import toast from 'react-hot-toast';
 import vendorService from '../services/vendorService';
+import eventService from '../services/eventService';
 import {
   Store, Users, CheckCircle2, Clock, Plus, Edit3, Eye, Trash2,
   X, Phone, Mail, CalendarDays, Tag, Activity, TrendingUp,
@@ -12,10 +13,6 @@ import {
 /* ─────────────── Constants ─────────────── */
 const SERVICE_TYPES  = ['Equipment', 'Catering', 'Media'];
 const STATUS_OPTIONS = ['Active', 'Pending', 'Completed'];
-const EVENTS = [
-  'Annual Tech Expo', 'Leadership Summit', 'Award Night 2026',
-  'Cultural Festival', 'Graduation Ceremony', 'Hackathon 2026', 'Sports Meet 2026',
-];
 
 const EMPTY_FORM = { name: '', service: '', contact: '', email: '', event: '', status: 'Pending' };
 
@@ -118,8 +115,8 @@ const validate = (form) => {
 
   if (!form.contact.trim())
     e.contact = 'Contact number is required';
-  else if (!/^\+?[\d\s\-]{7,15}$/.test(form.contact.trim()))
-    e.contact = 'Enter a valid contact number (7–15 digits)';
+  else if (!/^\d{10}$/.test(form.contact.trim()))
+    e.contact = 'Enter a valid 10-digit contact number';
 
   if (!form.email.trim())
     e.email = 'Email address is required';
@@ -149,13 +146,15 @@ const VendorManagement = () => {
 
   const [form,   setForm]   = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
+  const [eventList, setEventList] = useState([]);
 
   /* ── Fetch from backend ── */
   const fetchVendors = useCallback(async () => {
     try {
       setLoading(true);
       const res = await vendorService.getAll();
-      setVendors(res.data);
+      const payload = res.data;
+      setVendors(Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []));
     } catch {
       // fallback to an empty list; user can still add new
       setVendors([]);
@@ -164,7 +163,20 @@ const VendorManagement = () => {
     }
   }, []);
 
-  useEffect(() => { fetchVendors(); }, [fetchVendors]);
+  const fetchEvents = useCallback(async () => {
+    try {
+      const payload = await eventService.getAllEvents();
+      // payload could be { success: true, count, data: [...] } or just an array
+      const arr = Array.isArray(payload?.data) ? payload.data : (Array.isArray(payload) ? payload : []);
+      // prevent duplicates just in case
+      setEventList(Array.from(new Set(arr.map(e => e.title).filter(Boolean))));
+    } catch (err) {
+      console.warn("Failed to load events", err);
+      setEventList([]);
+    }
+  }, []);
+
+  useEffect(() => { fetchVendors(); fetchEvents(); }, [fetchVendors, fetchEvents]);
 
   /* ── Summary ── */
   const total     = vendors.length;
@@ -190,10 +202,23 @@ const VendorManagement = () => {
   /* ── Handlers: field change ── */
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setForm(prev => ({ ...prev, [name]: value }));
-    // clear individual error on change
-    if (errors[name]) setErrors(prev => ({ ...prev, [name]: '' }));
+    
+    // Restrict contact number input to digits only, max 10
+    let finalValue = value;
+    if (name === 'contact') {
+      finalValue = value.replace(/[^\d]/g, '').slice(0, 10);
+    }
+
+    const newForm = { ...form, [name]: finalValue };
+    setForm(newForm);
     setApiError('');
+    
+    // Real-time validation: validate the updated form and instantly update the error state for this specific field
+    const errs = validate(newForm);
+    setErrors(prev => ({
+      ...prev,
+      [name]: errs[name] || ''
+    }));
   };
 
   /* ── Open modals ── */
@@ -224,11 +249,13 @@ const VendorManagement = () => {
     try {
       if (editTarget) {
         const res = await vendorService.update(editTarget, form);
-        setVendors(prev => prev.map(v => (v._id || v.id) === editTarget ? res.data : v));
+        const updatedVendor = res.data?.data || res.data;
+        setVendors(prev => prev.map(v => (v._id || v.id) === editTarget ? updatedVendor : v));
         toast.success('Vendor updated successfully!');
       } else {
         const res = await vendorService.create(form);
-        setVendors(prev => [res.data, ...prev]);
+        const newVendor = res.data?.data || res.data;
+        setVendors(prev => [newVendor, ...prev]);
         toast.success('Vendor added successfully!');
       }
       setModalOpen(false);
@@ -507,7 +534,7 @@ const VendorManagement = () => {
                 <SelectInput label="Service Type"   id="service" options={SERVICE_TYPES}              value={form.service} onChange={handleChange} error={errors.service}/>
                 <TextInput  label="Contact Number"  id="contact" placeholder="+94 77 000 0000"        value={form.contact} onChange={handleChange} error={errors.contact}/>
                 <TextInput  label="Email Address"   id="email"   type="email" placeholder="vendor@example.com" value={form.email} onChange={handleChange} error={errors.email}/>
-                <SelectInput label="Assign Event"   id="event"   options={EVENTS}                    value={form.event}   onChange={handleChange} error={errors.event}/>
+                <SelectInput label="Assign Event"   id="event"   options={eventList}                 value={form.event}   onChange={handleChange} error={errors.event}/>
                 <SelectInput label="Status"         id="status"  options={STATUS_OPTIONS}             value={form.status}  onChange={handleChange} error={errors.status}/>
 
                 <motion.button type="submit" disabled={submitting}
