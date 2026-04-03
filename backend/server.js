@@ -37,6 +37,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const lostItemRoutes = require('./routes/lostItemRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const vendorRoutes = require('./routes/vendorRoutes');
+const volunteerRoutes = require('./routes/volunteerRoutes');
 const pointRoutes  = require('./routes/pointRoutes');
 
 app.use('/api/auth', authRoutes);

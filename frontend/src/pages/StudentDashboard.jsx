@@ -19,7 +19,7 @@ import {
     Download,
     CheckCircle2,
     MessageCircleMore,
-    HeartHandshake
+    HeartHandshake,
     TrendingUp,
     PieChart as PieChartIcon
 } from 'lucide-react';
