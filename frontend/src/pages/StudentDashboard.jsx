@@ -35,6 +35,7 @@ const StudentDashboard = () => {
     // States
     const [bookings, setBookings] = useState([]);
     const [loading, setLoading] = useState(true);
+    const [showAllCerts, setShowAllCerts] = useState(false);
 
     const fetchData = async () => {
         try {
@@ -323,44 +324,79 @@ const StudentDashboard = () => {
                             <Award size={24} style={{ color: '#10b981' }} /> My Certificates
                         </h2>
                         {certs.length > 0 ? (
-                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px' }}>
-                                {certs.map((b, index) => (
-                                    <div key={index} style={{
-                                        padding: '20px',
-                                        background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)',
-                                        borderRadius: '12px',
-                                        border: '1px solid rgba(16, 185, 129, 0.2)',
-                                        display: 'flex',
-                                        flexDirection: 'column',
-                                        alignItems: 'center',
-                                        textAlign: 'center',
-                                        gap: '12px'
-                                    }}>
-                                        <Award size={32} style={{ color: '#10b981' }} />
-                                        <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                                            {b.event?.title}
-                                        </div>
-                                        <button 
-                                            onClick={() => handleDownloadCert(b)}
+                            <>
+                                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '15px' }}>
+                                    {(showAllCerts ? certs : certs.slice(0, 3)).map((b, index) => (
+                                        <motion.div 
+                                            key={index}
+                                            initial={{ opacity: 0, scale: 0.9 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ duration: 0.3, delay: index * 0.05 }}
                                             style={{
-                                                padding: '6px 14px',
-                                                background: '#10b981',
-                                                color: 'white',
-                                                border: 'none',
-                                                borderRadius: '6px',
-                                                fontSize: '0.75rem',
-                                                fontWeight: '700',
-                                                cursor: 'pointer',
+                                                padding: '20px',
+                                                background: 'linear-gradient(135deg, rgba(16, 185, 129, 0.1) 0%, rgba(16, 185, 129, 0.05) 100%)',
+                                                borderRadius: '12px',
+                                                border: '1px solid rgba(16, 185, 129, 0.2)',
                                                 display: 'flex',
+                                                flexDirection: 'column',
                                                 alignItems: 'center',
-                                                gap: '5px'
+                                                textAlign: 'center',
+                                                gap: '12px'
                                             }}
                                         >
-                                            <Download size={14} /> Download
-                                        </button>
-                                    </div>
-                                ))}
-                            </div>
+                                            <Award size={32} style={{ color: '#10b981' }} />
+                                            <div style={{ fontSize: '0.8rem', fontWeight: '700', color: 'white', overflow: 'hidden', textOverflow: 'ellipsis', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
+                                                {b.event?.title}
+                                            </div>
+                                            <button 
+                                                onClick={() => handleDownloadCert(b)}
+                                                style={{
+                                                    padding: '6px 14px',
+                                                    background: '#10b981',
+                                                    color: 'white',
+                                                    border: 'none',
+                                                    borderRadius: '6px',
+                                                    fontSize: '0.75rem',
+                                                    fontWeight: '700',
+                                                    cursor: 'pointer',
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    gap: '5px'
+                                                }}
+                                            >
+                                                <Download size={14} /> Download
+                                            </button>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                                
+                                {certs.length > 3 && (
+                                    <button 
+                                        onClick={() => setShowAllCerts(!showAllCerts)}
+                                        style={{
+                                            width: '100%',
+                                            marginTop: '20px',
+                                            padding: '10px',
+                                            background: 'rgba(16, 185, 129, 0.1)',
+                                            color: '#10b981',
+                                            border: '1px dashed #10b981',
+                                            borderRadius: '8px',
+                                            fontSize: '0.9rem',
+                                            fontWeight: '600',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.3s ease'
+                                        }}
+                                        onMouseOver={(e) => {
+                                            e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)';
+                                        }}
+                                        onMouseOut={(e) => {
+                                            e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)';
+                                        }}
+                                    >
+                                        {showAllCerts ? 'Show Less' : `Show All Certificates (${certs.length})`}
+                                    </button>
+                                )}
+                            </>
                         ) : (
                             <div style={{ padding: '20px', background: 'rgba(255,255,255,0.02)', borderRadius: '12px', textAlign: 'center' }}>
                                 <p style={{ color: '#64748b', fontSize: '0.9rem' }}>Participate in events to unlock your professional certificates.</p>
