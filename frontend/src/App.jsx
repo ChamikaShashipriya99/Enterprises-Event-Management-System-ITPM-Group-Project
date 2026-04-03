@@ -25,6 +25,7 @@ import OrganizerDashboard from './pages/OrganizerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminEvents from './pages/AdminEvents';
+import AdminVolunteers from './pages/AdminVolunteers';
 import AdminLostFound from './pages/AdminLostFound';
 import AllEvents from './pages/AllEvents';
 import EventDetail from './pages/EventDetail';
@@ -179,6 +180,11 @@ function App() {
             <Route path="/admin/users" element={
               <ProtectedRoute role="admin">
                 <AdminUsers />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/volunteers" element={
+              <ProtectedRoute role="admin">
+                <AdminVolunteers />
               </ProtectedRoute>
             } />
             <Route path="/admin/events" element={

@@ -82,4 +82,23 @@ const getMyVolunteerData = async (req, res) => {
     }
 };
 
-module.exports = { registerVolunteer, getMyVolunteerData };
+// @desc    Get all volunteers for admin dashboard
+// @route   GET /api/volunteer/all
+// @access  Private/Admin
+const getAllVolunteers = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Not authorized as admin' });
+        }
+
+        const volunteers = await VolunteerRegistration.find()
+            .populate('user', 'profilePicture role')
+            .sort({ createdAt: -1 });
+            
+        res.json(volunteers);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error fetching all volunteers', error: error.message });
+    }
+};
+
+module.exports = { registerVolunteer, getMyVolunteerData, getAllVolunteers };
