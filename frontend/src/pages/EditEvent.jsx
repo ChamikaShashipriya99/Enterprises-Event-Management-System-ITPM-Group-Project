@@ -45,29 +45,53 @@ const EditEvent = () => {
         fetchEvent();
     }, [id]);
 
+    const validateField = (name, value) => {
+        let errorMsg = '';
+        switch (name) {
+            case 'title':
+                if (!value.trim()) errorMsg = 'Title is required';
+                else if (value.trim().length < 5) errorMsg = 'Title must be at least 5 characters';
+                break;
+            case 'description':
+                if (!value.trim()) errorMsg = 'Description is required';
+                else if (value.trim().length < 20) errorMsg = 'Description must be at least 20 characters';
+                break;
+            case 'location':
+                if (!value.trim()) errorMsg = 'Location is required';
+                break;
+            case 'date':
+                if (!value) errorMsg = 'Date is required';
+                else {
+                    const selectedDate = new Date(value);
+                    const today = new Date();
+                    today.setHours(0, 0, 0, 0);
+                    if (selectedDate < today) errorMsg = 'Event date must be today or in the future';
+                }
+                break;
+            case 'capacity':
+                if (!value) errorMsg = 'Capacity is required';
+                else if (value < 1) errorMsg = 'Capacity must be at least 1';
+                break;
+            default:
+                break;
+        }
+        setErrors(prev => ({ ...prev, [name]: errorMsg }));
+        return errorMsg;
+    };
+
     const validateForm = () => {
-        let newErrors = {};
-        if (!formData.title.trim()) newErrors.title = 'Title is required';
-        if (!formData.description.trim()) newErrors.description = 'Description is required';
-        if (!formData.location.trim()) newErrors.location = 'Location is required';
-
-        if (!formData.date) {
-            newErrors.date = 'Date is required';
-        } else if (new Date(formData.date) < new Date().setHours(0, 0, 0, 0)) {
-            newErrors.date = 'Event date must be in the future or today';
-        }
-
-        if (!formData.capacity || formData.capacity < 1) {
-            newErrors.capacity = 'Capacity must be at least 1';
-        }
-
-        setErrors(newErrors);
+        const newErrors = {};
+        Object.keys(formData).forEach(key => {
+            const msg = validateField(key, formData[key]);
+            if (msg) newErrors[key] = msg;
+        });
         return Object.keys(newErrors).length === 0;
     };
 
     const handleChange = (e) => {
-        setFormData({ ...formData, [e.target.name]: e.target.value });
-        if (errors[e.target.name]) setErrors({ ...errors, [e.target.name]: '' });
+        const { name, value } = e.target;
+        setFormData({ ...formData, [name]: value });
+        validateField(name, value);
     };
 
     const handleImageUpload = async (e) => {

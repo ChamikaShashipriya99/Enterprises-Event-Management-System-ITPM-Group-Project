@@ -5,8 +5,38 @@ const Notification = require('../models/Notification');
 // @desc    Create new event
 // @route   POST /api/events
 // @access  Private/Organizer
+// @route   POST /api/events
+// @access  Private/Organizer
 exports.createEvent = async (req, res, next) => {
     try {
+        const { title, description, location, date, capacity } = req.body;
+
+        // 1. Check for required fields
+        if (!title || !description || !location || !date || !capacity) {
+            return res.status(400).json({ success: false, message: 'All fields are required' });
+        }
+
+        // 2. Validate title and description length
+        if (title.trim().length < 5) {
+            return res.status(400).json({ success: false, message: 'Title must be at least 5 characters long' });
+        }
+        if (description.trim().length < 20) {
+            return res.status(400).json({ success: false, message: 'Description must be at least 20 characters long' });
+        }
+
+        // 3. Validate Date
+        const eventDate = new Date(date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (eventDate < today) {
+            return res.status(400).json({ success: false, message: 'Event date must be today or in the future' });
+        }
+
+        // 4. Validate Capacity
+        if (capacity < 1) {
+            return res.status(400).json({ success: false, message: 'Capacity must be at least 1' });
+        }
+
         req.body.organizer = req.user.id;
         const event = await Event.create(req.body);
 
@@ -62,8 +92,29 @@ exports.updateEvent = async (req, res, next) => {
             return res.status(401).json({ success: false, message: 'Not authorized to update this event' });
         }
 
+        const { title, description, date, capacity } = req.body;
+
+        // Perform validations for updated fields
+        if (title && title.trim().length < 5) {
+            return res.status(400).json({ success: false, message: 'Title must be at least 5 characters long' });
+        }
+        if (description && description.trim().length < 20) {
+            return res.status(400).json({ success: false, message: 'Description must be at least 20 characters long' });
+        }
+        if (date) {
+            const eventDate = new Date(date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (eventDate < today) {
+                return res.status(400).json({ success: false, message: 'Event date must be today or in the future' });
+            }
+        }
+        if (capacity !== undefined && capacity < 1) {
+            return res.status(400).json({ success: false, message: 'Capacity must be at least 1' });
+        }
+
         event = await Event.findByIdAndUpdate(req.params.id, req.body, {
-            returnDocument: 'after',
+            new: true,
             runValidators: true
         });
 
