@@ -1,14 +1,18 @@
 // frontend/src/pages/VolunteerRegistration.jsx
-import { useState, useContext } from 'react';
+import { useState, useContext, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Check, Clipboard, CheckCircle2 } from 'lucide-react';
 import { AuthContext } from '../context/AuthContext';
 import { toast } from 'react-hot-toast';
+import Skeleton from '../components/Skeleton';
 
 const VolunteerRegistration = () => {
     const { currentUser } = useContext(AuthContext);
     const navigate = useNavigate();
+
+    const [isUpdateMode, setIsUpdateMode] = useState(false);
+    const [loading, setLoading] = useState(true);
 
     const [formData, setFormData] = useState({
         fullName: currentUser?.name || '',
@@ -38,6 +42,49 @@ const VolunteerRegistration = () => {
             return acc;
         }, {})
     );
+
+    useEffect(() => {
+        const fetchExistingData = async () => {
+            try {
+                const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+                const token = user?.token || '';
+                
+                const response = await fetch('http://localhost:5000/api/volunteer/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    setIsUpdateMode(true);
+                    setFormData({
+                        fullName: data.fullName || '',
+                        email: data.email || '',
+                        phone: data.phone || ''
+                    });
+                    setSelectedSkills(data.skills || []);
+                    
+                    // Merge existing availability into default structure
+                    if (data.availability) {
+                        setAvailability(prev => {
+                            const updated = { ...prev };
+                            for (const day in data.availability) {
+                                if (updated[day]) {
+                                    updated[day] = { ...updated[day], ...data.availability[day] };
+                                }
+                            }
+                            return updated;
+                        });
+                    }
+                }
+            } catch (error) {
+                console.error("Error fetching existing registration", error);
+            } finally {
+                setLoading(false);
+            }
+        };
+
+        fetchExistingData();
+    }, []);
 
     const handleInputChange = (e) => {
         let { name, value } = e.target;
@@ -121,25 +168,48 @@ const VolunteerRegistration = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(errorData.message || 'Registration failed');
+                throw new Error(errorData.message || (isUpdateMode ? 'Update failed' : 'Registration failed'));
             }
             
-            toast.success("Volunteer Registration submitted successfully!");
+            toast.success(isUpdateMode ? "Profile updated successfully!" : "Volunteer Registration submitted successfully!");
             navigate('/student-dashboard');
         } catch (error) {
-            toast.error(error.message || "An error occurred during registration.");
+            toast.error(error.message || "An error occurred during submission.");
         }
     };
+
+    if (loading) {
+        return (
+            <div style={{ padding: '40px 5%', maxWidth: '1000px', margin: '0 auto' }}>
+                <Skeleton height="150px" style={{ borderRadius: '16px', marginBottom: '30px' }} />
+                <Skeleton height="300px" style={{ borderRadius: '16px', marginBottom: '30px' }} />
+                <Skeleton height="300px" style={{ borderRadius: '16px' }} />
+            </div>
+        );
+    }
 
     return (
         <div style={{ padding: '40px 5%', maxWidth: '1000px', margin: '0 auto' }}>
             <div style={{ textAlign: 'center', marginBottom: '40px' }}>
-                <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
-                    Volunteer <span style={{ background: 'linear-gradient(135deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Registration</span>
-                </h1>
-                <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
-                    Fill out details to get matched with amazing events on campus!
-                </p>
+                {isUpdateMode ? (
+                    <>
+                        <h1 style={{ fontSize: '2.8rem', fontWeight: '800', marginBottom: '10px', color: 'white' }}>
+                            Update Profile
+                        </h1>
+                        <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
+                            Update your skills and availability to stay matched with our events.
+                        </p>
+                    </>
+                ) : (
+                    <>
+                        <h1 style={{ fontSize: '2.5rem', fontWeight: '800', marginBottom: '10px' }}>
+                            Volunteer <span style={{ background: 'linear-gradient(135deg, #a855f7, #ec4899)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>Registration</span>
+                        </h1>
+                        <p style={{ color: '#94a3b8', fontSize: '1.1rem' }}>
+                            Fill out details to get matched with amazing events on campus!
+                        </p>
+                    </>
+                )}
             </div>
 
             <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
@@ -318,7 +388,7 @@ const VolunteerRegistration = () => {
                             gap: '10px'
                         }}
                     >
-                        <Clipboard size={20} /> Complete Registration
+                        <Clipboard size={20} /> {isUpdateMode ? 'Update Profile' : 'Complete Registration'}
                     </button>
                 </div>
             </form>

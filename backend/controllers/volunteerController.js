@@ -44,20 +44,42 @@ const registerVolunteer = async (req, res) => {
     }
 
     try {
-        const registration = new VolunteerRegistration({
+        const registrationData = {
             user: req.user._id,
             fullName,
             email,
             phone,
             skills,
             availability
-        });
+        };
 
-        const createdRegistration = await registration.save();
-        res.status(201).json(createdRegistration);
+        const updatedRegistration = await VolunteerRegistration.findOneAndUpdate(
+            { user: req.user._id },
+            { $set: registrationData },
+            { new: true, upsert: true }
+        );
+
+        res.status(200).json(updatedRegistration);
     } catch (error) {
         res.status(500).json({ message: 'Failed to register volunteer', error: error.message });
     }
 };
 
-module.exports = { registerVolunteer };
+// @desc    Get logged in user's volunteer data
+// @route   GET /api/volunteer/me
+// @access  Private
+const getMyVolunteerData = async (req, res) => {
+    try {
+        const volunteerData = await VolunteerRegistration.findOne({ user: req.user._id });
+        
+        if (!volunteerData) {
+            return res.status(404).json({ message: 'Volunteer registration not found' });
+        }
+        
+        res.json(volunteerData);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error fetching volunteer data', error: error.message });
+    }
+};
+
+module.exports = { registerVolunteer, getMyVolunteerData };

@@ -37,6 +37,7 @@ import ChatPage from './pages/ChatPage';
 import AuditLogs from './pages/AuditLogs';
 import Gallery from './pages/Gallery';
 import VolunteerRegistration from './pages/VolunteerRegistration';
+import VolunteerDashboard from './pages/VolunteerDashboard';
 
 // Booking Engine pages (Induwari's module)
 import MyBookings from './pages/bookings/MyBookings';
@@ -135,6 +136,11 @@ function App() {
             <Route path="/volunteer-register" element={
               <ProtectedRoute role="student">
                 <VolunteerRegistration />
+              </ProtectedRoute>
+            } />
+            <Route path="/volunteer-hub" element={
+              <ProtectedRoute role="student">
+                <VolunteerDashboard />
               </ProtectedRoute>
             } />
           </Route>
