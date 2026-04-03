@@ -12,7 +12,10 @@
   "dependencies": {
     "aos": "^2.3.4",
     "axios": "^1.13.6",
+    "force": "^0.0.3",
     "framer-motion": "^12.38.0",
+    "jspdf": "^4.2.1",
+    "jspdf-autotable": "^5.0.7",
     "jsqr": "^1.4.0",
     "lucide-react": "^1.7.0",
     "react": "^19.2.0",

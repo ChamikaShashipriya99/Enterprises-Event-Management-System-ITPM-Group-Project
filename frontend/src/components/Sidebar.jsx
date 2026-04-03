@@ -17,6 +17,7 @@ import {
     PlusCircle,
     Search,
     HeartHandshake
+    Store
 } from 'lucide-react';
 import EventBuddyLogo from '../assets/EventBuddy.png';
 import './Sidebar.css';
@@ -34,6 +35,7 @@ const Sidebar = () => {
             { path: '/admin/events', icon: <Calendar size={20} />, text: 'Event Oversight' },
             { path: '/admin/lost-found', icon: <ShieldAlert size={20} />, text: 'Recovery Hub' },
             { path: '/admin/audit-logs', icon: <History size={20} />, text: 'System Logs' },
+            { path: '/admin/vendors', icon: <Store size={20} />, text: 'Vendor Management' },
             { path: '/chat', icon: <MessageSquare size={20} />, text: 'Messages', badge: unreadCount },
             { path: '/profile?tab=notifications', icon: <Bell size={20} />, text: 'Notifications', badge: systemUnreadCount },
             { path: '/gallery', icon: <Search size={20} />, text: 'Gallery' },

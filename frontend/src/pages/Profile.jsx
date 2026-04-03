@@ -3,6 +3,7 @@ import { AuthContext } from '../context/AuthContext';
 import { useNavigate, Link } from 'react-router-dom';
 import userService from '../services/userService';
 import authService from '../services/authService';
+import pointService from '../services/pointService';
 import toast from 'react-hot-toast';
 import Skeleton from '../components/Skeleton';
 import ConfirmModal from '../components/ConfirmModal';
@@ -26,9 +27,107 @@ import {
     UserCircle,
     Bell,
     CheckCircle2,
-    Inbox
+    Inbox,
+    Star,
+    Trophy,
+    Zap
 } from 'lucide-react';
 import './Profile.css';
+
+// ── Level order for upgrade detection ────────────────────────────────────────
+const LEVEL_ORDER = { Unranked: 0, Bronze: 1, Silver: 2, Gold: 3 };
+
+// ── Confetti pieces (generated once, stable across renders) ──────────────────
+const CONFETTI = Array.from({ length: 60 }, (_, i) => ({
+    id: i,
+    left: `${Math.random() * 100}%`,
+    delay: `${Math.random() * 1.4}s`,
+    duration: `${1.8 + Math.random() * 1.4}s`,
+    color: ['#6366f1','#a855f7','#f59e0b','#10b981','#ec4899','#38bdf8'][i % 6],
+    size: `${6 + Math.random() * 8}px`,
+    rotate: `${Math.random() * 360}deg`,
+}));
+
+// ── CelebrationModal (defined outside Profile so it never remounts) ───────────
+const CelebrationModal = ({ level, onClose }) => {
+    if (!level) return null;
+    return (
+        <div
+            onClick={onClose}
+            style={{
+                position: 'fixed', inset: 0, zIndex: 9999,
+                background: 'rgba(0,0,0,0.82)', backdropFilter: 'blur(6px)',
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                flexDirection: 'column', padding: '1rem',
+                overflow: 'hidden',
+            }}
+        >
+            {/* Confetti */}
+            {CONFETTI.map(c => (
+                <div key={c.id} style={{
+                    position: 'absolute', top: '-20px', left: c.left,
+                    width: c.size, height: c.size, borderRadius: '2px',
+                    background: c.color, transform: `rotate(${c.rotate})`,
+                    animation: `confettiFall ${c.duration} ${c.delay} ease-in forwards`,
+                    pointerEvents: 'none',
+                }} />
+            ))}
+
+            {/* Card */}
+            <div
+                onClick={e => e.stopPropagation()}
+                style={{
+                    background: 'linear-gradient(135deg,rgba(30,27,75,0.97),rgba(17,24,39,0.97))',
+                    border: '1px solid rgba(99,102,241,0.4)',
+                    borderRadius: '24px', padding: '2.5rem 2rem',
+                    textAlign: 'center', maxWidth: '420px', width: '100%',
+                    boxShadow: '0 0 60px rgba(99,102,241,0.3)',
+                    animation: 'popIn 0.45s cubic-bezier(0.34,1.56,0.64,1) forwards',
+                    position: 'relative',
+                }}
+            >
+                <div style={{ fontSize: '5.5rem', lineHeight: 1, marginBottom: '0.6rem', animation: 'bounce 0.8s 0.4s ease infinite alternate' }}>
+                    {level.emoji}
+                </div>
+                <div style={{ fontSize: '0.8rem', fontWeight: 700, letterSpacing: '0.14em', color: '#818cf8', textTransform: 'uppercase', marginBottom: '0.4rem' }}>
+                    Level Up! 🎉
+                </div>
+                <h2 style={{ fontSize: '2.4rem', fontWeight: 900, color: level.color, margin: '0 0 0.5rem' }}>
+                    {level.name}
+                </h2>
+                <p style={{ color: '#94a3b8', fontSize: '1rem', marginBottom: '1.8rem', lineHeight: 1.6 }}>
+                    Congratulations! You've reached <strong style={{ color: 'white' }}>{level.name}</strong> level by attending events consistently. Keep it up!
+                </p>
+                <button
+                    onClick={onClose}
+                    style={{
+                        background: 'linear-gradient(135deg,#6366f1,#a855f7)',
+                        color: 'white', border: 'none', borderRadius: '12px',
+                        padding: '13px 32px', fontWeight: 700, fontSize: '1rem',
+                        cursor: 'pointer', boxShadow: '0 4px 20px rgba(99,102,241,0.4)',
+                    }}
+                >
+                    Awesome! 🚀
+                </button>
+            </div>
+
+            <style>{`
+                @keyframes confettiFall {
+                    0%   { transform: translateY(0) rotate(0deg); opacity: 1; }
+                    100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+                }
+                @keyframes popIn {
+                    from { transform: scale(0.6); opacity: 0; }
+                    to   { transform: scale(1);   opacity: 1; }
+                }
+                @keyframes bounce {
+                    from { transform: translateY(0); }
+                    to   { transform: translateY(-14px); }
+                }
+            `}</style>
+        </div>
+    );
+};
 
 const Profile = () => {
     const { currentUser, token, logout, systemNotifications, setSystemNotifications, systemUnreadCount, fetchSystemNotifications } = useContext(AuthContext);
@@ -39,6 +138,9 @@ const Profile = () => {
     const [loading, setLoading] = useState(true);
     const [deleteModalOpen, setDeleteModalOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('overview');
+    const [points, setPoints]             = useState(null);
+    const [pointsLoading, setPointsLoading] = useState(false);
+    const [celebLevel, setCelebLevel]     = useState(null); // level that triggered the celebration
     const navigate = useNavigate();
 
     const fetchProfile = async () => {
@@ -73,6 +175,41 @@ const Profile = () => {
             setActiveTab('notifications');
         }
     }, [token]);
+
+    // Fetch points when tab is activated; detect level-up for celebration
+    useEffect(() => {
+        if (activeTab !== 'points' || points !== null) return;
+        const load = async () => {
+            setPointsLoading(true);
+            try {
+                const res = await pointService.getMyPoints();
+                const data = res.data.data;
+                setPoints(data);
+
+                // ── Level-up detection ──────────────────────────────────────
+                const userId = currentUser?._id || currentUser?.id || 'guest';
+                const storageKey = `studentLevel_${userId}`;
+                const savedLevel = localStorage.getItem(storageKey) || 'Unranked';
+                const newLevel   = data.level.name;
+
+                if (
+                    LEVEL_ORDER[newLevel] !== undefined &&
+                    LEVEL_ORDER[savedLevel] !== undefined &&
+                    LEVEL_ORDER[newLevel] > LEVEL_ORDER[savedLevel] &&
+                    newLevel !== 'Unranked'
+                ) {
+                    setCelebLevel(data.level); // triggers the modal
+                }
+                // Always persist the latest level
+                localStorage.setItem(storageKey, newLevel);
+            } catch {
+                setPoints({ totalPoints: 0, attendedCount: 0, level: { name: 'Unranked', emoji: '⭐', next: 1, color: '#64748b' }, history: [] });
+            } finally {
+                setPointsLoading(false);
+            }
+        };
+        load();
+    }, [activeTab]);
 
     const handleRevokeSession = async (sessionId) => {
         try {
@@ -199,8 +336,23 @@ const Profile = () => {
 
     return (
         <div className="profile-container">
-            <header className="profile-hero">
-                <div className="profile-avatar-wrapper">
+            <header 
+                className="profile-hero" 
+                style={{ 
+                    background: profile.coverImage ? `url(http://localhost:5000${profile.coverImage}) center/cover` : 'linear-gradient(135deg, var(--primary) 0%, #a855f7 100%)',
+                    position: 'relative'
+                }}
+            >
+                {profile.coverImage && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(to bottom, rgba(15, 23, 42, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%)',
+                        borderRadius: '24px',
+                        zIndex: 1
+                    }} />
+                )}
+                <div className="profile-avatar-wrapper" style={{ zIndex: 10 }}>
                     <div className="profile-avatar">
                         {profile.profilePicture ? (
                             <img src={profile.profilePicture.startsWith('http') ? profile.profilePicture : `http://localhost:5000${profile.profilePicture}`} alt="Profile" />
@@ -209,14 +361,14 @@ const Profile = () => {
                         )}
                     </div>
                 </div>
-                <div className="profile-header-info">
+                <div className="profile-header-info" style={{ position: 'relative', zIndex: 10 }}>
                     <h1 className="profile-name">{profile.name}</h1>
                     <div className="profile-role-badge">
                         <Shield size={14} />
                         {profile.role} Account
                     </div>
                 </div>
-                <Link to="/edit-profile" className="btn-primary" style={{ position: 'absolute', right: '40px', bottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Link to="/edit-profile" className="btn-primary" style={{ position: 'absolute', right: '40px', bottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10 }}>
                     <Edit size={18} />
                     Edit Profile
                 </Link>
@@ -236,6 +388,14 @@ const Profile = () => {
                     <Bell size={18} /> Alerts & Notifications
                     {systemUnreadCount > 0 && <span className="tab-badge">{systemUnreadCount}</span>}
                 </button>
+                {currentUser?.role === 'student' && (
+                    <button
+                        className={`tab-btn ${activeTab === 'points' ? 'active' : ''}`}
+                        onClick={() => setActiveTab('points')}
+                    >
+                        <Trophy size={18} /> My Points
+                    </button>
+                )}
             </div>
 
             {activeTab === 'overview' ? (
@@ -385,6 +545,116 @@ const Profile = () => {
                         </div>
                     </div>
                 </div>
+            ) : activeTab === 'points' ? (
+                <div style={{ maxWidth: '800px', margin: '0 auto' }}>
+                    {pointsLoading ? (
+                        <div className="glass-card" style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                            <Zap size={32} style={{ color: '#6366f1', marginBottom: '1rem' }} />
+                            <p>Loading your achievements…</p>
+                        </div>
+                    ) : points ? (
+                        <>
+                            {/* Level hero card */}
+                            <div className="glass-card" style={{
+                                padding: '2rem', marginBottom: '1.5rem',
+                                background: 'linear-gradient(135deg, rgba(99,102,241,0.12) 0%, rgba(168,85,247,0.08) 100%)',
+                                borderLeft: `4px solid ${points.level.color}`,
+                                display: 'flex', alignItems: 'center', gap: '2rem', flexWrap: 'wrap',
+                            }}>
+                                <div style={{ fontSize: '5rem', lineHeight: 1 }}>{points.level.emoji}</div>
+                                <div style={{ flex: 1 }}>
+                                    <div style={{ fontSize: '0.78rem', color: '#64748b', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.08em', marginBottom: '4px' }}>Current Level</div>
+                                    <div style={{ fontSize: '2rem', fontWeight: 800, color: points.level.color, marginBottom: '4px' }}>{points.level.name}</div>
+                                    <div style={{ fontSize: '1rem', color: '#94a3b8' }}>
+                                        <span style={{ fontSize: '1.8rem', fontWeight: 800, color: 'white' }}>{points.totalPoints}</span>{' '}
+                                        credit points &middot; <span style={{ color: '#818cf8' }}>{points.attendedCount}</span> events attended
+                                    </div>
+                                    {points.level.next && (
+                                        <div style={{ marginTop: '1rem' }}>
+                                            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '0.75rem', color: '#64748b', marginBottom: '6px' }}>
+                                                <span>Progress to next level</span>
+                                                <span>{points.attendedCount} / {points.level.next} events</span>
+                                            </div>
+                                            <div style={{ height: '8px', borderRadius: '99px', background: 'rgba(255,255,255,0.07)', overflow: 'hidden' }}>
+                                                <div style={{
+                                                    height: '100%', borderRadius: '99px',
+                                                    background: `linear-gradient(90deg, ${points.level.color}, #818cf8)`,
+                                                    width: `${Math.min((points.attendedCount / points.level.next) * 100, 100)}%`,
+                                                    transition: 'width 0.8s ease',
+                                                }} />
+                                            </div>
+                                        </div>
+                                    )}
+                                    {!points.level.next && (
+                                        <div style={{ marginTop: '0.6rem', fontSize: '0.85rem', color: '#f59e0b', fontWeight: 600 }}>🎉 Maximum level reached!</div>
+                                    )}
+                                </div>
+                            </div>
+
+                            {/* Level rules */}
+                            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(150px,1fr))', gap: '1rem', marginBottom: '2rem' }}>
+                                {[
+                                    { emoji: '⭐', name: 'Unranked', req: '0 events',   pts: '0 pts',    color: '#64748b' },
+                                    { emoji: '🥉', name: 'Bronze',   req: '1+ events',  pts: '10+ pts',  color: '#b45309' },
+                                    { emoji: '🥈', name: 'Silver',   req: '5+ events',  pts: '50+ pts',  color: '#94a3b8' },
+                                    { emoji: '🥇', name: 'Gold',     req: '10+ events', pts: '100+ pts', color: '#f59e0b' },
+                                ].map(lv => (
+                                    <div key={lv.name} className="glass-card" style={{
+                                        padding: '1rem', borderTop: `3px solid ${lv.color}`, textAlign: 'center',
+                                        opacity: points.level.name === lv.name ? 1 : 0.45,
+                                        transform: points.level.name === lv.name ? 'scale(1.04)' : 'none',
+                                        transition: 'all 0.2s',
+                                    }}>
+                                        <div style={{ fontSize: '2.2rem' }}>{lv.emoji}</div>
+                                        <div style={{ fontWeight: 700, color: lv.color, marginTop: '4px' }}>{lv.name}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#64748b' }}>{lv.req}</div>
+                                        <div style={{ fontSize: '0.75rem', color: '#94a3b8' }}>{lv.pts}</div>
+                                    </div>
+                                ))}
+                            </div>
+
+                            {/* History */}
+                            <div className="glass-card" style={{ padding: '1.5rem' }}>
+                                <h3 style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '1.1rem', fontWeight: 700, marginBottom: '1.2rem' }}>
+                                    <Star size={18} style={{ color: '#f59e0b' }} /> Attended Events History
+                                </h3>
+                                {points.history.length === 0 ? (
+                                    <div style={{ textAlign: 'center', padding: '2.5rem 0', color: '#475569' }}>
+                                        <Trophy size={40} style={{ opacity: 0.3, marginBottom: '1rem' }} />
+                                        <p style={{ fontWeight: 600, marginBottom: '4px' }}>No attended events yet</p>
+                                        <p style={{ fontSize: '0.85rem' }}>Attend events to start earning credit points!</p>
+                                    </div>
+                                ) : (
+                                    <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                        {points.history.map((item, idx) => (
+                                            <div key={item.bookingId}
+                                                style={{ display: 'flex', alignItems: 'center', gap: '14px', padding: '12px 14px', borderRadius: '12px', background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.06)', transition: 'background 0.2s', cursor: 'default' }}
+                                                onMouseEnter={e => e.currentTarget.style.background = 'rgba(99,102,241,0.07)'}
+                                                onMouseLeave={e => e.currentTarget.style.background = 'rgba(255,255,255,0.03)'}
+                                            >
+                                                <div style={{ width: 38, height: 38, borderRadius: '10px', background: 'linear-gradient(135deg,#6366f1,#a855f7)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800, fontSize: '1rem', color: 'white', flexShrink: 0 }}>
+                                                    {idx + 1}
+                                                </div>
+                                                <div style={{ flex: 1, minWidth: 0 }}>
+                                                    <div style={{ fontWeight: 600, color: 'white', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{item.eventTitle}</div>
+                                                    <div style={{ fontSize: '0.78rem', color: '#64748b', marginTop: '2px' }}>
+                                                        <Calendar size={12} style={{ display: 'inline', verticalAlign: 'middle', marginRight: '4px' }} />
+                                                        {item.eventDate ? new Date(item.eventDate).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' }) : 'Date N/A'}
+                                                        {item.eventLocation && <> &middot; {item.eventLocation}</>}
+                                                    </div>
+                                                </div>
+                                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', background: 'rgba(99,102,241,0.12)', padding: '5px 12px', borderRadius: '20px', flexShrink: 0 }}>
+                                                    <Zap size={13} style={{ color: '#818cf8' }} />
+                                                    <span style={{ fontWeight: 700, color: '#818cf8', fontSize: '0.85rem' }}>+{item.pointsEarned} pts</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </>
+                    ) : null}
+                </div>
             ) : (
                 <div className="notifications-container">
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }}>
@@ -453,6 +723,9 @@ const Profile = () => {
                 onCancel={() => setDeleteModalOpen(false)}
                 confirmText="Delete Permanently"
             />
+
+            {/* ── Level-Up Celebration Modal ── */}
+            <CelebrationModal level={celebLevel} onClose={() => setCelebLevel(null)} />
         </div>
     );
 };
