@@ -94,9 +94,23 @@ const getAllVolunteers = async (req, res) => {
 
         const volunteers = await VolunteerRegistration.find()
             .populate('user', 'profilePicture role')
+            .lean()
             .sort({ createdAt: -1 });
+
+        const assignments = await VolunteerAssignment.find();
+        
+        const enhancedVolunteers = volunteers.map(vol => {
+            const uidStr = vol.user && vol.user._id ? vol.user._id.toString() : (vol.user ? vol.user.toString() : null);
+            const volAssignments = assignments.filter(a => a.volunteer && a.volunteer.toString() === uidStr);
+            return {
+                ...vol,
+                hasAccepted: volAssignments.some(a => a.status === 'accepted'),
+                hasDeclined: volAssignments.some(a => a.status === 'declined'),
+                hasPending: volAssignments.some(a => a.status === 'pending')
+            };
+        });
             
-        res.json(volunteers);
+        res.json(enhancedVolunteers);
     } catch (error) {
         res.status(500).json({ message: 'Server error fetching all volunteers', error: error.message });
     }

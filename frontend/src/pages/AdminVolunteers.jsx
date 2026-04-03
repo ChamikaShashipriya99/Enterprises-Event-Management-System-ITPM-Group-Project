@@ -288,10 +288,36 @@ const AdminVolunteers = () => {
                                             >
                                                 <div style={{ width: '8px', height: '8px', background: '#34d399', borderRadius: '50%' }}></div> Assign
                                             </button>
-                                            <div style={{ display: 'flex', gap: '4px', opacity: 0.5 }}>
-                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#34d399' }} />
-                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#ef4444' }} />
-                                                <div style={{ width: '6px', height: '6px', borderRadius: '50%', background: '#3b82f6' }} />
+                                            <div style={{ display: 'flex', gap: '6px', paddingRight: '5px' }}>
+                                                {/* Green Circle - Accepted */}
+                                                <div 
+                                                    title={vol.hasAccepted ? "Has accepted assignments" : "No accepted assignments"}
+                                                    style={{ 
+                                                    width: '8px', height: '8px', borderRadius: '50%', background: '#34d399',
+                                                    opacity: vol.hasAccepted ? 1 : 0.2,
+                                                    boxShadow: vol.hasAccepted ? '0 0 10px #34d399' : 'none',
+                                                    transform: vol.hasAccepted ? 'scale(1.3)' : 'scale(1)'
+                                                }} />
+                                                
+                                                {/* Red Circle - Declined */}
+                                                <div 
+                                                    title={vol.hasDeclined ? "Has declined assignments" : "No declined assignments"}
+                                                    style={{ 
+                                                    width: '8px', height: '8px', borderRadius: '50%', background: '#ef4444',
+                                                    opacity: vol.hasDeclined ? 1 : 0.2,
+                                                    boxShadow: vol.hasDeclined ? '0 0 10px #ef4444' : 'none',
+                                                    transform: vol.hasDeclined ? 'scale(1.3)' : 'scale(1)'
+                                                }} />
+                                                
+                                                {/* Blue Circle - Pending */}
+                                                <div 
+                                                    title={vol.hasPending ? "Has pending assignments" : "No pending assignments"}
+                                                    style={{ 
+                                                    width: '8px', height: '8px', borderRadius: '50%', background: '#3b82f6',
+                                                    opacity: vol.hasPending ? 1 : 0.2,
+                                                    boxShadow: vol.hasPending ? '0 0 10px #3b82f6' : 'none',
+                                                    transform: vol.hasPending ? 'scale(1.3)' : 'scale(1)'
+                                                }} />
                                             </div>
                                         </div>
                                     </td>
