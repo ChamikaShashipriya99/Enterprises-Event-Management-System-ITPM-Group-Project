@@ -493,8 +493,8 @@ const LandingPage = () => {
             { 
               title: 'Contact Us', 
               links: [
-                { name: 'office@eventbuddy.com', icon: <Mail size={16} /> },
-                { name: 'Silicon Valley, CA', icon: <MapPin size={16} /> }
+                { name: 'eventbuddy.sliit@gmail.com', icon: <Mail size={16} /> },
+                { name: 'SLIIT, Malabe, Colombo', icon: <MapPin size={16} /> }
               ] 
             }
           ].map((col, i) => (
