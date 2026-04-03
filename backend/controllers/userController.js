@@ -15,6 +15,7 @@ const getUserProfile = async (req, res) => {
             phone: user.phone,
             role: user.role,
             profilePicture: user.profilePicture,
+            coverImage: user.coverImage,
             registeredEvents: user.registeredEvents,
             certificates: user.certificates,
             createdAt: user.createdAt,
@@ -37,6 +38,7 @@ const updateUserProfile = async (req, res) => {
         // Allow clearing phone or profilePicture explicitly
         if (req.body.phone !== undefined) user.phone = req.body.phone;
         if (req.body.profilePicture !== undefined) user.profilePicture = req.body.profilePicture;
+        if (req.body.coverImage !== undefined) user.coverImage = req.body.coverImage;
 
         if (req.body.password) {
             user.password = req.body.password;
@@ -51,6 +53,7 @@ const updateUserProfile = async (req, res) => {
             phone: updatedUser.phone,
             role: updatedUser.role,
             profilePicture: updatedUser.profilePicture,
+            coverImage: updatedUser.coverImage,
             token: generateToken(updatedUser),
         });
     } else {

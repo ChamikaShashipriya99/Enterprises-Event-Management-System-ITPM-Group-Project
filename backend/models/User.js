@@ -34,6 +34,10 @@ const userSchema = mongoose.Schema(
             type: String,
             required: false,
         },
+        coverImage: {
+            type: String,
+            required: false,
+        },
         registeredEvents: [
             {
                 type: mongoose.Schema.Types.ObjectId,

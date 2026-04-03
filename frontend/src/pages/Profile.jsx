@@ -336,8 +336,23 @@ const Profile = () => {
 
     return (
         <div className="profile-container">
-            <header className="profile-hero">
-                <div className="profile-avatar-wrapper">
+            <header 
+                className="profile-hero" 
+                style={{ 
+                    background: profile.coverImage ? `url(http://localhost:5000${profile.coverImage}) center/cover` : 'linear-gradient(135deg, var(--primary) 0%, #a855f7 100%)',
+                    position: 'relative'
+                }}
+            >
+                {profile.coverImage && (
+                    <div style={{
+                        position: 'absolute',
+                        inset: 0,
+                        background: 'linear-gradient(to bottom, rgba(15, 23, 42, 0.2) 0%, rgba(15, 23, 42, 0.8) 100%)',
+                        borderRadius: '24px',
+                        zIndex: 1
+                    }} />
+                )}
+                <div className="profile-avatar-wrapper" style={{ zIndex: 10 }}>
                     <div className="profile-avatar">
                         {profile.profilePicture ? (
                             <img src={profile.profilePicture.startsWith('http') ? profile.profilePicture : `http://localhost:5000${profile.profilePicture}`} alt="Profile" />
@@ -346,14 +361,14 @@ const Profile = () => {
                         )}
                     </div>
                 </div>
-                <div className="profile-header-info">
+                <div className="profile-header-info" style={{ position: 'relative', zIndex: 10 }}>
                     <h1 className="profile-name">{profile.name}</h1>
                     <div className="profile-role-badge">
                         <Shield size={14} />
                         {profile.role} Account
                     </div>
                 </div>
-                <Link to="/edit-profile" className="btn-primary" style={{ position: 'absolute', right: '40px', bottom: '20px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <Link to="/edit-profile" className="btn-primary" style={{ position: 'absolute', right: '40px', bottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', zIndex: 10 }}>
                     <Edit size={18} />
                     Edit Profile
                 </Link>
