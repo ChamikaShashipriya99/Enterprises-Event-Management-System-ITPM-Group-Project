@@ -129,6 +129,11 @@ function App() {
                 <ReportItem />
               </ProtectedRoute>
             } />
+            <Route path="/edit-item/:id" element={
+              <ProtectedRoute>
+                <ReportItem />
+              </ProtectedRoute>
+            } />
             {/* Booking Engine for Students */}
             <Route path="/my-bookings" element={
               <ProtectedRoute role="student">

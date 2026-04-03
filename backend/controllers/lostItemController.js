@@ -9,8 +9,25 @@ const reportItem = async (req, res) => {
     try {
         const { type, itemName, category, description, location, date, image } = req.body;
 
+        // 1. Check for all required fields
         if (!type || !itemName || !category || !description || !location || !date) {
-            return res.status(400).json({ message: 'Please provide all required fields' });
+            return res.status(400).json({ message: 'All required fields must be provided' });
+        }
+
+        // 2. String length validations
+        if (itemName.trim().length < 3) {
+            return res.status(400).json({ message: 'Item name must be at least 3 characters long' });
+        }
+        if (description.trim().length < 10) {
+            return res.status(400).json({ message: 'Description must be at least 10 characters long' });
+        }
+
+        // 3. Date validation (Disable future dates)
+        const reportDate = new Date(date);
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        if (reportDate > today) {
+            return res.status(400).json({ message: 'Report date cannot be in the future' });
         }
 
         const newItem = await LostItem.create({
@@ -142,8 +159,73 @@ const resolveItem = async (req, res) => {
     }
 };
 
+// @desc    Update lost or found item
+// @route   PUT /api/lost-found/:id
+// @access  Private
+const updateItem = async (req, res) => {
+    try {
+        const item = await LostItem.findById(req.params.id);
+
+        if (!item) {
+            return res.status(404).json({ message: 'Item not found' });
+        }
+
+        // Authorization: Only reporter or admin can update
+        if (item.reporter.toString() !== req.user._id.toString() && req.user.role !== 'admin') {
+            return res.status(401).json({ message: 'Not authorized to update this item' });
+        }
+
+        const { itemName, description, date } = req.body;
+
+        // Perform validations for updated fields
+        if (itemName && itemName.trim().length < 3) {
+            return res.status(400).json({ message: 'Item name must be at least 3 characters long' });
+        }
+        if (description && description.trim().length < 10) {
+            return res.status(400).json({ message: 'Description must be at least 10 characters long' });
+        }
+        if (date) {
+            const reportDate = new Date(date);
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            if (reportDate > today) {
+                return res.status(400).json({ message: 'Report date cannot be in the future' });
+            }
+        }
+
+        const updatedItem = await LostItem.findByIdAndUpdate(
+            req.params.id,
+            req.body,
+            { new: true }
+        );
+
+        res.status(200).json(updatedItem);
+    } catch (error) {
+        console.error('Error updating item:', error);
+        res.status(500).json({ message: 'Server error while updating item' });
+    }
+};
+
+// @desc    Get single item by ID
+// @route   GET /api/lost-found/:id
+// @access  Private
+const getItemById = async (req, res) => {
+    try {
+        const item = await LostItem.findById(req.params.id).populate('reporter', 'name email');
+        if (!item) {
+            return res.status(404).json({ message: 'Item not found' });
+        }
+        res.status(200).json(item);
+    } catch (error) {
+        console.error('Error fetching item:', error);
+        res.status(500).json({ message: 'Server error while fetching item' });
+    }
+};
+
 module.exports = {
     reportItem,
     getAllItems,
-    resolveItem
+    resolveItem,
+    updateItem,
+    getItemById
 };

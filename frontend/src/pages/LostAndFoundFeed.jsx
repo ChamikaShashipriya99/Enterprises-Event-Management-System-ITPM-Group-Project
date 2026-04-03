@@ -13,7 +13,8 @@ import {
     HelpCircle,
     Inbox,
     Filter,
-    ArrowRight
+    ArrowRight,
+    Edit
 } from 'lucide-react';
 
 const LostAndFoundFeed = () => {
@@ -233,13 +234,33 @@ const LostAndFoundFeed = () => {
                                         </div>
                                     ) : (
                                         (isOwner || isAdmin) && (
-                                            <button 
-                                                onClick={() => handleResolve(item._id)}
-                                                className="btn-primary" 
-                                                style={{ width: '100%', padding: '12px', background: 'transparent', border: '1px solid #10b981', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
-                                            >
-                                                Mark as {isLost ? 'Found' : 'Returned'} <ArrowRight size={18} />
-                                            </button>
+                                            <div style={{ display: 'flex', gap: '10px' }}>
+                                                <button 
+                                                    onClick={() => handleResolve(item._id)}
+                                                    className="btn-primary" 
+                                                    style={{ flex: 2, padding: '12px', background: 'transparent', border: '1px solid #10b981', color: '#10b981', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px' }}
+                                                >
+                                                    Mark as {isLost ? 'Found' : 'Returned'} <ArrowRight size={18} />
+                                                </button>
+                                                <Link 
+                                                    to={`/edit-item/${item._id}`}
+                                                    style={{ 
+                                                        flex: 1, 
+                                                        padding: '12px', 
+                                                        background: 'rgba(99, 102, 241, 0.1)', 
+                                                        border: '1px solid #6366f1', 
+                                                        color: '#6366f1', 
+                                                        borderRadius: '8px',
+                                                        display: 'flex', 
+                                                        alignItems: 'center', 
+                                                        justifyContent: 'center', 
+                                                        textDecoration: 'none' 
+                                                    }}
+                                                    title="Edit Report"
+                                                >
+                                                    <Edit size={18} />
+                                                </Link>
+                                            </div>
                                         )
                                     )}
                                 </div>
