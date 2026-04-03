@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
+import EventCountdown from '../components/EventCountdown';
 import './AllEvents.css';
 import { 
     Search, 
@@ -12,7 +13,6 @@ import {
     Sparkles,
     ShieldCheck,
     History,
-    CalendarOff
 } from 'lucide-react';
 
 const AllEvents = () => {
@@ -104,7 +104,6 @@ const AllEvents = () => {
                     const isPassed = eventDate < today;
                     const isFull = event.registeredUsers?.length >= event.capacity;
                     
-                    // Check if current user is registered
                     const storedUser = localStorage.getItem('user');
                     const currentUser = storedUser ? JSON.parse(storedUser) : null;
                     const userId = currentUser?._id || currentUser?.id;
@@ -112,7 +111,6 @@ const AllEvents = () => {
                         (typeof u === 'string' ? u === userId : u._id === userId)
                     );
 
-                    // Show blur and overlay if event passed OR if full AND user is NOT registered
                     const showOverlay = isPassed || (isFull && !isUserRegistered);
 
                     return (
@@ -137,72 +135,84 @@ const AllEvents = () => {
                                 </div>
                             )}
                             <div className="card-image-wrapper">
-                            <div className="badge-container">
-                                <div className="floating-badge badge-date">
-                                    <Calendar size={14} />
-                                    {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                <div className="badge-container">
+                                    <div className="floating-badge badge-date">
+                                        <Calendar size={14} />
+                                        {new Date(event.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                                    </div>
+                                    <div className="floating-badge badge-capacity">
+                                        <Users size={14} />
+                                        {event.registeredUsers?.length || 0} / {event.capacity}
+                                    </div>
                                 </div>
-                                <div className="floating-badge badge-capacity">
-                                    <Users size={14} />
-                                    {event.registeredUsers?.length || 0} / {event.capacity}
-                                </div>
+                                
+                                {!isPassed && (
+                                    <div className="countdown-wrapper" style={{ 
+                                        position: 'absolute', 
+                                        bottom: '15px', 
+                                        right: '15px', 
+                                        zIndex: 50,
+                                        pointerEvents: 'none'
+                                    }}>
+                                        <EventCountdown targetDate={event.date} compact={false} />
+                                    </div>
+                                )}
+                                
+                                {event.image ? (
+                                    <img 
+                                        src={`http://localhost:5000${event.image}`} 
+                                        className="card-image"
+                                        alt={event.title}
+                                    />
+                                ) : (
+                                    <div className="card-image" style={{ 
+                                        background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        color: 'rgba(99, 102, 241, 0.3)'
+                                    }}>
+                                        <Sparkles size={64} strokeWidth={1} />
+                                    </div>
+                                )}
+                                <div className="card-overlay-gradient"></div>
                             </div>
-                            
-                            {event.image ? (
-                                <img 
-                                    src={`http://localhost:5000${event.image}`} 
-                                    className="card-image"
-                                    alt={event.title}
-                                />
-                            ) : (
-                                <div className="card-image" style={{ 
-                                    background: 'linear-gradient(135deg, rgba(99, 102, 241, 0.15) 0%, rgba(168, 85, 247, 0.15) 100%)',
-                                    display: 'flex',
-                                    alignItems: 'center',
-                                    justifyContent: 'center',
-                                    color: 'rgba(99, 102, 241, 0.3)'
-                                }}>
-                                    <Sparkles size={64} strokeWidth={1} />
-                                </div>
-                            )}
-                            <div className="card-overlay-gradient"></div>
-                        </div>
 
-                        <div className="card-body">
-                            <h3 className="card-title">{event.title}</h3>
-                            <div className="card-meta">
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                                    <Calendar size={14} style={{ color: '#6366f1' }} />
-                                    <span>{new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                            <div className="card-body">
+                                <h3 className="card-title">{event.title}</h3>
+                                <div className="card-meta">
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                                        <Calendar size={14} style={{ color: '#6366f1' }} />
+                                        <span>{new Date(event.date).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}</span>
+                                    </div>
+                                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '1rem' }}>
+                                        <MapPin size={14} style={{ color: '#10b981' }} />
+                                        <span>{event.location}</span>
+                                    </div>
                                 </div>
-                                <div style={{ display: 'flex', alignItems: 'center', gap: '6px', marginLeft: '1rem' }}>
-                                    <MapPin size={14} style={{ color: '#10b981' }} />
-                                    <span>{event.location}</span>
-                                </div>
+                                <p className="card-description">
+                                    {event.description}
+                                </p>
                             </div>
-                            <p className="card-description">
-                                {event.description}
-                            </p>
-                        </div>
 
-                        <footer className="card-footer">
-                            <div className="organizer-info">
-                                <div className="organizer-avatar">
-                                    {event.organizer?.profilePicture ? (
-                                        <img 
-                                            src={event.organizer.profilePicture.startsWith('http') ? event.organizer.profilePicture : `http://localhost:5000${event.organizer.profilePicture}`} 
-                                            alt={event.organizer.name}
-                                            style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
-                                        />
-                                    ) : (
-                                        event.organizer?.name?.charAt(0)
-                                    )}
+                            <footer className="card-footer">
+                                <div className="organizer-info">
+                                    <div className="organizer-avatar">
+                                        {event.organizer?.profilePicture ? (
+                                            <img 
+                                                src={event.organizer.profilePicture.startsWith('http') ? event.organizer.profilePicture : `http://localhost:5000${event.organizer.profilePicture}`} 
+                                                alt={event.organizer.name}
+                                                style={{ width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover' }}
+                                            />
+                                        ) : (
+                                            event.organizer?.name?.charAt(0)
+                                        )}
+                                    </div>
+                                    <div className="organizer-details">
+                                        <div className="name">{event.organizer?.name}</div>
+                                        <div className="role">Host <ShieldCheck size={10} style={{ display: 'inline', marginLeft: '2px' }} /></div>
+                                    </div>
                                 </div>
-                                <div className="organizer-details">
-                                    <div className="name">{event.organizer?.name}</div>
-                                    <div className="role">Host <ShieldCheck size={10} style={{ display: 'inline', marginLeft: '2px' }} /></div>
-                                </div>
-                            </div>
                                 <Link to={`/events/${event._id}`} className={`details-btn ${(isPassed || isFull) ? 'btn-ghost' : ''}`}>
                                     {isPassed ? 'View Archive' : (isFull ? 'View Details' : 'View')} <ArrowRight size={16} />
                                 </Link>
