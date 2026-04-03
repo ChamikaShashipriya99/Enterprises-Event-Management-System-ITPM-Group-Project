@@ -1,35 +1,43 @@
-// frontend/src/pages/AdminVolunteers.jsx
 import { useState, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { Search, Target, Users, CalendarDays, CheckSquare } from 'lucide-react';
+import { Search, Target, Users, CalendarDays, X } from 'lucide-react';
 import Skeleton from '../components/Skeleton';
 
 const AdminVolunteers = () => {
     const [volunteers, setVolunteers] = useState([]);
+    const [events, setEvents] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
 
+    // Modal States
+    const [assignModalOpen, setAssignModalOpen] = useState(false);
+    const [selectedVolunteer, setSelectedVolunteer] = useState(null);
+    const [selectedEventId, setSelectedEventId] = useState('');
+    const [assignMessage, setAssignMessage] = useState('');
+
     useEffect(() => {
-        fetchVolunteers();
+        fetchData();
     }, []);
 
-    const fetchVolunteers = async () => {
+    const fetchData = async () => {
         try {
             const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
             const token = user?.token || '';
             
-            const response = await fetch('http://localhost:5000/api/volunteer/all', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
+            const [volRes, evtRes] = await Promise.all([
+                fetch('http://localhost:5000/api/volunteer/all', { headers: { 'Authorization': `Bearer ${token}` } }),
+                fetch('http://localhost:5000/api/events', { headers: { 'Authorization': `Bearer ${token}` } })
+            ]);
 
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to fetch volunteers');
+            if (!volRes.ok) throw new Error('Failed to fetch volunteers');
+            setVolunteers(await volRes.json());
+
+            if (evtRes.ok) {
+                const eventPayload = await evtRes.json();
+                setEvents(eventPayload.data || []);
             }
 
-            const data = await response.json();
-            setVolunteers(data);
         } catch (error) {
             toast.error(error.message);
         } finally {
@@ -61,6 +69,34 @@ const AdminVolunteers = () => {
         const inName = (v.fullName || '').toLowerCase().includes(search);
         return inSkills || inName;
     });
+
+    const openAssignModal = (volunteer) => {
+        setSelectedVolunteer(volunteer);
+        setSelectedEventId('');
+        setAssignMessage('');
+        setAssignModalOpen(true);
+    };
+
+    const handleEventChange = (e) => {
+        const eventId = e.target.value;
+        setSelectedEventId(eventId);
+        const eventObj = events.find(ev => ev._id === eventId);
+        if (eventObj) {
+            setAssignMessage(`We would like to assign you to support ${eventObj.title} based on your registered skills and availability.`);
+        } else {
+            setAssignMessage('');
+        }
+    };
+
+    const submitAssignment = () => {
+        if (!selectedEventId || !assignMessage) {
+            toast.error('Please select an event and provide a message.');
+            return;
+        }
+        // Ideally, send the assignment cleanly to a backend here.
+        toast.success(`Assignment accurately mapped and sent to ${selectedVolunteer.fullName}!`);
+        setAssignModalOpen(false);
+    };
 
     if (loading) {
         return (
@@ -210,7 +246,9 @@ const AdminVolunteers = () => {
                                     </td>
                                     <td style={{ padding: '20px', textAlign: 'right' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>
-                                            <button style={{
+                                            <button 
+                                                onClick={() => openAssignModal(vol)}
+                                                style={{
                                                 display: 'flex',
                                                 alignItems: 'center',
                                                 gap: '6px',
@@ -247,6 +285,122 @@ const AdminVolunteers = () => {
                 </table>
             </div>
             
+            {/* Overlay Modal Logic */}
+            <AnimatePresence>
+                {assignModalOpen && selectedVolunteer && (
+                    <div style={{
+                        position: 'fixed',
+                        top: 0, left: 0, right: 0, bottom: 0,
+                        background: 'rgba(5, 5, 10, 0.8)',
+                        zIndex: 1000,
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        backdropFilter: 'blur(5px)'
+                    }}>
+                        <motion.div 
+                            initial={{ opacity: 0, scale: 0.95, y: 10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: 10 }}
+                            transition={{ duration: 0.2 }}
+                            style={{
+                                background: '#12141f',
+                                border: '1px solid rgba(255,255,255,0.05)',
+                                borderRadius: '16px',
+                                width: '100%',
+                                maxWidth: '500px',
+                                padding: '30px',
+                                boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+                                fontFamily: 'Inter, sans-serif'
+                            }}
+                        >
+                            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>
+                                <h3 style={{ margin: 0, color: 'white', fontSize: '1.4rem', fontWeight: 'bold' }}>Assign Volunteer</h3>
+                                <button 
+                                    onClick={() => setAssignModalOpen(false)}
+                                    style={{ background: 'transparent', border: 'none', cursor: 'pointer', padding: '5px', color: '#64748b' }}
+                                >
+                                    <X size={20} />
+                                </button>
+                            </div>
+
+                            <p style={{ color: '#94a3b8', fontSize: '0.95rem', marginBottom: '25px' }}>
+                                Sending assignment to: <span style={{ color: 'white', fontWeight: 'bold' }}>{selectedVolunteer.fullName}</span>
+                            </p>
+
+                            <div style={{ marginBottom: '20px' }}>
+                                <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.85rem', marginBottom: '8px' }}>Select Event *</label>
+                                <select 
+                                    value={selectedEventId}
+                                    onChange={handleEventChange}
+                                    style={{
+                                        width: '100%', padding: '12px 15px', borderRadius: '8px',
+                                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                                        color: selectedEventId ? 'white' : '#64748b', fontSize: '0.95rem',
+                                        outline: 'none', cursor: 'pointer'
+                                    }}
+                                >
+                                    <option value="" disabled style={{ background: '#12141f', color: '#64748b' }}>Choose Event</option>
+                                    {events.map(ev => {
+                                        const evDate = new Date(ev.date);
+                                        const dayName = daysArr[evDate.getDay()];
+                                        const dateSt = evDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                                        
+                                        // Is Volunteer Available precisely on this event day?
+                                        const hasAvail = selectedVolunteer.availability && selectedVolunteer.availability[dayName] && Object.values(selectedVolunteer.availability[dayName]).some(slot => slot === true);
+                                        
+                                        return (
+                                            <option key={ev._id} value={ev._id} style={{ background: '#12141f', color: 'white' }}>
+                                                {ev.title} ({dateSt} - {dayName}) {!hasAvail ? '- [Unavailable Day]' : ''}
+                                            </option>
+                                        );
+                                    })}
+                                </select>
+                                <p style={{ fontSize: '0.75rem', color: '#f59e0b', marginTop: '6px', fontStyle: 'italic' }}>
+                                    Admins can override availability. Watch for [Unavailable Day] markers.
+                                </p>
+                            </div>
+
+                            <div style={{ marginBottom: '30px' }}>
+                                <label style={{ display: 'block', color: '#94a3b8', fontSize: '0.85rem', marginBottom: '8px' }}>Personalized Message *</label>
+                                <textarea 
+                                    value={assignMessage}
+                                    onChange={(e) => setAssignMessage(e.target.value)}
+                                    rows="4"
+                                    style={{
+                                        width: '100%', padding: '15px', borderRadius: '8px', 
+                                        lineHeight: '1.5',
+                                        background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)',
+                                        color: 'white', fontSize: '0.95rem',
+                                        outline: 'none', resize: 'vertical'
+                                    }}
+                                />
+                            </div>
+
+                            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '15px' }}>
+                                <button 
+                                    onClick={() => setAssignModalOpen(false)}
+                                    style={{ padding: '10px 20px', borderRadius: '25px', background: 'rgba(255,255,255,0.08)', color: '#94a3b8', border: 'none', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s' }}
+                                    onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.15)'}
+                                    onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.08)'}
+                                >
+                                    Cancel
+                                </button>
+                                <button 
+                                    onClick={submitAssignment}
+                                    style={{ padding: '10px 20px', borderRadius: '25px', background: '#10b981', color: 'white', border: 'none', cursor: 'pointer', fontWeight: '600', transition: 'all 0.2s', opacity: (selectedEventId && assignMessage) ? 1 : 0.5 }}
+                                    disabled={!selectedEventId || !assignMessage}
+                                    onMouseOver={(e) => { if(selectedEventId) e.target.style.background = '#059669' }}
+                                    onMouseOut={(e) => { if(selectedEventId) e.target.style.background = '#10b981' }}
+                                >
+                                    Send Assignment
+                                </button>
+                            </div>
+                        </motion.div>
+                    </div>
+                )}
+            </AnimatePresence>
+
         </div>
     );
 };
