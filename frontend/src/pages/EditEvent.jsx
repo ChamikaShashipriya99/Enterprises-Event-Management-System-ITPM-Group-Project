@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import eventService from '../services/eventService';
 
 const EditEvent = () => {
@@ -122,6 +123,7 @@ const EditEvent = () => {
 
         try {
             await eventService.updateEvent(id, formData);
+            toast.success('Event updated successfully! 📝✨');
             navigate('/organizer-events');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to update event');

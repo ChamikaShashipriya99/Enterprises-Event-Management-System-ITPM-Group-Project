@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import eventService from '../services/eventService';
 
 const CreateEvent = () => {
@@ -94,6 +95,7 @@ const CreateEvent = () => {
 
         try {
             await eventService.createEvent(formData);
+            toast.success('Success! Event launched effectively. 🎉');
             navigate('/organizer-dashboard');
         } catch (err) {
             setError(err.response?.data?.message || 'Failed to create event');
