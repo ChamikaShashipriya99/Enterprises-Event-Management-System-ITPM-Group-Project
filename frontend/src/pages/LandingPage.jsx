@@ -1,4 +1,4 @@
-import React, { useContext } from 'react';
+import React, { useContext, useState, useEffect } from 'react';
 import { 
   Calendar, 
   ShieldCheck, 
@@ -15,9 +15,17 @@ import {
 import { Link, Navigate } from 'react-router-dom';
 import { AuthContext } from '../context/AuthContext';
 import EventBuddyLogo from '../assets/EventBuddy.png';
+import V4 from '../assets/gallery/V4.mp4';
+import V5 from '../assets/gallery/V5.mp4';
 
 const LandingPage = () => {
   const { currentUser } = useContext(AuthContext);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
+  const videos = [V4, V5];
+
+  const handleVideoEnd = () => {
+    setCurrentVideoIndex((prevIndex) => (prevIndex + 1) % videos.length);
+  };
 
   if (currentUser) {
     if (currentUser.role === 'admin') return <Navigate to="/admin-dashboard" />;
@@ -32,7 +40,7 @@ const LandingPage = () => {
     }}>
       {/* Hero Section */}
       <section style={{
-        minHeight: '90vh',
+        minHeight: '100vh',
         display: 'flex',
         flexDirection: 'column',
         justifyContent: 'center',
@@ -40,109 +48,158 @@ const LandingPage = () => {
         textAlign: 'center',
         padding: '0 5%',
         position: 'relative',
-        background: 'radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%)'
+        background: '#020617',
+        overflow: 'hidden'
       }}>
+        {/* Cinematic Sequential Video Background */}
         <div style={{
-          display: 'inline-flex',
-          alignItems: 'center',
-          gap: '8px',
-          background: 'rgba(99, 102, 241, 0.1)',
-          padding: '8px 16px',
-          borderRadius: '20px',
-          border: '1px solid rgba(99, 102, 241, 0.2)',
-          color: '#818cf8',
-          fontSize: '0.9rem',
-          fontWeight: '600',
-          marginBottom: '2rem',
-          animation: 'fadeInDown 0.8s ease'
+          position: 'absolute',
+          top: 0,
+          left: 0,
+          width: '100%',
+          height: '100%',
+          zIndex: 0
         }}>
-          <Sparkles size={16} />
-          The Future of Event Management is Here
-        </div>
-
-        <h1 style={{ 
-          fontSize: 'clamp(3rem, 8vw, 5.5rem)', 
-          marginBottom: '1.5rem', 
-          fontWeight: '800',
-          lineHeight: '1.1',
-          letterSpacing: '-0.04em',
-          animation: 'fadeInUp 1s ease',
-          display: 'flex',
-          flexDirection: 'column',
-          alignItems: 'center'
-        }}>
-          Elevate Your Events <br />
-          With <img src={EventBuddyLogo} alt="EventBuddy" style={{ height: 'clamp(60px, 12vw, 100px)', marginTop: '0.5rem', objectFit: 'contain' }} />
-        </h1>
-
-        <p style={{ 
-          fontSize: 'clamp(1.1rem, 2vw, 1.4rem)', 
-          color: '#94a3b8', 
-          maxWidth: '800px', 
-          marginBottom: '3rem', 
-          lineHeight: '1.6',
-          animation: 'fadeInUp 1.2s ease'
-        }}>
-          The all-in-one orchestration platform for modern enterprises. 
-          Manage registrations, foster engagement with real-time chat, and 
-          deliver verified certificates with unmatched ease.
-        </p>
-
-        <div style={{ 
-          display: 'flex', 
-          gap: '1.5rem', 
-          flexWrap: 'wrap', 
-          justifyContent: 'center',
-          animation: 'fadeInUp 1.4s ease'
-        }}>
-          <Link to="/register" className="btn-primary" style={{ 
-            padding: '18px 36px', 
-            fontSize: '1.1rem',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px',
-            textDecoration: 'none'
-          }}>
-            Start Organizing Free <ArrowRight size={20} />
-          </Link>
-          <Link to="/login" style={{
-            padding: '18px 36px',
-            fontSize: '1.1rem',
-            background: 'rgba(255,255,255,0.05)',
-            border: '1px solid rgba(255,255,255,0.1)',
-            color: 'white',
-            borderRadius: '12px',
-            cursor: 'pointer',
-            textDecoration: 'none',
-            transition: 'all 0.3s ease',
-            display: 'flex',
-            alignItems: 'center',
-            gap: '10px'
-          }}
-          onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
-          onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+          <video 
+            key={videos[currentVideoIndex]}
+            autoPlay 
+            muted 
+            playsInline
+            onEnded={handleVideoEnd}
+            style={{
+              width: '100%',
+              height: '100%',
+              objectFit: 'cover',
+              filter: 'brightness(0.5) saturate(1.2)',
+              transition: 'opacity 1s ease-in-out'
+            }}
           >
-            Explore Events
-          </Link>
+            <source src={videos[currentVideoIndex]} type="video/mp4" />
+          </video>
+          
+          {/* Overlay Gradients */}
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'linear-gradient(to bottom, rgba(2, 6, 23, 0.4) 0%, rgba(2, 6, 23, 0.8) 100%)',
+            zIndex: 1
+          }} />
+          <div style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'radial-gradient(circle at 50% 50%, transparent 0%, rgba(2, 6, 23, 0.6) 100%)',
+            zIndex: 1
+          }} />
         </div>
 
-        {/* Floating elements for visual interest */}
-        <div style={{
-          position: 'absolute',
-          top: '20%',
-          left: '10%',
-          opacity: '0.1',
-          animation: 'float 6s infinite ease-in-out'
-        }}><Calendar size={120} /></div>
-        <div style={{
-          position: 'absolute',
-          bottom: '20%',
-          right: '10%',
-          opacity: '0.1',
-          animation: 'float 8s infinite ease-in-out reverse'
-        }}><MessageSquare size={100} /></div>
-      </section>
+        <div style={{ position: 'relative', zIndex: 10 }}>
+          <div style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: '8px',
+            background: 'rgba(99, 102, 241, 0.1)',
+            padding: '8px 16px',
+            borderRadius: '20px',
+            border: '1px solid rgba(99, 102, 241, 0.2)',
+            color: '#818cf8',
+            fontSize: '0.9rem',
+            fontWeight: '600',
+            marginBottom: '2rem',
+            animation: 'fadeInDown 0.8s ease'
+          }}>
+            <Sparkles size={16} />
+            The Future of Event Management is Here
+          </div>
 
+          <h1 style={{ 
+            fontSize: 'clamp(3rem, 8vw, 5.5rem)', 
+            marginBottom: '1.5rem', 
+            fontWeight: '800',
+            lineHeight: '1.1',
+            letterSpacing: '-0.04em',
+            animation: 'fadeInUp 1s ease',
+            display: 'flex',
+            flexDirection: 'column',
+            alignItems: 'center'
+          }}>
+            Elevate Your Events <br />
+            With <img src={EventBuddyLogo} alt="EventBuddy" style={{ height: 'clamp(60px, 12vw, 100px)', marginTop: '0.5rem', objectFit: 'contain' }} />
+          </h1>
+
+          <p style={{ 
+            fontSize: 'clamp(1.1rem, 2vw, 1.4rem)', 
+            color: '#94a3b8', 
+            maxWidth: '800px', 
+            marginBottom: '3rem', 
+            lineHeight: '1.6',
+            animation: 'fadeInUp 1.2s ease'
+          }}>
+            The all-in-one orchestration platform for modern enterprises. 
+            Manage registrations, foster engagement with real-time chat, and 
+            deliver verified certificates with unmatched ease.
+          </p>
+
+          <div style={{ 
+            display: 'flex', 
+            gap: '1.5rem', 
+            flexWrap: 'wrap', 
+            justifyContent: 'center',
+            animation: 'fadeInUp 1.4s ease'
+          }}>
+            <Link to="/register" className="btn-primary" style={{ 
+              padding: '18px 36px', 
+              fontSize: '1.1rem',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px',
+              textDecoration: 'none'
+            }}>
+              Start Organizing Free <ArrowRight size={20} />
+            </Link>
+            <Link to="/login" style={{
+              padding: '18px 36px',
+              fontSize: '1.1rem',
+              background: 'rgba(255,255,255,0.05)',
+              border: '1px solid rgba(255,255,255,0.1)',
+              color: 'white',
+              borderRadius: '12px',
+              cursor: 'pointer',
+              textDecoration: 'none',
+              transition: 'all 0.3s ease',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '10px'
+            }}
+            onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
+            onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+            >
+              Explore Events
+            </Link>
+          </div>
+
+          {/* Floating elements for visual interest */}
+          <div style={{
+            position: 'absolute',
+            top: '20%',
+            left: '10%',
+            opacity: '0.1',
+            animation: 'float 6s infinite ease-in-out'
+          }}><Calendar size={120} /></div>
+          <div style={{
+            position: 'absolute',
+            bottom: '20%',
+            right: '10%',
+            opacity: '0.05',
+            animation: 'float 8s infinite ease-in-out reverse'
+          }}><MessageSquare size={100} /></div>
+        </div>
+      </section>
 
       {/* Features Section */}
       <section style={{ padding: '8rem 10%' }}>
