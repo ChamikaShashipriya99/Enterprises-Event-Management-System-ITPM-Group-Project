@@ -36,6 +36,7 @@ import ReportItem from './pages/ReportItem';
 import ChatPage from './pages/ChatPage';
 import AuditLogs from './pages/AuditLogs';
 import Gallery from './pages/Gallery';
+import VendorManagement from './pages/VendorManagement';
 
 // Booking Engine pages (Induwari's module)
 import MyBookings from './pages/bookings/MyBookings';
@@ -187,6 +188,11 @@ function App() {
             <Route path="/admin/bookings" element={
               <ProtectedRoute role="admin">
                 <AdminBookings />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/vendors" element={
+              <ProtectedRoute role="admin">
+                <VendorManagement />
               </ProtectedRoute>
             } />
           </Route>
