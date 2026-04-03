@@ -47,6 +47,7 @@ app.use('/api/bookings', bookingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/lost-found', lostItemRoutes);
 app.use('/api/chat', chatRoutes);
+app.use('/api/volunteer', volunteerRoutes);
 app.use('/api/vendors', vendorRoutes);
 app.use('/api/points', pointRoutes);
 

@@ -25,6 +25,7 @@ import OrganizerDashboard from './pages/OrganizerDashboard';
 import AdminDashboard from './pages/AdminDashboard';
 import AdminUsers from './pages/AdminUsers';
 import AdminEvents from './pages/AdminEvents';
+import AdminVolunteers from './pages/AdminVolunteers';
 import AdminLostFound from './pages/AdminLostFound';
 import AllEvents from './pages/AllEvents';
 import EventDetail from './pages/EventDetail';
@@ -36,6 +37,8 @@ import ReportItem from './pages/ReportItem';
 import ChatPage from './pages/ChatPage';
 import AuditLogs from './pages/AuditLogs';
 import Gallery from './pages/Gallery';
+import VolunteerRegistration from './pages/VolunteerRegistration';
+import VolunteerDashboard from './pages/VolunteerDashboard';
 import VendorManagement from './pages/VendorManagement';
 
 // Booking Engine pages (Induwari's module)
@@ -132,6 +135,16 @@ function App() {
                 <MyBookings />
               </ProtectedRoute>
             } />
+            <Route path="/volunteer-register" element={
+              <ProtectedRoute role="student">
+                <VolunteerRegistration />
+              </ProtectedRoute>
+            } />
+            <Route path="/volunteer-hub" element={
+              <ProtectedRoute role="student">
+                <VolunteerDashboard />
+              </ProtectedRoute>
+            } />
           </Route>
 
           {/* Organizer Dedicated Routes (DashboardLayout) */}
@@ -168,6 +181,11 @@ function App() {
             <Route path="/admin/users" element={
               <ProtectedRoute role="admin">
                 <AdminUsers />
+              </ProtectedRoute>
+            } />
+            <Route path="/admin/volunteers" element={
+              <ProtectedRoute role="admin">
+                <AdminVolunteers />
               </ProtectedRoute>
             } />
             <Route path="/admin/events" element={

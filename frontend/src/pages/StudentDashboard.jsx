@@ -19,6 +19,7 @@ import {
     Download,
     CheckCircle2,
     MessageCircleMore,
+    HeartHandshake
     TrendingUp,
     PieChart as PieChartIcon
 } from 'lucide-react';
@@ -379,6 +380,57 @@ const StudentDashboard = () => {
                     </section>
                 </div>
             </div>
+
+            {/* Volunteering Section */}
+            <section className="glass-card" style={{ marginTop: '40px', padding: '40px', background: 'linear-gradient(135deg, rgba(236, 72, 153, 0.05) 0%, rgba(244, 63, 94, 0.05) 100%)', borderTop: '4px solid #ec4899', overflow: 'hidden', position: 'relative' }}>
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '30px' }}>
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '20px' }}>
+                        <div>
+                            <h2 style={{ fontSize: '2rem', fontWeight: '800', marginBottom: '10px', display: 'flex', alignItems: 'center', gap: '15px' }}>
+                                <HeartHandshake size={32} style={{ color: '#ec4899' }} /> Make an Impact
+                            </h2>
+                            <p style={{ color: '#e2e8f0', fontSize: '1.1rem', maxWidth: '600px', lineHeight: '1.6' }}>
+                                Join our community of volunteers! Give back, gain new skills, and connect with people who share your passion for making a difference.
+                            </p>
+                        </div>
+                        <div style={{ display: 'flex', gap: '15px', flexWrap: 'wrap' }}>
+                            <Link to="/volunteer-register" className="btn-primary" style={{ background: 'linear-gradient(135deg, #ec4899, #f43f5e)', textDecoration: 'none', padding: '12px 24px', fontSize: '1rem', border: 'none' }}>
+                                Register Volunteering
+                            </Link>
+                            <Link to="/volunteer-hub" className="btn-primary" style={{ background: 'transparent', border: '2px solid #ec4899', color: 'white', textDecoration: 'none', padding: '10px 24px', fontSize: '1rem' }}>
+                                Volunteering Dashboard
+                            </Link>
+                        </div>
+                    </div>
+                    
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }}>
+                        <div style={{ borderRadius: '16px', overflow: 'hidden', height: '250px', position: 'relative' }}>
+                            <img 
+                                src="https://images.unsplash.com/photo-1593113565694-c6f8716c0296?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                                alt="Volunteering group" 
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} 
+                                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            />
+                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)', display: 'flex', alignItems: 'flex-end', padding: '20px', pointerEvents: 'none' }}>
+                                <span style={{ color: 'white', fontWeight: '700', fontSize: '1.2rem' }}>Community Service</span>
+                            </div>
+                        </div>
+                        <div style={{ borderRadius: '16px', overflow: 'hidden', height: '250px', position: 'relative' }}>
+                            <img 
+                                src="https://images.unsplash.com/photo-1559027615-cd4628902d4a?ixlib=rb-4.0.3&auto=format&fit=crop&w=800&q=80" 
+                                alt="Team support" 
+                                style={{ width: '100%', height: '100%', objectFit: 'cover', transition: 'transform 0.5s ease' }} 
+                                onMouseOver={(e) => e.currentTarget.style.transform = 'scale(1.05)'}
+                                onMouseOut={(e) => e.currentTarget.style.transform = 'scale(1)'}
+                            />
+                            <div style={{ position: 'absolute', inset: 0, background: 'linear-gradient(to top, rgba(0,0,0,0.7) 0%, transparent 50%)', display: 'flex', alignItems: 'flex-end', padding: '20px', pointerEvents: 'none' }}>
+                                <span style={{ color: 'white', fontWeight: '700', fontSize: '1.2rem' }}>Event Support</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
 
             {/* Floating Chat Button */}
             <Link to="/chat" className="floating-chat-btn" title="Open Chat" style={{ 
