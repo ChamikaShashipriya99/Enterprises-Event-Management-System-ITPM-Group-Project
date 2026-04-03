@@ -43,6 +43,7 @@ const notificationRoutes = require('./routes/notificationRoutes');
 const lostItemRoutes = require('./routes/lostItemRoutes');
 const chatRoutes = require('./routes/chatRoutes');
 const vendorRoutes = require('./routes/vendorRoutes');
+const pointRoutes  = require('./routes/pointRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
@@ -53,6 +54,7 @@ app.use('/api/notifications', notificationRoutes);
 app.use('/api/lost-found', lostItemRoutes);
 app.use('/api/chat', chatRoutes);
 app.use('/api/vendors', vendorRoutes);
+app.use('/api/points', pointRoutes);
 
 // Error Handling Middleware
 app.use((err, req, res, next) => {
