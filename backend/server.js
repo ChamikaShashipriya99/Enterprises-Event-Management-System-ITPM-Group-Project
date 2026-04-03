@@ -39,6 +39,7 @@ const chatRoutes = require('./routes/chatRoutes');
 const vendorRoutes = require('./routes/vendorRoutes');
 const volunteerRoutes = require('./routes/volunteerRoutes');
 const pointRoutes  = require('./routes/pointRoutes');
+const volunteerRoutes = require('./routes/volunteerRoutes');
 
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
