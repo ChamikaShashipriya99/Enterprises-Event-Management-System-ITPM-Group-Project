@@ -16,7 +16,7 @@ import {
     Bell,
     PlusCircle,
     Search,
-    HeartHandshake
+    HeartHandshake,
     Store
 } from 'lucide-react';
 import EventBuddyLogo from '../assets/EventBuddy.png';
