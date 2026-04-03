@@ -20,6 +20,7 @@ const getUserProfile = async (req, res) => {
             certificates: user.certificates,
             createdAt: user.createdAt,
             lastLogin: user.lastLogin,
+            isMfaEnabled: user.isMfaEnabled,
         });
     } else {
         res.status(404).json({ message: 'User not found' });
@@ -54,6 +55,7 @@ const updateUserProfile = async (req, res) => {
             role: updatedUser.role,
             profilePicture: updatedUser.profilePicture,
             coverImage: updatedUser.coverImage,
+            isMfaEnabled: updatedUser.isMfaEnabled,
             token: generateToken(updatedUser),
         });
     } else {
