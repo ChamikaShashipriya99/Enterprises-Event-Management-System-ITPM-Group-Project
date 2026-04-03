@@ -1,4 +1,5 @@
 const VolunteerRegistration = require('../models/VolunteerRegistration');
+const VolunteerAssignment = require('../models/VolunteerAssignment');
 
 // @desc    Register a volunteer
 // @route   POST /api/volunteer/register
@@ -101,4 +102,91 @@ const getAllVolunteers = async (req, res) => {
     }
 };
 
-module.exports = { registerVolunteer, getMyVolunteerData, getAllVolunteers };
+// @desc    Assign a volunteer to an event (Admin)
+// @route   POST /api/volunteer/assign
+// @access  Private/Admin
+const assignVolunteer = async (req, res) => {
+    try {
+        if (req.user.role !== 'admin') {
+            return res.status(403).json({ message: 'Not authorized as admin' });
+        }
+        const { volunteerId, eventId, message } = req.body;
+        
+        const exists = await VolunteerAssignment.findOne({ volunteer: volunteerId, event: eventId });
+        if (exists) {
+            return res.status(400).json({ message: 'Volunteer already assigned to this event' });
+        }
+
+        const assignment = await VolunteerAssignment.create({
+            volunteer: volunteerId,
+            event: eventId,
+            message
+        });
+
+        res.status(201).json(assignment);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error assigning volunteer', error: error.message });
+    }
+};
+
+// @desc    Get assignments for the logged-in user
+// @route   GET /api/volunteer/assignments/me
+// @access  Private
+const getMyAssignments = async (req, res) => {
+    try {
+        const assignments = await VolunteerAssignment.find({ volunteer: req.user.id })
+            .populate('event', 'title date')
+            .sort({ createdAt: -1 });
+        res.json(assignments);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error fetching assignments', error: error.message });
+    }
+};
+
+// @desc    Update assignment status
+// @route   PUT /api/volunteer/assignments/:id/status
+// @access  Private
+const updateAssignmentStatus = async (req, res) => {
+    try {
+        const { status } = req.body;
+        if (!['pending', 'accepted', 'declined'].includes(status)) {
+            return res.status(400).json({ message: 'Invalid status' });
+        }
+        
+        const assignment = await VolunteerAssignment.findOne({ _id: req.params.id, volunteer: req.user.id });
+        if (!assignment) {
+            return res.status(404).json({ message: 'Assignment not found' });
+        }
+        
+        assignment.status = status;
+        await assignment.save();
+        res.json(assignment);
+    } catch (error) {
+        res.status(500).json({ message: 'Server error updating status', error: error.message });
+    }
+};
+
+// @desc    Mark all assignments as read
+// @route   PUT /api/volunteer/assignments/read-all
+// @access  Private
+const markAllAssignmentsRead = async (req, res) => {
+    try {
+        await VolunteerAssignment.updateMany(
+            { volunteer: req.user.id, isRead: false },
+            { $set: { isRead: true } }
+        );
+        res.json({ message: 'All assignments marked as read' });
+    } catch (error) {
+        res.status(500).json({ message: 'Server error marking as read', error: error.message });
+    }
+};
+
+module.exports = { 
+    registerVolunteer, 
+    getMyVolunteerData, 
+    getAllVolunteers,
+    assignVolunteer,
+    getMyAssignments,
+    updateAssignmentStatus,
+    markAllAssignmentsRead
+};

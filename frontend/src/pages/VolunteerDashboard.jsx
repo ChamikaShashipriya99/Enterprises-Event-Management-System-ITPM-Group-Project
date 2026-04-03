@@ -2,13 +2,14 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Mail, Phone, CheckSquare, Target, CalendarDays, Clock, PenLine } from 'lucide-react';
+import { Mail, Phone, CheckSquare, Target, CalendarDays, Clock, PenLine, Bell, Check, X as XIcon } from 'lucide-react';
 import Skeleton from '../components/Skeleton';
 import { toast } from 'react-hot-toast';
 
 const VolunteerDashboard = () => {
     const navigate = useNavigate();
     const [data, setData] = useState(null);
+    const [assignments, setAssignments] = useState([]);
     const [loading, setLoading] = useState(true);
 
     useEffect(() => {
@@ -18,9 +19,11 @@ const VolunteerDashboard = () => {
                 const token = user?.token || '';
                 
                 const response = await fetch('http://localhost:5000/api/volunteer/me', {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+
+                const assignRes = await fetch('http://localhost:5000/api/volunteer/assignments/me', {
+                    headers: { 'Authorization': `Bearer ${token}` }
                 });
 
                 if (!response.ok) {
@@ -34,6 +37,10 @@ const VolunteerDashboard = () => {
 
                 const volunteerData = await response.json();
                 setData(volunteerData);
+
+                if (assignRes.ok) {
+                    setAssignments(await assignRes.json());
+                }
             } catch (error) {
                 toast.error("Error loading dashboard.");
                 console.error(error);
@@ -66,6 +73,42 @@ const VolunteerDashboard = () => {
     });
 
     const getInitial = (name) => name ? name.charAt(0).toUpperCase() : 'V';
+
+    const handleAssignmentStatus = async (id, status) => {
+        try {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const res = await fetch(`http://localhost:5000/api/volunteer/assignments/${id}/status`, {
+                method: 'PUT',
+                headers: { 
+                    'Authorization': `Bearer ${user?.token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ status })
+            });
+            if (res.ok) {
+                setAssignments(prev => prev.map(a => a._id === id ? { ...a, status } : a));
+                toast.success(`Assignment ${status}`);
+            }
+        } catch(error) {
+            toast.error('Error updating assignment');
+        }
+    };
+
+    const handleMarkAllRead = async () => {
+        try {
+            const user = JSON.parse(localStorage.getItem('user'));
+            const res = await fetch(`http://localhost:5000/api/volunteer/assignments/read-all`, {
+                method: 'PUT',
+                headers: { 'Authorization': `Bearer ${user?.token}` }
+            });
+            if (res.ok) {
+                setAssignments(prev => prev.map(a => ({ ...a, isRead: true })));
+                toast.success('All assignments marked as read');
+            }
+        } catch(error) {
+            toast.error('Error marking as read');
+        }
+    };
 
     return (
         <div style={{ padding: '40px 5%', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
@@ -159,6 +202,95 @@ const VolunteerDashboard = () => {
                     </button>
                 </div>
             </motion.section>
+
+            {/* Event Assignments Row */}
+            {assignments.length > 0 && (
+                <motion.section 
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.5, delay: 0.05 }}
+                    style={{ 
+                        background: 'rgba(255,255,255,0.02)',
+                        border: '1px solid rgba(255,255,255,0.05)',
+                        borderRadius: '16px',
+                        padding: '30px',
+                        marginBottom: '30px'
+                    }}
+                >
+                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px', flexWrap: 'wrap', gap: '15px' }}>
+                        <div>
+                            <h2 style={{ fontSize: '1.4rem', fontWeight: '800', color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                                <Bell size={22} color="#fbbf24" fill="#fbbf24" /> Event Assignments
+                            </h2>
+                            <p style={{ color: '#94a3b8', fontSize: '0.9rem', margin: '4px 0 0 0' }}>Notifications from the Event Admins</p>
+                        </div>
+                        <button 
+                            onClick={handleMarkAllRead}
+                            style={{ 
+                                display: 'flex', alignItems: 'center', gap: '6px', 
+                                background: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)',
+                                color: '#34d399', padding: '8px 16px', borderRadius: '20px', 
+                                fontSize: '0.85rem', fontWeight: '600', cursor: 'pointer', transition: 'all 0.2s'
+                            }}
+                            onMouseOver={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.2)'}
+                            onMouseOut={(e) => e.currentTarget.style.background = 'rgba(16, 185, 129, 0.1)'}
+                        >
+                            <Check size={16} /> Mark all as read
+                        </button>
+                    </div>
+
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
+                        {assignments.map(ass => {
+                            const dateSt = new Date(ass.event?.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+                            const createdTime = new Date(ass.createdAt).toLocaleString('en-US', { month: 'numeric', day: 'numeric', year: 'numeric', hour: 'numeric', minute: 'numeric', second: 'numeric', hour12: true });
+
+                            let badge = null;
+                            if (ass.status === 'accepted') {
+                                badge = <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.2)', color: '#34d399', padding: '4px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold' }}><Check size={12} /> ACCEPTED</div>;
+                            } else if (ass.status === 'declined') {
+                                badge = <div style={{ display: 'inline-flex', alignItems: 'center', gap: '4px', background: 'rgba(239, 68, 68, 0.2)', color: '#f87171', padding: '4px 10px', borderRadius: '12px', fontSize: '0.7rem', fontWeight: 'bold' }}><XIcon size={12} /> DECLINED</div>;
+                            }
+
+                            return (
+                                <div key={ass._id} style={{ 
+                                    background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.05)', 
+                                    borderRadius: '12px', padding: '20px', display: 'flex', flexDirection: 'column', gap: '15px', position: 'relative',
+                                    borderLeft: !ass.isRead ? '3px solid #6366f1' : '1px solid rgba(255,255,255,0.05)'
+                                }}>
+                                    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '15px' }}>
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', flexWrap: 'wrap' }}>
+                                            <span style={{ fontSize: '1.05rem', fontWeight: '700', color: 'white' }}>{ass.event?.title || 'Unknown Event'}</span>
+                                            <span style={{ color: '#94a3b8', fontSize: '0.9rem' }}>({dateSt})</span>
+                                            {badge}
+                                        </div>
+                                        <div style={{ color: '#64748b', fontSize: '0.8rem' }}>{createdTime}</div>
+                                    </div>
+                                    <div style={{ color: '#cbd5e1', fontSize: '0.95rem', lineHeight: '1.5' }}>
+                                        {ass.message}
+                                    </div>
+
+                                    {ass.status === 'pending' && (
+                                        <div style={{ display: 'flex', gap: '10px', marginTop: '5px' }}>
+                                            <button 
+                                                onClick={() => handleAssignmentStatus(ass._id, 'accepted')}
+                                                style={{ padding: '8px 20px', borderRadius: '6px', background: 'rgba(16, 185, 129, 0.1)', color: '#34d399', border: '1px solid rgba(16, 185, 129, 0.2)', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
+                                                onMouseOver={(e) => e.target.style.background = 'rgba(16, 185, 129, 0.2)'}
+                                                onMouseOut={(e) => e.target.style.background = 'rgba(16, 185, 129, 0.1)'}
+                                            >Accept</button>
+                                            <button 
+                                                onClick={() => handleAssignmentStatus(ass._id, 'declined')}
+                                                style={{ padding: '8px 20px', borderRadius: '6px', background: 'rgba(255,255,255,0.05)', color: '#94a3b8', border: '1px solid rgba(255,255,255,0.1)', cursor: 'pointer', fontWeight: '600', fontSize: '0.85rem' }}
+                                                onMouseOver={(e) => e.target.style.background = 'rgba(255,255,255,0.1)'}
+                                                onMouseOut={(e) => e.target.style.background = 'rgba(255,255,255,0.05)'}
+                                            >Decline</button>
+                                        </div>
+                                    )}
+                                </div>
+                            );
+                        })}
+                    </div>
+                </motion.section>
+            )}
 
             {/* Middle Row */}
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px', marginBottom: '30px' }}>

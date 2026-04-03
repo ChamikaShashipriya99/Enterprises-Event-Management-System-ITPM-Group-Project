@@ -88,14 +88,35 @@ const AdminVolunteers = () => {
         }
     };
 
-    const submitAssignment = () => {
+    const submitAssignment = async () => {
         if (!selectedEventId || !assignMessage) {
             toast.error('Please select an event and provide a message.');
             return;
         }
-        // Ideally, send the assignment cleanly to a backend here.
-        toast.success(`Assignment accurately mapped and sent to ${selectedVolunteer.fullName}!`);
-        setAssignModalOpen(false);
+        
+        try {
+            const user = localStorage.getItem('user') ? JSON.parse(localStorage.getItem('user')) : null;
+            const token = user?.token || '';
+            const res = await fetch('http://localhost:5000/api/volunteer/assign', {
+                method: 'POST',
+                headers: { 
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    volunteerId: selectedVolunteer.user._id || selectedVolunteer.user,
+                    eventId: selectedEventId,
+                    message: assignMessage
+                })
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.message || 'Failed to send assignment');
+            
+            toast.success(`Assignment accurately mapped and sent to ${selectedVolunteer.fullName}!`);
+            setAssignModalOpen(false);
+        } catch (error) {
+            toast.error(error.message);
+        }
     };
 
     if (loading) {
