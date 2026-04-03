@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { toast } from 'react-hot-toast';
-import { Search, Target, Users, CalendarDays, X } from 'lucide-react';
+import { Search, Target, Users, CalendarDays, X, Check } from 'lucide-react';
 import Skeleton from '../components/Skeleton';
 
 const AdminVolunteers = () => {
@@ -211,6 +211,7 @@ const AdminVolunteers = () => {
                             <th style={{ padding: '15px 20px', color: '#64748b', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '1px' }}>PHONE</th>
                             <th style={{ padding: '15px 20px', color: '#64748b', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '1px' }}>SKILLS</th>
                             <th style={{ padding: '15px 20px', color: '#64748b', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '1px' }}>AVAILABLE DAYS</th>
+                            <th style={{ padding: '15px 20px', color: '#64748b', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '1px' }}>ASSIGNMENTS</th>
                             <th style={{ padding: '15px 20px', color: '#64748b', fontSize: '0.75rem', fontWeight: '700', letterSpacing: '1px', textAlign: 'right' }}>ACTIONS</th>
                         </tr>
                     </thead>
@@ -264,6 +265,36 @@ const AdminVolunteers = () => {
                                     </td>
                                     <td style={{ padding: '20px', color: '#94a3b8', fontSize: '0.85rem' }}>
                                         {availableDays.length > 0 ? availableDays.join(', ') : 'None'}
+                                    </td>
+                                    <td style={{ padding: '20px' }}>
+                                        <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+                                            {vol.assignments && vol.assignments.length > 0 ? (
+                                                vol.assignments.map(ass => (
+                                                    <div key={ass._id} style={{ 
+                                                        display: 'flex', 
+                                                        flexDirection: 'column', 
+                                                        gap: '6px',
+                                                        background: 'rgba(255,255,255,0.02)',
+                                                        border: '1px solid rgba(255,255,255,0.05)',
+                                                        borderLeft: ass.status === 'accepted' ? '3px solid #10b981' : ass.status === 'declined' ? '3px solid #ef4444' : '3px solid #3b82f6',
+                                                        padding: '10px 12px',
+                                                        borderRadius: '8px',
+                                                        minWidth: '150px'
+                                                    }}>
+                                                        <span style={{ color: '#f8fafc', fontSize: '0.85rem', fontWeight: '700', lineHeight: '1.3' }}>{ass.event?.title || 'Unknown Event'}</span>
+                                                        {ass.status === 'accepted' ? (
+                                                            <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: '4px', background: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '3px 8px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: '800' }}><Check size={10} strokeWidth={3} /> ACCEPTED</div>
+                                                        ) : ass.status === 'declined' ? (
+                                                            <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: '4px', background: 'rgba(239, 68, 68, 0.15)', color: '#f87171', padding: '3px 8px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: '800' }}><X size={10} strokeWidth={3} /> DECLINED</div>
+                                                        ) : (
+                                                            <div style={{ display: 'inline-flex', alignSelf: 'flex-start', alignItems: 'center', gap: '4px', background: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', padding: '3px 8px', borderRadius: '12px', fontSize: '0.65rem', fontWeight: '800' }}> PENDING</div>
+                                                        )}
+                                                    </div>
+                                                ))
+                                            ) : (
+                                                <span style={{ color: '#64748b', fontSize: '0.8rem', fontStyle: 'italic' }}>No assignments</span>
+                                            )}
+                                        </div>
                                     </td>
                                     <td style={{ padding: '20px', textAlign: 'right' }}>
                                         <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: '8px' }}>

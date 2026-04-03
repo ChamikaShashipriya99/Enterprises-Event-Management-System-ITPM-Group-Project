@@ -97,13 +97,14 @@ const getAllVolunteers = async (req, res) => {
             .lean()
             .sort({ createdAt: -1 });
 
-        const assignments = await VolunteerAssignment.find();
+        const assignments = await VolunteerAssignment.find().populate('event', 'title').lean();
         
         const enhancedVolunteers = volunteers.map(vol => {
             const uidStr = vol.user && vol.user._id ? vol.user._id.toString() : (vol.user ? vol.user.toString() : null);
             const volAssignments = assignments.filter(a => a.volunteer && a.volunteer.toString() === uidStr);
             return {
                 ...vol,
+                assignments: volAssignments,
                 hasAccepted: volAssignments.some(a => a.status === 'accepted'),
                 hasDeclined: volAssignments.some(a => a.status === 'declined'),
                 hasPending: volAssignments.some(a => a.status === 'pending')
