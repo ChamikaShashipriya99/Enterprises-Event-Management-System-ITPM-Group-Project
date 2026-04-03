@@ -7,8 +7,10 @@ import eventService from '../services/eventService';
 import {
   Store, Users, CheckCircle2, Clock, Plus, Edit3, Eye, Trash2,
   X, Phone, Mail, CalendarDays, Tag, Activity, TrendingUp,
-  Utensils, Camera, Cpu, Star, Zap, AlertCircle, Loader2,
+  Utensils, Camera, Cpu, Star, Zap, AlertCircle, Loader2, Download, Search
 } from 'lucide-react';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 /* ─────────────── Constants ─────────────── */
 const SERVICE_TYPES  = ['Equipment', 'Catering', 'Media'];
@@ -147,6 +149,7 @@ const VendorManagement = () => {
   const [form,   setForm]   = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
   const [eventList, setEventList] = useState([]);
+  const [searchTerm, setSearchTerm] = useState('');
 
   /* ── Fetch from backend ── */
   const fetchVendors = useCallback(async () => {
@@ -198,6 +201,87 @@ const VendorManagement = () => {
   }, { type:'', count:0 });
 
   const recentActivity = [...vendors].slice(-3).reverse();
+
+  const filteredVendors = vendors.filter(v => {
+    const s = searchTerm.toLowerCase();
+    return (v.name && v.name.toLowerCase().includes(s)) ||
+           (v.service && v.service.toLowerCase().includes(s)) ||
+           (v.event && v.event.toLowerCase().includes(s)) ||
+           (v.status && v.status.toLowerCase().includes(s)) ||
+           (v.contact && v.contact.toLowerCase().includes(s)) ||
+           (v.email && v.email.toLowerCase().includes(s));
+  });
+
+  /* ── Export PDF ── */
+  const downloadPDF = () => {
+    try {
+      const doc = new jsPDF('landscape'); // landscape is better for tables with many columns
+      
+      const primaryColor = [99, 102, 241];
+      const textDark = [15, 23, 42];
+      const textLight = [100, 116, 139];
+
+      // Document Header
+      doc.setFontSize(22);
+      doc.setTextColor(...primaryColor);
+      doc.text("EventBuddy", 14, 20);
+      
+      doc.setFontSize(14);
+      doc.setTextColor(...textDark);
+      doc.text("Vendor Directory Report", 14, 30);
+      
+      doc.setFontSize(10);
+      doc.setTextColor(...textLight);
+      doc.text(`Generated on: ${new Date().toLocaleString()}`, 14, 38);
+
+      autoTable(doc, {
+        startY: 45,
+        head: [['Vendor Name', 'Service Type', 'Assigned Event', 'Status', 'Contact', 'Email']],
+        body: filteredVendors.map(v => [v.name || '-', v.service || '-', v.event || '-', v.status || '-', v.contact || '-', v.email || '-']),
+        theme: 'grid',
+        styles: {
+          fontSize: 9,
+          font: 'helvetica',
+          cellPadding: 5,
+          textColor: [51, 65, 85],
+          lineColor: [226, 232, 240],
+          lineWidth: 0.1,
+        },
+        headStyles: {
+          fillColor: primaryColor,
+          textColor: [255, 255, 255],
+          fontStyle: 'bold',
+          halign: 'center'
+        },
+        alternateRowStyles: {
+          fillColor: [248, 250, 252] // light blue/gray
+        },
+        columnStyles: {
+          0: { cellWidth: 45 },
+          1: { cellWidth: 35 },
+          2: { cellWidth: 60 },
+          3: { cellWidth: 30, halign: 'center' },
+          4: { cellWidth: 40 },
+          5: { cellWidth: 'auto' },
+        },
+        didDrawPage: function (data) {
+          doc.setFontSize(8);
+          doc.setTextColor(...textLight);
+          doc.text(
+            `Page ${data.pageNumber}`,
+            data.settings.margin.left,
+            doc.internal.pageSize.height - 10
+          );
+        }
+      });
+      
+      doc.save("vendor-directory.pdf");
+      toast.success('PDF Downloaded successfully!');
+    } catch (error) {
+      console.error("PDF Export failed:", error);
+      toast.error('Failed to export PDF.');
+    }
+  };
 
   /* ── Handlers: field change ── */
   const handleChange = (e) => {
@@ -344,9 +428,43 @@ const VendorManagement = () => {
         initial={{ opacity:0, y:20 }} animate={{ opacity:1, y:0 }} transition={{ duration:0.5, delay:0.2 }}
         className="glass-card" style={{ padding:'1.8rem', marginBottom:'2rem', overflowX:'auto' }}
       >
-        <h2 style={{ fontSize:'1.2rem', fontWeight:700, marginBottom:'1.4rem', display:'flex', alignItems:'center', gap:'10px' }}>
-          <Activity size={20} style={{ color:'#6366f1' }}/> Vendor Directory
-        </h2>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom:'1.4rem', flexWrap: 'wrap', gap: '1rem' }}>
+          <h2 style={{ fontSize:'1.2rem', fontWeight:700, display:'flex', alignItems:'center', gap:'10px', margin:0 }}>
+            <Activity size={20} style={{ color:'#6366f1' }}/> Vendor Directory
+          </h2>
+          <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            <div style={{ position: 'relative' }}>
+              <Search size={16} style={{ position: 'absolute', left: '10px', top: '50%', transform: 'translateY(-50%)', color: '#64748b' }} />
+              <input 
+                type="text"
+                placeholder="Search vendors..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                style={{
+                  padding:'9px 14px 9px 34px', borderRadius:'10px',
+                  background:'rgba(15,23,42,0.6)', color:'white', fontSize:'0.85rem', outline:'none',
+                  border:'1px solid rgba(255,255,255,0.1)',
+                  width: '240px',
+                  transition: 'border-color 0.2s'
+                }}
+                onFocus={e => e.target.style.borderColor = '#6366f1'}
+                onBlur={e => e.target.style.borderColor = 'rgba(255,255,255,0.1)'}
+              />
+            </div>
+            <motion.button
+              whileHover={{ scale:1.03 }}
+              whileTap={{ scale:0.97 }}
+              onClick={downloadPDF}
+              style={{
+                display:'flex', alignItems:'center', gap:'6px',
+                background:'rgba(16, 185, 129, 0.12)', color:'#10b981', border:'1px solid rgba(16, 185, 129, 0.3)',
+                borderRadius:'10px', padding:'9px 15px', fontWeight:600, fontSize:'0.85rem', cursor:'pointer'
+              }}
+            >
+              <Download size={16}/> Export PDF
+            </motion.button>
+          </div>
+        </div>
 
         {loading ? (
           <div style={{ textAlign:'center', padding:'3rem', color:'#64748b' }}>
@@ -363,7 +481,7 @@ const VendorManagement = () => {
               </tr>
             </thead>
             <tbody>
-              {vendors.map((v, idx) => {
+              {filteredVendors.map((v, idx) => {
                 const sc = serviceColor(v.service);
                 const ss = statusStyle(v.status);
                 const vid = v._id || v.id;
@@ -411,9 +529,9 @@ const VendorManagement = () => {
             </tbody>
           </table>
         )}
-        {!loading && vendors.length === 0 && (
+        {!loading && filteredVendors.length === 0 && (
           <div style={{ textAlign:'center', color:'#475569', padding:'3rem 0' }}>
-            No vendors yet. Click <strong style={{ color:'#818cf8' }}>Add Vendor</strong> to get started.
+            No vendors found. {vendors.length === 0 ? "Click Add Vendor to get started." : "Try clearing your search."}
           </div>
         )}
       </motion.div>
