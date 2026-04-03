@@ -6,6 +6,7 @@ import { AuthContext } from '../context/AuthContext';
 import bookingService from '../services/bookingService';
 import eventService from '../services/eventService';
 import Skeleton from '../components/Skeleton';
+import EventCountdown from '../components/EventCountdown';
 import { 
     Calendar, 
     Award, 
@@ -217,6 +218,7 @@ const StudentDashboard = () => {
                                         }}>
                                             <CheckCircle2 size={10} /> Confirmed
                                         </span>
+                                        <EventCountdown targetDate={b.event?.date} compact={true} />
                                     </div>
                                     <div style={{ fontSize: '0.85rem', color: '#94a3b8', display: 'flex', gap: '15px', alignItems: 'center', flexWrap: 'wrap' }}>
                                         <span style={{ display: 'flex', alignItems: 'center', gap: '4px' }}><MapPin size={14} /> {b.event?.location}</span>
