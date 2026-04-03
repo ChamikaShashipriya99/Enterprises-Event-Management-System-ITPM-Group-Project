@@ -9,7 +9,7 @@ import {
   X, Phone, Mail, CalendarDays, Tag, Activity, TrendingUp,
   Utensils, Camera, Cpu, Star, Zap, AlertCircle, Loader2, Download, Search
 } from 'lucide-react';
-import jsPDF from 'jspdf';
+import { jsPDF } from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
 /* ─────────────── Constants ─────────────── */
