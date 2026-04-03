@@ -1,9 +1,3 @@
-// ─────────────────────────────────────────────────────────────────────────────
-// MERGE INSTRUCTIONS FOR server.js
-// Add the booking route to your existing backend/server.js
-// Only the 2 lines marked NEW need to be added.
-// ─────────────────────────────────────────────────────────────────────────────
-
 const express = require('express');
 const dotenv = require('dotenv');
 dotenv.config();
@@ -38,7 +32,7 @@ const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const adminRoutes = require('./routes/adminRoutes');
 const eventRoutes = require('./routes/eventRoutes');
-const bookingRoutes = require('./routes/bookingRoutes'); // NEW
+const bookingRoutes = require('./routes/bookingRoutes');
 const notificationRoutes = require('./routes/notificationRoutes');
 const lostItemRoutes = require('./routes/lostItemRoutes');
 const chatRoutes = require('./routes/chatRoutes');
@@ -49,7 +43,7 @@ app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/events', eventRoutes);
-app.use('/api/bookings', bookingRoutes); // NEW
+app.use('/api/bookings', bookingRoutes);
 app.use('/api/notifications', notificationRoutes);
 app.use('/api/lost-found', lostItemRoutes);
 app.use('/api/chat', chatRoutes);
@@ -82,6 +76,5 @@ const io = new Server(server, {
 
 socketHandler(io);
 app.set('io', io);
-
 
 server.listen(PORT, () => console.log(`Server running on port ${PORT}`));
