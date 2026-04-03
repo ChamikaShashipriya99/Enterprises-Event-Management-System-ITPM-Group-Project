@@ -129,7 +129,7 @@ const AdminVolunteers = () => {
     }
 
     return (
-        <div style={{ padding: '40px', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ padding: '40px',  }}>
             
             <div style={{ marginBottom: '30px' }}>
                 <h1 style={{ fontSize: '2rem', fontWeight: '800', color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -358,7 +358,7 @@ const AdminVolunteers = () => {
                                 maxWidth: '500px',
                                 padding: '30px',
                                 boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
-                                fontFamily: 'Inter, sans-serif'
+                                
                             }}
                         >
                             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }}>

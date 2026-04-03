@@ -111,7 +111,7 @@ const VolunteerDashboard = () => {
     };
 
     return (
-        <div style={{ padding: '40px 5%', maxWidth: '1200px', margin: '0 auto', fontFamily: 'Inter, sans-serif' }}>
+        <div style={{ padding: '40px 5%', maxWidth: '1200px', margin: '0 auto',  }}>
             
             {/* Top Profile Card */}
             <motion.section 
