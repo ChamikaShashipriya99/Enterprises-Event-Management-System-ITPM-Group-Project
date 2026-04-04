@@ -514,11 +514,14 @@ const BookingDetail = () => {
                         <div style={{ display: 'flex', gap: '16px' }}>
                             <button
                                 onClick={handleCancel}
-                                disabled={cancelling}
+                                disabled={cancelling || !reason.trim()}
                                 className="btn-primary"
                                 style={{
                                     flex: 1, background: 'linear-gradient(135deg, #f43f5e 0%, #be123c 100%)',
-                                    padding: '14px', borderRadius: '12px', fontSize: '1rem'
+                                    padding: '14px', borderRadius: '12px', fontSize: '1rem',
+                                    opacity: (cancelling || !reason.trim()) ? 0.5 : 1,
+                                    cursor: (cancelling || !reason.trim()) ? 'not-allowed' : 'pointer',
+                                    transition: 'all 0.3s'
                                 }}
                             >
                                 {cancelling ? 'Processing...' : 'Yes, Cancel'}
